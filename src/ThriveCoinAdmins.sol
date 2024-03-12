@@ -5,9 +5,10 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
  * @title ThriveCoin admins contract
- * @notice Keeps all admin's addresses who can send transactions on ThriveCoin contracts
+ * @notice Keeps track of all ThriveCoin admins
  */
 contract ThriveCoinAdmins is AccessControl {
+    error Not_An_Admin();
     /**
      * @notice hash of ADMIN_ROLE
      */
@@ -16,11 +17,6 @@ contract ThriveCoinAdmins is AccessControl {
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
-    }
-
-    modifier onlyAdmin() {
-        require(hasRole(ADMIN_ROLE, msg.sender), "Caller is not an admin");
-        _;
     }
 
     /**
@@ -32,7 +28,7 @@ contract ThriveCoinAdmins is AccessControl {
     }
 
     /**
-     * @notice Allows the DEFAULT_ADMIN_ROLE (owner) to grant the ADMIN_ROLE to an account.
+     * @notice Allows the DEFAULT_ADMIN_ROLE(owner) to grant the ADMIN_ROLE to an account.
      * @param _account The address of the new admin.
      */
     function grantAdminRole(
