@@ -1,45 +1,47 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {AccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ThriveCoinAdmins} from "./ThriveCoinAdmins.sol";
 
 /**
- * @title ThriveCoinIERC20Reward
+ * @title ThriveProtocolIERC20Reward
  * @notice Contract for managing rewards related to ERC20 token.
  * This contract allows admins to deposit tokens, give rewards, and users to withdraw their rewards.
  */
-contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
+contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
-    ThriveCoinAdmins public thriveCoinAdmins;
+    AccessControlEnumerable public accessControlEnumerable;
     IERC20 public token;
     mapping(address => uint256) public balanceOf;
 
     /**
      * @dev Emitted when an admin rewads a user with tokens.
      */
-    event Reward(address indexed recipient, uint amount, string reason);
+    event Reward(address indexed recipient, uint256 amount, string reason);
     /**
      * @dev Emitted when a user withdraws tokens from the contract.
      */
-    event Withdrawal(address indexed user, uint amount);
+    event Withdrawal(address indexed user, uint256 amount);
 
     /**
      * @dev Initializes the contract.
-     * @param _thriveCoinAdmins The address of the ThriveCoinAdmins contract.
+     * @param _accessControlEnumerable The address of the AccessControlEnumerable contract.
      * @param _token The address of ERC20 token contract.
      */
     function initialize(
-        address _thriveCoinAdmins,
+        address _accessControlEnumerable,
         address _token
     ) public initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
-        thriveCoinAdmins = ThriveCoinAdmins(_thriveCoinAdmins);
+        accessControlEnumerable = AccessControlEnumerable(
+            _accessControlEnumerable
+        );
         token = IERC20(_token);
     }
 
@@ -55,12 +57,16 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @dev Modifier to only allow execution by admins.
-     * If the caller is not an admin, reverts with ThriveCoinAdmins.Not_An_Admin.
+     * If the caller is not an admin, reverts with a corresponding message
      */
     modifier onlyAdmin() {
-        if (!thriveCoinAdmins.isAdmin(msg.sender)) {
-            revert ThriveCoinAdmins.Not_An_Admin();
-        }
+        require(
+            accessControlEnumerable.hasRole(
+                accessControlEnumerable.DEFAULT_ADMIN_ROLE(),
+                _msgSender()
+            ),
+            "ThriveProtocol: must have admin role"
+        );
         _;
     }
 
@@ -70,8 +76,8 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      * The deposited tokens will be held in the contract's balance.
      * @param _amount The amount of tokens to deposit.
      */
-    function deposit(uint _amount) external {
-        token.safeTransferFrom(msg.sender, address(this), _amount);
+    function deposit(uint256 _amount) external {
+        token.safeTransferFrom(_msgSender(), address(this), _amount);
     }
 
     /**
@@ -80,16 +86,16 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      * Users can only withdraw rewards that they have earned.
      * @param _amount The amount of tokens to withdraw.
      */
-    function withdraw(uint _amount) external {
-        require(balanceOf[msg.sender] >= _amount, "Insufficient balance");
+    function withdraw(uint256 _amount) external {
+        require(balanceOf[_msgSender()] >= _amount, "Insufficient balance");
         require(
             token.balanceOf(address(this)) >= _amount,
             "Insufficient contract balance"
         );
 
-        balanceOf[msg.sender] -= _amount;
-        token.safeTransfer(msg.sender, _amount);
-        emit Withdrawal(msg.sender, _amount);
+        balanceOf[_msgSender()] -= _amount;
+        token.safeTransfer(_msgSender(), _amount);
+        emit Withdrawal(_msgSender(), _amount);
     }
 
     /**
@@ -100,7 +106,7 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      */
     function reward(
         address _recipient,
-        uint _amount,
+        uint256 _amount,
         string calldata _reason
     ) external onlyAdmin {
         _reward(_recipient, _amount, _reason);
@@ -114,7 +120,7 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      */
     function rewardBulk(
         address[] calldata _recipients,
-        uint[] calldata _amounts,
+        uint256[] calldata _amounts,
         string[] calldata _reasons
     ) external onlyAdmin {
         require(
@@ -123,7 +129,7 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
             "Array lengths mismatch"
         );
 
-        for (uint i = 0; i < _recipients.length; i++) {
+        for (uint256 i = 0; i < _recipients.length; i++) {
             _reward(_recipients[i], _amounts[i], _reasons[i]);
         }
     }
@@ -136,20 +142,24 @@ contract ThriveCoinIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      */
     function _reward(
         address _recipient,
-        uint _amount,
+        uint256 _amount,
         string calldata _reason
-    ) private {
+    ) internal {
         balanceOf[_recipient] += _amount;
         emit Reward(_recipient, _amount, _reason);
     }
 
     /**
-     * @dev Sets the ThriveCoinAdmins contract address.
+     * @dev Sets the AccessControlEnumerable contract address.
      * Only the owner of this contract can call this function.
      *
-     * @param _thriveCoinAdmins The address of the new ThriveCoinAdmins contract.
+     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setThriveCoinAdmins(address _thriveCoinAdmins) external onlyOwner {
-        thriveCoinAdmins = ThriveCoinAdmins(_thriveCoinAdmins);
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable
+    ) external onlyOwner {
+        accessControlEnumerable = AccessControlEnumerable(
+            _accessControlEnumerable
+        );
     }
 }
