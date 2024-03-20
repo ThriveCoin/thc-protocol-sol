@@ -21,10 +21,11 @@ contract ThriveProtocolIERC20RewardTest is Test {
 
     function setUp() public {
         token = new MockERC20("test token", "TST");
-        vm.prank(address(1));
+        vm.startPrank(address(1));
         admins = new MockAccessControl();
         reward = new ThriveProtocolIERC20Reward();
         reward.initialize(address(admins), address(token));
+        vm.stopPrank();
 
         token.mint(address(2), 10 ether);
 
@@ -36,6 +37,7 @@ contract ThriveProtocolIERC20RewardTest is Test {
     /////////////
     // deposit //
     /////////////
+
     function test_Deposit() public {
         vm.startPrank(address(2));
         token.approve(address(reward), 1 ether);
@@ -60,6 +62,7 @@ contract ThriveProtocolIERC20RewardTest is Test {
     ////////////
     // reward //
     ////////////
+
     function test_Reward() public {
         vm.prank(address(1));
         vm.expectEmit(true, true, true, true);
@@ -78,6 +81,7 @@ contract ThriveProtocolIERC20RewardTest is Test {
     ////////////////
     // rewardBulk //
     ////////////////
+
     function test_RewardBulk() public {
         vm.prank(address(1));
         vm.expectEmit(true, true, true, true);
@@ -107,6 +111,7 @@ contract ThriveProtocolIERC20RewardTest is Test {
     //////////////
     // withdraw //
     //////////////
+
     function test_Withdraw() public {
         test_Deposit();
         test_Reward();
@@ -133,5 +138,30 @@ contract ThriveProtocolIERC20RewardTest is Test {
         vm.prank(address(2));
         vm.expectRevert("Insufficient contract balance");
         reward.withdraw(0.001 ether);
+    }
+
+    ////////////////////////////////
+    // setAccessControlEnumerable //
+    ////////////////////////////////
+
+    function test_SetAccessControl() public {
+        MockAccessControl newAccessControl = new MockAccessControl();
+
+        vm.prank(address(1));
+        reward.setAccessControlEnumerable(address(newAccessControl));
+
+        address accessAddress = address(reward.accessControlEnumerable());
+        assertEq(accessAddress, address(newAccessControl));
+    }
+
+    function test_AccessControlFromNotOwner() public {
+        MockAccessControl newAccessControl = new MockAccessControl();
+
+        vm.startPrank(address(2));
+        bytes4 selector = bytes4(
+            keccak256("OwnableUnauthorizedAccount(address)")
+        );
+        vm.expectRevert(abi.encodeWithSelector(selector, address(2)));
+        reward.setAccessControlEnumerable(address(newAccessControl));
     }
 }

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import {AccessControlEnumerable} from "lib/openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
