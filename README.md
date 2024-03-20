@@ -1,66 +1,19 @@
-## Foundry
+## Deploy
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```
+source .env (or .env.development)
 ```
 
-### Test
-
-```shell
-$ forge test
+```
+forge script --sig "run(address,address)" --rpc-url $RPC_URL -vvvv --broadcast --verify --etherscan-api-key $API_KEY script/ThriveProtocolIERC20Reward.s.sol <access_control_address> <token_address>
 ```
 
-### Format
+## Update
 
-```shell
-$ forge fmt
+```
+source .env (or .env.development)
 ```
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
 ```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+forge script --rpc-url $RPC_URL -vvvv --broadcast script/ThriveProtocolIERC20RewardUpgrade.s.sol
 ```
