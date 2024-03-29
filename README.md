@@ -17,3 +17,9 @@ source .env (or .env.development)
 ```
 forge script --rpc-url $RPC_URL -vvvv --broadcast script/ThriveProtocolIERC20RewardUpgrade.s.sol
 ```
+
+## Init submodules
+
+```
+git submodule update --init --recursive
+```
