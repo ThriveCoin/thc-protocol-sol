@@ -18,14 +18,15 @@ contract ThriveProtocolCommunityFactory {
     uint256 private foundationPercentage;
 
     /**
-     * @param _rewardsAdmin The address of the account who has administrator rights for the funds allocated for rewards
-     * @param _treasuryAdmin The address of the account who has administrator rights for the funds allocated for DAO treasury
-     * @param _validationsAdmin The address of the account who has administrator rights for the funds allocated for validations
-     * @param _foundationAdmin The address of the account who has administrator rights for the funds allocated for the foundation
+     * @param _rewardsAdmin The address of the account who has administrator rights for the founds allocated for rewards
+     * @param _treasuryAdmin The address of the account who has administrator rights for the founds allocated for DAO treasury
+     * @param _validationsAdmin The address of the account who has administrator rights for the founds allocated for validations
+     * @param _foundationAdmin The address of the account who has administrator rights for the founds allocated for the foundation
      * @param _rewardsPercentage The value of percentage to add to rewards admin
      * @param _treasuryPercentage The value of percentage to add to treasury admin
      * @param _validationsPercentage The value of percentage to add to validations admin
      * @param _foundationPercentage The value of percentage to add to foundation admin
+     * @param _accessControlEnumerable The address of access control enumerable contract
      */
     constructor(
         address _rewardsAdmin,
@@ -35,15 +36,20 @@ contract ThriveProtocolCommunityFactory {
         uint256 _rewardsPercentage,
         uint256 _treasuryPercentage,
         uint256 _validationsPercentage,
-        uint256 _foundationPercentage
+        uint256 _foundationPercentage,
+        address _accessControlEnumerable
     ) {
+        accessControlEnumerable = AccessControlEnumerable(
+            _accessControlEnumerable
+        );
+
         _setAdmins(
             _rewardsAdmin,
             _treasuryAdmin,
             _validationsAdmin,
             _foundationAdmin
         );
-        _setPercentages(
+        _setPercentage(
             _rewardsPercentage,
             _treasuryPercentage,
             _validationsPercentage,
@@ -94,6 +100,20 @@ contract ThriveProtocolCommunityFactory {
     }
 
     /**
+     * @dev Sets the AccessControlEnumerable contract address.
+     * Only the owner of this contract can call this function.
+     *
+     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     */
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable
+    ) external onlyAdmin {
+        accessControlEnumerable = AccessControlEnumerable(
+            _accessControlEnumerable
+        );
+    }
+
+    /**
      * @notice Sets the admins' addresses
      * can call only DEFAULT_ADMIN account
      * @param _rewardsAdmin The address of the account who has administrator rights for the funds allocated for rewards
@@ -123,13 +143,13 @@ contract ThriveProtocolCommunityFactory {
      * @param _validationsPercentage The percentage for the validations admin
      * @param _foundationPercentage The percentage for the foundation admin
      */
-    function setPercentages(
+    function setPercentage(
         uint256 _rewardsPercentage,
         uint256 _treasuryPercentage,
         uint256 _validationsPercentage,
         uint256 _foundationPercentage
     ) external onlyAdmin {
-        _setPercentages(
+        _setPercentage(
             _rewardsPercentage,
             _treasuryPercentage,
             _validationsPercentage,
@@ -227,7 +247,7 @@ contract ThriveProtocolCommunityFactory {
      * @param _validationsPercentage The percentage for the validations admin
      * @param _foundationPercentage The percentage for the foundation admin
      */
-    function _setPercentages(
+    function _setPercentage(
         uint256 _rewardsPercentage,
         uint256 _treasuryPercentage,
         uint256 _validationsPercentage,
