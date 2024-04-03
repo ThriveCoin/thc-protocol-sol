@@ -13,16 +13,13 @@ contract ThriveProtocolIERC20RewardUpgradeScript is Script {
         address proxy = vm.envAddress("PROXY_ADDRESS");
 
         vm.startBroadcast(deployerPrivateKey);
-        ThriveProtocolIERC20Reward newImplementation = new ThriveProtocolIERC20Reward();
-        ThriveProtocolIERC20Reward proxyContract = ThriveProtocolIERC20Reward(
-            payable(proxy)
-        );
+        ThriveProtocolIERC20Reward newImplementation =
+            new ThriveProtocolIERC20Reward();
+        ThriveProtocolIERC20Reward proxyContract =
+            ThriveProtocolIERC20Reward(payable(proxy));
         proxyContract.upgradeToAndCall(address(newImplementation), "");
         vm.stopBroadcast();
 
-        console2.log(
-            "new implementation address: ",
-            address(newImplementation)
-        );
+        console2.log("new implementation address: ", address(newImplementation));
     }
 }

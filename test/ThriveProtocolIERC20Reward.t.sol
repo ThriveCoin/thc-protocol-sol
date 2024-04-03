@@ -158,9 +158,8 @@ contract ThriveProtocolIERC20RewardTest is Test {
         MockAccessControl newAccessControl = new MockAccessControl();
 
         vm.startPrank(address(2));
-        bytes4 selector = bytes4(
-            keccak256("OwnableUnauthorizedAccount(address)")
-        );
+        bytes4 selector =
+            bytes4(keccak256("OwnableUnauthorizedAccount(address)"));
         vm.expectRevert(abi.encodeWithSelector(selector, address(2)));
         reward.setAccessControlEnumerable(address(newAccessControl));
     }

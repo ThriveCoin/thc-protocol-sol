@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+import {AccessControlEnumerable} from
+    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
 
 contract ThriveProtocolCommunityFactory {
@@ -39,15 +40,11 @@ contract ThriveProtocolCommunityFactory {
         uint256 _foundationPercentage,
         address _accessControlEnumerable
     ) {
-        accessControlEnumerable = AccessControlEnumerable(
-            _accessControlEnumerable
-        );
+        accessControlEnumerable =
+            AccessControlEnumerable(_accessControlEnumerable);
 
         _setAdmins(
-            _rewardsAdmin,
-            _treasuryAdmin,
-            _validationsAdmin,
-            _foundationAdmin
+            _rewardsAdmin, _treasuryAdmin, _validationsAdmin, _foundationAdmin
         );
         _setPercentage(
             _rewardsPercentage,
@@ -64,8 +61,7 @@ contract ThriveProtocolCommunityFactory {
     modifier onlyAdmin() {
         require(
             accessControlEnumerable.hasRole(
-                accessControlEnumerable.DEFAULT_ADMIN_ROLE(),
-                msg.sender
+                accessControlEnumerable.DEFAULT_ADMIN_ROLE(), msg.sender
             ),
             "ThriveProtocolCommunity: must have admin role"
         );
@@ -79,10 +75,11 @@ contract ThriveProtocolCommunityFactory {
      * @param _accessControlEnumerable The address of access control enumerable contract
      * @return The address of deployed comminity contract
      */
-    function deploy(
-        string memory _name,
-        address _accessControlEnumerable
-    ) external onlyAdmin returns (address) {
+    function deploy(string memory _name, address _accessControlEnumerable)
+        external
+        onlyAdmin
+        returns (address)
+    {
         ThriveProtocolCommunity community = new ThriveProtocolCommunity(
             msg.sender,
             _name,
@@ -105,12 +102,12 @@ contract ThriveProtocolCommunityFactory {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(
-        address _accessControlEnumerable
-    ) external onlyAdmin {
-        accessControlEnumerable = AccessControlEnumerable(
-            _accessControlEnumerable
-        );
+    function setAccessControlEnumerable(address _accessControlEnumerable)
+        external
+        onlyAdmin
+    {
+        accessControlEnumerable =
+            AccessControlEnumerable(_accessControlEnumerable);
     }
 
     /**
@@ -128,10 +125,7 @@ contract ThriveProtocolCommunityFactory {
         address _foundationAdmin
     ) external onlyAdmin {
         _setAdmins(
-            _rewardsAdmin,
-            _treasuryAdmin,
-            _validationsAdmin,
-            _foundationAdmin
+            _rewardsAdmin, _treasuryAdmin, _validationsAdmin, _foundationAdmin
         );
     }
 

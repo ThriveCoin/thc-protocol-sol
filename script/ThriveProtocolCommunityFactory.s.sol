@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {ThriveProtocolCommunityFactory} from "src/ThriveProtocolCommunityFactory.sol";
+import {ThriveProtocolCommunityFactory} from
+    "src/ThriveProtocolCommunityFactory.sol";
 
 contract ThriveProtocolCommunityFactoryScript is Script {
     function run(
@@ -20,16 +21,16 @@ contract ThriveProtocolCommunityFactoryScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
         ThriveProtocolCommunityFactory factory = new ThriveProtocolCommunityFactory(
-                _rewardsAdmin,
-                _treasuryAdmin,
-                _validationsAdmin,
-                _foundationAdmin,
-                _rewardsPercent,
-                _treasuryPercent,
-                _validationsPercent,
-                _foundationPercent,
-                _accessControlEnumerable
-            );
+            _rewardsAdmin,
+            _treasuryAdmin,
+            _validationsAdmin,
+            _foundationAdmin,
+            _rewardsPercent,
+            _treasuryPercent,
+            _validationsPercent,
+            _foundationPercent,
+            _accessControlEnumerable
+        );
         vm.stopBroadcast();
         console2.log("factory address: ", address(factory));
     }
