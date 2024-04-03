@@ -114,25 +114,39 @@ contract ThriveProtocolCommunityFactory {
     }
 
     /**
-     * @notice Sets the admins' addresses
+     * @notice Sets the rewards admin address
      * can call only DEFAULT_ADMIN account
      * @param _rewardsAdmin The address of the account who has administrator rights for the funds allocated for rewards
+     */
+    function setRewardsAdmin(address _rewardsAdmin) external onlyAdmin {
+        rewardsAdmin = _rewardsAdmin;
+    }
+
+    /**
+     * @notice Sets the treasury admin address
+     * can call only DEFAULT_ADMIN account
      * @param _treasuryAdmin The address of the account who has administrator rights for the funds allocated for DAO treasury
+     */
+    function setTreasuryAdmin(address _treasuryAdmin) external onlyAdmin {
+        treasuryAdmin = _treasuryAdmin;
+    }
+
+    /**
+     * @notice Sets the validations admin address
+     * can call only DEFAULT_ADMIN account
      * @param _validationsAdmin The address of the account who has administrator rights for the funds allocated for validations
+     */
+    function setValidationsAdmin(address _validationsAdmin) external onlyAdmin {
+        validationsAdmin = _validationsAdmin;
+    }
+
+    /**
+     * @notice Sets the foundation admin address
+     * can call only DEFAULT_ADMIN account
      * @param _foundationAdmin The address of the account who has administrator rights for the funds allocated for the foundation
      */
-    function setAdmins(
-        address _rewardsAdmin,
-        address _treasuryAdmin,
-        address _validationsAdmin,
-        address _foundationAdmin
-    ) external onlyAdmin {
-        _setAdmins(
-            _rewardsAdmin,
-            _treasuryAdmin,
-            _validationsAdmin,
-            _foundationAdmin
-        );
+    function setFoundationAdmin(address _foundationAdmin) external onlyAdmin {
+        foundationAdmin = _foundationAdmin;
     }
 
     /**
@@ -149,6 +163,15 @@ contract ThriveProtocolCommunityFactory {
         uint256 _validationsPercentage,
         uint256 _foundationPercentage
     ) external onlyAdmin {
+        require(
+            _rewardsPercentage +
+                _treasuryPercentage +
+                _validationsPercentage +
+                _foundationPercentage ==
+                100,
+            "Percentages must add up to 100"
+        );
+
         _setPercentage(
             _rewardsPercentage,
             _treasuryPercentage,

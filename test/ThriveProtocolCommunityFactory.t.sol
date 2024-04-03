@@ -70,26 +70,76 @@ contract ThriveProtocolCommunityFactoryTest is Test {
     // setters //
     /////////////
 
-    function test_setAdmins() public {
+    function test_setRewardsAdmin() public {
         vm.prank(address(1));
-        factory.setAdmins(address(2), address(3), address(4), address(5));
-
-        assertEq(factory.rewardsAdmin(), address(2));
-        assertEq(factory.treasuryAdmin(), address(3));
-        assertEq(factory.validationsAdmin(), address(4));
-        assertEq(factory.foundationAdmin(), address(5));
+        factory.setRewardsAdmin(address(6));
+        assertEq(factory.rewardsAdmin(), address(6));
     }
 
-    function test_setAdmins_withoutRole() public {
+    function test_setTreasuryAdmin() public {
+        vm.prank(address(1));
+        factory.setTreasuryAdmin(address(7));
+        assertEq(factory.treasuryAdmin(), address(7));
+    }
+
+    function test_setValidationsAdmin() public {
+        vm.prank(address(1));
+        factory.setValidationsAdmin(address(8));
+        assertEq(factory.validationsAdmin(), address(8));
+    }
+
+    function test_setFoundationAdmin() public {
+        vm.prank(address(1));
+        factory.setFoundationAdmin(address(9));
+        assertEq(factory.foundationAdmin(), address(9));
+    }
+
+    function test_setRewardsAdmin_withoutRole() public {
         vm.prank(address(2));
         vm.expectRevert("ThriveProtocolCommunity: must have admin role");
-        factory.setAdmins(address(2), address(3), address(4), address(5));
+        factory.setRewardsAdmin(address(6));
 
         vm.prank(address(1));
         accessControl.grantRole(0x00, address(2));
         vm.prank(address(2));
-        factory.setAdmins(address(2), address(3), address(4), address(5));
-        assertEq(factory.rewardsAdmin(), address(2));
+        factory.setRewardsAdmin(address(6));
+        assertEq(factory.rewardsAdmin(), address(6));
+    }
+
+    function test_setTreasuryAdmin_withoutRole() public {
+        vm.prank(address(2));
+        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        factory.setTreasuryAdmin(address(7));
+
+        vm.prank(address(1));
+        accessControl.grantRole(0x00, address(2));
+        vm.prank(address(2));
+        factory.setTreasuryAdmin(address(7));
+        assertEq(factory.treasuryAdmin(), address(7));
+    }
+
+    function test_setValidationsAdmin_withoutRole() public {
+        vm.prank(address(2));
+        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        factory.setValidationsAdmin(address(8));
+
+        vm.prank(address(1));
+        accessControl.grantRole(0x00, address(2));
+        vm.prank(address(2));
+        factory.setValidationsAdmin(address(8));
+        assertEq(factory.validationsAdmin(), address(8));
+    }
+
+    function test_setFoundationAdmin_withoutRole() public {
+        vm.prank(address(2));
+        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        factory.setFoundationAdmin(address(9));
+
+        vm.prank(address(1));
+        accessControl.grantRole(0x00, address(2));
+        vm.prank(address(2));
+        factory.setFoundationAdmin(address(9));
+        assertEq(factory.foundationAdmin(), address(9));
     }
 
     function test_setPercents() public {

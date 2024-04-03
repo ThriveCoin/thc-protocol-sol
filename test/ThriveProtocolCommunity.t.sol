@@ -345,26 +345,76 @@ contract ThriveProtocolCommunityTest is Test {
     // setters //
     /////////////
 
-    function test_setAdmins() public {
+    function test_setRewardsAdmin() public {
         vm.prank(address(1));
-        community.setAdmins(address(2), address(3), address(4), address(5));
-
+        community.setRewardsAdmin(address(2));
         assertEq(community.rewardsAdmin(), address(2));
+    }
+
+    function test_setTreasuryAdmin() public {
+        vm.prank(address(1));
+        community.setTreasuryAdmin(address(3));
         assertEq(community.treasuryAdmin(), address(3));
+    }
+
+    function test_setValidationsAdmin() public {
+        vm.prank(address(1));
+        community.setValidationsAdmin(address(4));
         assertEq(community.validationsAdmin(), address(4));
+    }
+
+    function test_setFoundationAdmin() public {
+        vm.prank(address(1));
+        community.setFoundationAdmin(address(5));
         assertEq(community.foundationAdmin(), address(5));
     }
 
-    function test_setAdmins_withoutRole() public {
+    function test_setRewardsAdmin_withoutRole() public {
         vm.prank(address(2));
         vm.expectRevert("ThriveProtocolCommunity: must have admin role");
-        community.setAdmins(address(2), address(3), address(4), address(5));
+        community.setRewardsAdmin(address(2));
 
         vm.prank(address(1));
         accessControl.grantRole(0x00, address(2));
         vm.prank(address(2));
-        community.setAdmins(address(2), address(3), address(4), address(5));
+        community.setRewardsAdmin(address(2));
         assertEq(community.rewardsAdmin(), address(2));
+    }
+
+    function test_setTreasuryAdmin_withoutRole() public {
+        vm.prank(address(2));
+        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        community.setTreasuryAdmin(address(3));
+
+        vm.prank(address(1));
+        accessControl.grantRole(0x00, address(2));
+        vm.prank(address(2));
+        community.setTreasuryAdmin(address(3));
+        assertEq(community.treasuryAdmin(), address(3));
+    }
+
+    function test_setValidationsAdmin_withoutRole() public {
+        vm.prank(address(2));
+        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        community.setValidationsAdmin(address(4));
+
+        vm.prank(address(1));
+        accessControl.grantRole(0x00, address(2));
+        vm.prank(address(2));
+        community.setValidationsAdmin(address(4));
+        assertEq(community.validationsAdmin(), address(4));
+    }
+
+    function test_setFoundationAdmin_withoutRole() public {
+        vm.prank(address(2));
+        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        community.setFoundationAdmin(address(5));
+
+        vm.prank(address(1));
+        accessControl.grantRole(0x00, address(2));
+        vm.prank(address(2));
+        community.setFoundationAdmin(address(5));
+        assertEq(community.foundationAdmin(), address(5));
     }
 
     function test_setPecents() public {
