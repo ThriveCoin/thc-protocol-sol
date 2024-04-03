@@ -49,7 +49,7 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         vm.prank(address(1));
         address community = factory.deploy("test", address(accessControl));
 
-        assertEq(ThriveProtocolCommunity(community).getName(), "test");
+        assertEq(ThriveProtocolCommunity(community).name(), "test");
     }
 
     function test_deploy_withoutRole() public {
@@ -63,7 +63,7 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         vm.prank(address(2));
         address community = factory.deploy("test", address(accessControl));
 
-        assertEq(ThriveProtocolCommunity(community).getName(), "test");
+        assertEq(ThriveProtocolCommunity(community).name(), "test");
     }
 
     /////////////
@@ -74,10 +74,10 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         vm.prank(address(1));
         factory.setAdmins(address(2), address(3), address(4), address(5));
 
-        assertEq(factory.getRewardsAdmin(), address(2));
-        assertEq(factory.getTreasuryAdmin(), address(3));
-        assertEq(factory.getValidationsAdmin(), address(4));
-        assertEq(factory.getFoundationAdmin(), address(5));
+        assertEq(factory.rewardsAdmin(), address(2));
+        assertEq(factory.treasuryAdmin(), address(3));
+        assertEq(factory.validationsAdmin(), address(4));
+        assertEq(factory.foundationAdmin(), address(5));
     }
 
     function test_setAdmins_withoutRole() public {
@@ -89,17 +89,17 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         accessControl.grantRole(0x00, address(2));
         vm.prank(address(2));
         factory.setAdmins(address(2), address(3), address(4), address(5));
-        assertEq(factory.getRewardsAdmin(), address(2));
+        assertEq(factory.rewardsAdmin(), address(2));
     }
 
     function test_setPercents() public {
         vm.prank(address(1));
         factory.setPercentage(90, 1, 1, 8);
 
-        assertEq(factory.getRewardsPercentage(), 90);
-        assertEq(factory.getTreasuryPercentage(), 1);
-        assertEq(factory.getValidationsPercentage(), 1);
-        assertEq(factory.getFoundationPercentage(), 8);
+        assertEq(factory.rewardsPercentage(), 90);
+        assertEq(factory.treasuryPercentage(), 1);
+        assertEq(factory.validationsPercentage(), 1);
+        assertEq(factory.foundationPercentage(), 8);
     }
 
     function test_setPercents_withoutRole() public {
@@ -111,7 +111,7 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         accessControl.grantRole(0x00, address(2));
         vm.prank(address(2));
         factory.setPercentage(90, 1, 1, 8);
-        assertEq(factory.getRewardsPercentage(), 90);
+        assertEq(factory.rewardsPercentage(), 90);
     }
 
     function test_setAccessControl() public {
@@ -137,16 +137,16 @@ contract ThriveProtocolCommunityFactoryTest is Test {
     /////////////
 
     function test_getAdmins() public view {
-        assertEq(factory.getRewardsAdmin(), rewardsAdmin);
-        assertEq(factory.getTreasuryAdmin(), treasuryAdmin);
-        assertEq(factory.getValidationsAdmin(), validationsAdmin);
-        assertEq(factory.getFoundationAdmin(), foundationAdmin);
+        assertEq(factory.rewardsAdmin(), rewardsAdmin);
+        assertEq(factory.treasuryAdmin(), treasuryAdmin);
+        assertEq(factory.validationsAdmin(), validationsAdmin);
+        assertEq(factory.foundationAdmin(), foundationAdmin);
     }
 
     function test_getPercents() public view {
-        assertEq(factory.getRewardsPercentage(), 80);
-        assertEq(factory.getTreasuryPercentage(), 5);
-        assertEq(factory.getValidationsPercentage(), 5);
-        assertEq(factory.getFoundationPercentage(), 10);
+        assertEq(factory.rewardsPercentage(), 80);
+        assertEq(factory.treasuryPercentage(), 5);
+        assertEq(factory.validationsPercentage(), 5);
+        assertEq(factory.foundationPercentage(), 10);
     }
 }
