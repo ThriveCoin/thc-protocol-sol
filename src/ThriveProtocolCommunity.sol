@@ -39,27 +39,15 @@ contract ThriveProtocolCommunity is Ownable {
     /**
      * @param _owner The address of contract owner
      * @param _name The name of the community
-     * @param _rewardsAdmin The address of the account who has administrator rights for the funds allocated for rewards
-     * @param _treasuryAdmin The address of the account who has administrator rights for the funds allocated for DAO treasury
-     * @param _validationsAdmin The address of the account who has administrator rights for the funds allocated for validations
-     * @param _foundationAdmin The address of the account who has administrator rights for the funds allocated for the foundation
-     * @param _rewardsPercentage The value of percentage to add to rewards admin
-     * @param _treasuryPercentage The value of percentage to add to treasury admin
-     * @param _validationsPercentage The value of percentage to add to validations admin
-     * @param _foundationPercentage The value of percentage to add to foundation admin
+     * @param _admins The array with addresses of admins
+     * @param _percentages The array with value of percents for distribution
      * @param _accessControlEnumerable The address of access control enumerable contract
      */
     constructor(
         address _owner,
         string memory _name,
-        address _rewardsAdmin,
-        address _treasuryAdmin,
-        address _validationsAdmin,
-        address _foundationAdmin,
-        uint256 _rewardsPercentage,
-        uint256 _treasuryPercentage,
-        uint256 _validationsPercentage,
-        uint256 _foundationPercentage,
+        address[4] memory _admins,
+        uint256[4] memory _percentages,
         address _accessControlEnumerable
     ) Ownable(_owner) {
         name = _name;
@@ -68,18 +56,17 @@ contract ThriveProtocolCommunity is Ownable {
             _accessControlEnumerable
         );
 
-        _setAdmins(
-            _rewardsAdmin,
-            _treasuryAdmin,
-            _validationsAdmin,
-            _foundationAdmin
-        );
+        // accessControlEnumerable.grantRole(
+        //     accessControlEnumerable.DEFAULT_ADMIN_ROLE(), msg.sender
+        // );
+
+        _setAdmins(_admins[0], _admins[1], _admins[2], _admins[3]);
 
         _setPercentage(
-            _rewardsPercentage,
-            _treasuryPercentage,
-            _validationsPercentage,
-            _foundationPercentage
+            _percentages[0],
+            _percentages[1],
+            _percentages[2],
+            _percentages[3]
         );
     }
 
@@ -101,19 +88,19 @@ contract ThriveProtocolCommunity is Ownable {
     /**
      * @notice Transfers _amount of the _token to the smart contract
      * and increases the balances of administrators of treasury,
-     * validations, rewards and foundations in the following percentageages for the _token
+     * validations, rewards and foundations in the following percentages for the _token
      * @param _token The address of ERC20 contract
      * @param _amount The amount of token to deposit
      */
     function deposit(address _token, uint256 _amount) public {
-        balances[rewardsAdmin][_token] += (_amount / 100) * rewardsPercentage;
-        balances[treasuryAdmin][_token] += (_amount / 100) * treasuryPercentage;
+        balances[treasuryAdmin][_token] += (_amount * treasuryPercentage) / 100;
         balances[validationsAdmin][_token] +=
-            (_amount / 100) *
-            validationsPercentage;
+            (_amount * validationsPercentage) /
+            100;
         balances[foundationAdmin][_token] +=
-            (_amount / 100) *
-            foundationPercentage;
+            (_amount * foundationPercentage) /
+            100;
+        balances[rewardsAdmin][_token] += (_amount * rewardsPercentage) / 100;
 
         uint256 dust = _amount -
             (balances[rewardsAdmin][_token] +
@@ -202,11 +189,34 @@ contract ThriveProtocolCommunity is Ownable {
         uint256 _validationsPercentage,
         uint256 _foundationPercentage
     ) external onlyAdmin {
+        require(
+            _rewardsPercentage +
+                _treasuryPercentage +
+                _validationsPercentage +
+                _foundationPercentage ==
+                100,
+            "Percentages must add up to 100"
+        );
+
         _setPercentage(
             _rewardsPercentage,
             _treasuryPercentage,
             _validationsPercentage,
             _foundationPercentage
+        );
+    }
+
+    /**
+     * @dev Sets the AccessControlEnumerable contract address.
+     * Only the owner of this contract can call this function.
+     *
+     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     */
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable
+    ) external onlyOwner {
+        accessControlEnumerable = AccessControlEnumerable(
+            _accessControlEnumerable
         );
     }
 

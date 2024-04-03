@@ -80,14 +80,13 @@ contract ThriveProtocolCommunityFactory {
         ThriveProtocolCommunity community = new ThriveProtocolCommunity(
             msg.sender,
             _name,
-            rewardsAdmin,
-            treasuryAdmin,
-            validationsAdmin,
-            foundationAdmin,
-            rewardsPercentage,
-            treasuryPercentage,
-            validationsPercentage,
-            foundationPercentage,
+            [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
+            [
+                rewardsPercentage,
+                treasuryPercentage,
+                validationsPercentage,
+                foundationPercentage
+            ],
             _accessControlEnumerable
         );
 
