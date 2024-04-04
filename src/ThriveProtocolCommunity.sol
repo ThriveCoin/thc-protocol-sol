@@ -4,16 +4,16 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from
     "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {AccessControlEnumerable} from
+import {IAccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 contract ThriveProtocolCommunity is Ownable {
     using SafeERC20 for IERC20;
-    using AccessControlHelper for AccessControlEnumerable;
+    using AccessControlHelper for IAccessControlEnumerable;
 
-    AccessControlEnumerable public accessControlEnumerable;
+    IAccessControlEnumerable public accessControlEnumerable;
 
     string public name;
 
@@ -57,7 +57,7 @@ contract ThriveProtocolCommunity is Ownable {
         name = _name;
 
         accessControlEnumerable =
-            AccessControlEnumerable(_accessControlEnumerable);
+            IAccessControlEnumerable(_accessControlEnumerable);
 
         _setAdmins(_admins[0], _admins[1], _admins[2], _admins[3]);
 
@@ -209,7 +209,7 @@ contract ThriveProtocolCommunity is Ownable {
         onlyOwner
     {
         accessControlEnumerable =
-            AccessControlEnumerable(_accessControlEnumerable);
+            IAccessControlEnumerable(_accessControlEnumerable);
     }
 
     /**

@@ -1,15 +1,15 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AccessControlEnumerable} from
+import {IAccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 contract ThriveProtocolCommunityFactory {
-    using AccessControlHelper for AccessControlEnumerable;
+    using AccessControlHelper for IAccessControlEnumerable;
 
-    AccessControlEnumerable public accessControlEnumerable;
+    IAccessControlEnumerable public accessControlEnumerable;
 
     address public rewardsAdmin;
     address public treasuryAdmin;
@@ -44,7 +44,7 @@ contract ThriveProtocolCommunityFactory {
         address _accessControlEnumerable
     ) {
         accessControlEnumerable =
-            AccessControlEnumerable(_accessControlEnumerable);
+            IAccessControlEnumerable(_accessControlEnumerable);
 
         _setAdmins(
             _rewardsAdmin, _treasuryAdmin, _validationsAdmin, _foundationAdmin
@@ -99,7 +99,7 @@ contract ThriveProtocolCommunityFactory {
         onlyAdmin
     {
         accessControlEnumerable =
-            AccessControlEnumerable(_accessControlEnumerable);
+            IAccessControlEnumerable(_accessControlEnumerable);
     }
 
     /**
