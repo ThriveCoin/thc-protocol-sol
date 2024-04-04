@@ -1,10 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+import {AccessControlEnumerable} from
+    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
+import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 contract ThriveProtocolCommunityFactory {
+    using AccessControlHelper for AccessControlEnumerable;
+
     AccessControlEnumerable public accessControlEnumerable;
 
     address public rewardsAdmin;
@@ -39,15 +43,11 @@ contract ThriveProtocolCommunityFactory {
         uint256 _foundationPercentage,
         address _accessControlEnumerable
     ) {
-        accessControlEnumerable = AccessControlEnumerable(
-            _accessControlEnumerable
-        );
+        accessControlEnumerable =
+            AccessControlEnumerable(_accessControlEnumerable);
 
         _setAdmins(
-            _rewardsAdmin,
-            _treasuryAdmin,
-            _validationsAdmin,
-            _foundationAdmin
+            _rewardsAdmin, _treasuryAdmin, _validationsAdmin, _foundationAdmin
         );
         _setPercentage(
             _rewardsPercentage,
@@ -62,13 +62,7 @@ contract ThriveProtocolCommunityFactory {
      * If the caller is not an admin, reverts with a corresponding message
      */
     modifier onlyAdmin() {
-        require(
-            accessControlEnumerable.hasRole(
-                accessControlEnumerable.DEFAULT_ADMIN_ROLE(),
-                msg.sender
-            ),
-            "ThriveProtocolCommunity: must have admin role"
-        );
+        accessControlEnumerable.checkAdminRole(msg.sender);
         _;
     }
 
@@ -76,24 +70,19 @@ contract ThriveProtocolCommunityFactory {
      * @notice Deploy the community contract
      * can calls only user with DEFAULT_ADMIN role
      * @param _name The name of the community
+     * @param _admins The array with addresses of admins
+     * @param _percentages The array with value of percents for distribution
      * @param _accessControlEnumerable The address of access control enumerable contract
      * @return The address of deployed comminity contract
      */
     function deploy(
         string memory _name,
+        address[4] memory _admins,
+        uint256[4] memory _percentages,
         address _accessControlEnumerable
     ) external onlyAdmin returns (address) {
         ThriveProtocolCommunity community = new ThriveProtocolCommunity(
-            msg.sender,
-            _name,
-            [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
-            [
-                rewardsPercentage,
-                treasuryPercentage,
-                validationsPercentage,
-                foundationPercentage
-            ],
-            _accessControlEnumerable
+            msg.sender, _name, _admins, _percentages, _accessControlEnumerable
         );
 
         return address(community);
@@ -105,12 +94,12 @@ contract ThriveProtocolCommunityFactory {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(
-        address _accessControlEnumerable
-    ) external onlyAdmin {
-        accessControlEnumerable = AccessControlEnumerable(
-            _accessControlEnumerable
-        );
+    function setAccessControlEnumerable(address _accessControlEnumerable)
+        external
+        onlyAdmin
+    {
+        accessControlEnumerable =
+            AccessControlEnumerable(_accessControlEnumerable);
     }
 
     /**
@@ -136,7 +125,10 @@ contract ThriveProtocolCommunityFactory {
      * can call only DEFAULT_ADMIN account
      * @param _validationsAdmin The address of the account who has administrator rights for the funds allocated for validations
      */
-    function setValidationsAdmin(address _validationsAdmin) external onlyAdmin {
+    function setValidationsAdmin(address _validationsAdmin)
+        external
+        onlyAdmin
+    {
         validationsAdmin = _validationsAdmin;
     }
 
@@ -164,11 +156,8 @@ contract ThriveProtocolCommunityFactory {
         uint256 _foundationPercentage
     ) external onlyAdmin {
         require(
-            _rewardsPercentage +
-                _treasuryPercentage +
-                _validationsPercentage +
-                _foundationPercentage ==
-                100,
+            _rewardsPercentage + _treasuryPercentage + _validationsPercentage
+                + _foundationPercentage == 100,
             "Percentages must add up to 100"
         );
 

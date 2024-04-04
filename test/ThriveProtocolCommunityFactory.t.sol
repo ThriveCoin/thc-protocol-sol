@@ -46,22 +46,67 @@ contract ThriveProtocolCommunityFactoryTest is Test {
     ////////////
 
     function test_deploy() public {
-        vm.prank(address(1));
-        address community = factory.deploy("test", address(accessControl));
+        vm.startPrank(address(1));
+        address community = factory.deploy(
+            "test",
+            [
+                factory.rewardsAdmin(),
+                factory.treasuryAdmin(),
+                factory.validationsAdmin(),
+                factory.foundationAdmin()
+            ],
+            [
+                factory.rewardsPercentage(),
+                factory.treasuryPercentage(),
+                factory.validationsPercentage(),
+                factory.foundationPercentage()
+            ],
+            address(accessControl)
+        );
 
         assertEq(ThriveProtocolCommunity(community).name(), "test");
     }
 
     function test_deploy_withoutRole() public {
-        vm.prank(address(2));
+        vm.startPrank(address(2));
+        uint256 rewardsPercentage = factory.rewardsPercentage();
+        uint256 treasuryPercentage = factory.treasuryPercentage();
+        uint256 validationsPercentage = factory.validationsPercentage();
+        uint256 foundationPercentage = factory.foundationPercentage();
         vm.expectRevert("ThriveProtocolCommunity: must have admin role");
-        factory.deploy("test", address(accessControl));
-
+        factory.deploy(
+            "test",
+            [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
+            [
+                rewardsPercentage,
+                treasuryPercentage,
+                validationsPercentage,
+                foundationPercentage
+            ],
+            address(accessControl)
+        );
+        vm.stopPrank();
         vm.prank(address(1));
         accessControl.grantRole(0x00, address(2));
 
-        vm.prank(address(2));
-        address community = factory.deploy("test", address(accessControl));
+        vm.startPrank(address(2));
+        address community = factory.deploy(
+            "test",
+            [
+                factory.rewardsAdmin(),
+                factory.treasuryAdmin(),
+                factory.validationsAdmin(),
+                factory.foundationAdmin()
+            ],
+            [
+                factory.rewardsPercentage(),
+                factory.treasuryPercentage(),
+                factory.validationsPercentage(),
+                factory.foundationPercentage()
+            ],
+            address(accessControl)
+        );
+        vm.stopPrank();
 
         assertEq(ThriveProtocolCommunity(community).name(), "test");
     }

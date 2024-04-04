@@ -67,39 +67,23 @@ contract ThriveProtocolCommunityTest is Test {
         community.deposit(address(token2), 1000);
         vm.stopPrank();
 
-        uint256 rewardsBalance1 = community.balances(
-            rewardsAdmin,
-            address(token1)
-        );
-        uint256 treasuryBalance1 = community.balances(
-            treasuryAdmin,
-            address(token1)
-        );
-        uint256 validationsBalance1 = community.balances(
-            validationsAdmin,
-            address(token1)
-        );
-        uint256 foundationBalance1 = community.balances(
-            foundationAdmin,
-            address(token1)
-        );
+        uint256 rewardsBalance1 =
+            community.balances(rewardsAdmin, address(token1));
+        uint256 treasuryBalance1 =
+            community.balances(treasuryAdmin, address(token1));
+        uint256 validationsBalance1 =
+            community.balances(validationsAdmin, address(token1));
+        uint256 foundationBalance1 =
+            community.balances(foundationAdmin, address(token1));
 
-        uint256 rewardsBalance2 = community.balances(
-            rewardsAdmin,
-            address(token2)
-        );
-        uint256 treasuryBalance2 = community.balances(
-            treasuryAdmin,
-            address(token2)
-        );
-        uint256 validationsBalance2 = community.balances(
-            validationsAdmin,
-            address(token2)
-        );
-        uint256 foundationBalance2 = community.balances(
-            foundationAdmin,
-            address(token2)
-        );
+        uint256 rewardsBalance2 =
+            community.balances(rewardsAdmin, address(token2));
+        uint256 treasuryBalance2 =
+            community.balances(treasuryAdmin, address(token2));
+        uint256 validationsBalance2 =
+            community.balances(validationsAdmin, address(token2));
+        uint256 foundationBalance2 =
+            community.balances(foundationAdmin, address(token2));
 
         assertEq(rewardsBalance1, 80);
         assertEq(treasuryBalance1, 5);
@@ -119,32 +103,22 @@ contract ThriveProtocolCommunityTest is Test {
         community.deposit(address(token1), amount);
         vm.stopPrank();
 
-        uint256 rewardsBalance1 = community.balances(
-            rewardsAdmin,
-            address(token1)
-        );
-        uint256 treasuryBalance1 = community.balances(
-            treasuryAdmin,
-            address(token1)
-        );
-        uint256 validationsBalance1 = community.balances(
-            validationsAdmin,
-            address(token1)
-        );
-        uint256 foundationBalance1 = community.balances(
-            foundationAdmin,
-            address(token1)
-        );
+        uint256 rewardsBalance1 =
+            community.balances(rewardsAdmin, address(token1));
+        uint256 treasuryBalance1 =
+            community.balances(treasuryAdmin, address(token1));
+        uint256 validationsBalance1 =
+            community.balances(validationsAdmin, address(token1));
+        uint256 foundationBalance1 =
+            community.balances(foundationAdmin, address(token1));
 
         assertEq(treasuryBalance1, 5);
         assertEq(validationsBalance1, 5);
         assertEq(foundationBalance1, 11);
         assertEq(rewardsBalance1, 90);
         assertEq(
-            rewardsBalance1 +
-                treasuryBalance1 +
-                validationsBalance1 +
-                foundationBalance1,
+            rewardsBalance1 + treasuryBalance1 + validationsBalance1
+                + foundationBalance1,
             amount
         );
     }
@@ -204,47 +178,35 @@ contract ThriveProtocolCommunityTest is Test {
         community.deposit(address(token2), 1000);
         vm.stopPrank();
 
-        uint256 validationsBalance = token1.balanceOf(
-            address(validationsAdmin)
-        );
+        uint256 validationsBalance = token1.balanceOf(address(validationsAdmin));
         uint256 foundationBalance = token2.balanceOf(address(foundationAdmin));
 
         vm.prank(validationsAdmin);
         vm.expectEmit(true, true, true, true);
         emit Transfer(
-            address(community),
-            address(validationsAdmin),
-            address(token1),
-            4
+            address(community), address(validationsAdmin), address(token1), 4
         );
         community.withdraw(address(token1), 4);
 
         vm.prank(foundationAdmin);
         vm.expectEmit(true, true, true, true);
         emit Transfer(
-            address(community),
-            address(foundationAdmin),
-            address(token2),
-            100
+            address(community), address(foundationAdmin), address(token2), 100
         );
         community.withdraw(address(token2), 100);
 
         assertEq(
-            community.balances(address(validationsAdmin), address(token1)),
-            1
+            community.balances(address(validationsAdmin), address(token1)), 1
         );
         assertEq(
-            community.balances(address(foundationAdmin), address(token2)),
-            0
+            community.balances(address(foundationAdmin), address(token2)), 0
         );
 
         assertEq(
-            token1.balanceOf(address(validationsAdmin)),
-            validationsBalance + 4
+            token1.balanceOf(address(validationsAdmin)), validationsBalance + 4
         );
         assertEq(
-            token2.balanceOf(address(foundationAdmin)),
-            foundationBalance + 100
+            token2.balanceOf(address(foundationAdmin)), foundationBalance + 100
         );
     }
 
@@ -303,12 +265,10 @@ contract ThriveProtocolCommunityTest is Test {
         community.transfer(address(5), address(token2), 100);
 
         assertEq(
-            community.balances(address(validationsAdmin), address(token1)),
-            1
+            community.balances(address(validationsAdmin), address(token1)), 1
         );
         assertEq(
-            community.balances(address(foundationAdmin), address(token2)),
-            0
+            community.balances(address(foundationAdmin), address(token2)), 0
         );
 
         assertEq(token1.balanceOf(address(5)), token1Balance + 4);
@@ -453,9 +413,8 @@ contract ThriveProtocolCommunityTest is Test {
         MockAccessControl newAccessControl = new MockAccessControl();
 
         vm.startPrank(address(2));
-        bytes4 selector = bytes4(
-            keccak256("OwnableUnauthorizedAccount(address)")
-        );
+        bytes4 selector =
+            bytes4(keccak256("OwnableUnauthorizedAccount(address)"));
         vm.expectRevert(abi.encodeWithSelector(selector, address(2)));
         community.setAccessControlEnumerable(address(newAccessControl));
     }

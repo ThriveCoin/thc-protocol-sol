@@ -2,12 +2,16 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {AccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {AccessControlEnumerable} from
+    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 contract ThriveProtocolCommunity is Ownable {
     using SafeERC20 for IERC20;
+    using AccessControlHelper for AccessControlEnumerable;
 
     AccessControlEnumerable public accessControlEnumerable;
 
@@ -23,8 +27,8 @@ contract ThriveProtocolCommunity is Ownable {
     uint256 public validationsPercentage;
     uint256 public foundationPercentage;
 
-    mapping(address admin => mapping(address token => uint256 amount))
-        public balances;
+    mapping(address admin => mapping(address token => uint256 amount)) public
+        balances;
 
     /**
      * @dev Emitted when a user transfer tokens from the contract
@@ -52,17 +56,13 @@ contract ThriveProtocolCommunity is Ownable {
     ) Ownable(_owner) {
         name = _name;
 
-        accessControlEnumerable = AccessControlEnumerable(
-            _accessControlEnumerable
-        );
+        accessControlEnumerable =
+            AccessControlEnumerable(_accessControlEnumerable);
 
         _setAdmins(_admins[0], _admins[1], _admins[2], _admins[3]);
 
         _setPercentage(
-            _percentages[0],
-            _percentages[1],
-            _percentages[2],
-            _percentages[3]
+            _percentages[0], _percentages[1], _percentages[2], _percentages[3]
         );
     }
 
@@ -71,13 +71,7 @@ contract ThriveProtocolCommunity is Ownable {
      * If the caller is not an admin, reverts with a corresponding message
      */
     modifier onlyAdmin() {
-        require(
-            accessControlEnumerable.hasRole(
-                accessControlEnumerable.DEFAULT_ADMIN_ROLE(),
-                msg.sender
-            ),
-            "ThriveProtocolCommunity: must have admin role"
-        );
+        accessControlEnumerable.checkAdminRole(msg.sender);
         _;
     }
 
@@ -91,18 +85,17 @@ contract ThriveProtocolCommunity is Ownable {
     function deposit(address _token, uint256 _amount) public {
         balances[treasuryAdmin][_token] += (_amount * treasuryPercentage) / 100;
         balances[validationsAdmin][_token] +=
-            (_amount * validationsPercentage) /
-            100;
+            (_amount * validationsPercentage) / 100;
         balances[foundationAdmin][_token] +=
-            (_amount * foundationPercentage) /
-            100;
+            (_amount * foundationPercentage) / 100;
         balances[rewardsAdmin][_token] += (_amount * rewardsPercentage) / 100;
 
-        uint256 dust = _amount -
-            (balances[rewardsAdmin][_token] +
-                balances[treasuryAdmin][_token] +
-                balances[validationsAdmin][_token] +
-                balances[foundationAdmin][_token]);
+        uint256 dust = _amount
+            - (
+                balances[rewardsAdmin][_token] + balances[treasuryAdmin][_token]
+                    + balances[validationsAdmin][_token]
+                    + balances[foundationAdmin][_token]
+            );
         balances[rewardsAdmin][_token] += dust;
 
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
@@ -125,10 +118,7 @@ contract ThriveProtocolCommunity is Ownable {
      * @param _amount The amount of token to withdraw
      */
     function withdraw(address _token, uint256 _amount) public {
-        require(
-            balances[msg.sender][_token] >= _amount,
-            "Insufficient balance"
-        );
+        require(balances[msg.sender][_token] >= _amount, "Insufficient balance");
         balances[msg.sender][_token] -= _amount;
         IERC20(_token).safeTransfer(msg.sender, _amount);
         emit Transfer(address(this), msg.sender, _token, _amount);
@@ -140,13 +130,7 @@ contract ThriveProtocolCommunity is Ownable {
      * @param _amount The amount of token to withdraw
      */
     function transfer(address _to, address _token, uint256 _amount) public {
-        require(
-            balances[msg.sender][_token] >= _amount,
-            "Insufficient balance"
-        );
-        balances[msg.sender][_token] -= _amount;
-        IERC20(_token).safeTransfer(_to, _amount);
-        emit Transfer(address(this), _to, _token, _amount);
+        _transfer(msg.sender, _to, _token, _amount);
     }
 
     /**
@@ -172,7 +156,10 @@ contract ThriveProtocolCommunity is Ownable {
      * can call only DEFAULT_ADMIN account
      * @param _validationsAdmin The address of the account who has administrator rights for the funds allocated for validations
      */
-    function setValidationsAdmin(address _validationsAdmin) external onlyAdmin {
+    function setValidationsAdmin(address _validationsAdmin)
+        external
+        onlyAdmin
+    {
         validationsAdmin = _validationsAdmin;
     }
 
@@ -200,11 +187,8 @@ contract ThriveProtocolCommunity is Ownable {
         uint256 _foundationPercentage
     ) external onlyAdmin {
         require(
-            _rewardsPercentage +
-                _treasuryPercentage +
-                _validationsPercentage +
-                _foundationPercentage ==
-                100,
+            _rewardsPercentage + _treasuryPercentage + _validationsPercentage
+                + _foundationPercentage == 100,
             "Percentages must add up to 100"
         );
 
@@ -220,12 +204,12 @@ contract ThriveProtocolCommunity is Ownable {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(
-        address _accessControlEnumerable
-    ) external onlyOwner {
-        accessControlEnumerable = AccessControlEnumerable(
-            _accessControlEnumerable
-        );
+    function setAccessControlEnumerable(address _accessControlEnumerable)
+        external
+        onlyOwner
+    {
+        accessControlEnumerable =
+            AccessControlEnumerable(_accessControlEnumerable);
     }
 
     /**
@@ -264,5 +248,24 @@ contract ThriveProtocolCommunity is Ownable {
         treasuryPercentage = _treasuryPercentage;
         validationsPercentage = _validationsPercentage;
         foundationPercentage = _foundationPercentage;
+    }
+
+    /**
+     * @notice Internal function to handle the token transfer logic
+     * @param _from The address of the sender
+     * @param _to The address of the recipient
+     * @param _token The address of ERC20 contract
+     * @param _amount The amount of token to transfer
+     */
+    function _transfer(
+        address _from,
+        address _to,
+        address _token,
+        uint256 _amount
+    ) internal {
+        require(balances[_from][_token] >= _amount, "Insufficient balance");
+        balances[_from][_token] -= _amount;
+        IERC20(_token).safeTransfer(_to, _amount);
+        emit Transfer(address(this), _to, _token, _amount);
     }
 }
