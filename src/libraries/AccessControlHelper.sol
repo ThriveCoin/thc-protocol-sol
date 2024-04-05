@@ -13,7 +13,7 @@ library AccessControlHelper {
     ) internal view {
         require(
             accessControlEnumerable.hasRole(DEFAULT_ADMIN_ROLE, user),
-            "ThriveProtocolCommunity: must have admin role"
+            "ThriveProtocol: must have admin role"
         );
     }
 }

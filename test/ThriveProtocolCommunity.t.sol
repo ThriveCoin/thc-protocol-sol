@@ -97,10 +97,9 @@ contract ThriveProtocolCommunityTest is Test {
     }
 
     function test_deposit_withDust() public {
-        uint amount = 111;
         vm.startPrank(address(1));
-        token1.approve(address(community), amount);
-        community.deposit(address(token1), amount);
+        token1.approve(address(community), 100);
+        community.deposit(address(token1), 100);
         vm.stopPrank();
 
         uint256 rewardsBalance1 =
@@ -112,15 +111,30 @@ contract ThriveProtocolCommunityTest is Test {
         uint256 foundationBalance1 =
             community.balances(foundationAdmin, address(token1));
 
+        assertEq(rewardsBalance1, 80);
         assertEq(treasuryBalance1, 5);
         assertEq(validationsBalance1, 5);
-        assertEq(foundationBalance1, 11);
-        assertEq(rewardsBalance1, 90);
-        assertEq(
-            rewardsBalance1 + treasuryBalance1 + validationsBalance1
-                + foundationBalance1,
-            amount
-        );
+        assertEq(foundationBalance1, 10);
+
+        uint amount = 111;
+        vm.startPrank(address(1));
+        token1.approve(address(community), amount);
+        community.deposit(address(token1), amount);
+        vm.stopPrank();
+
+        uint256 rewardsBalance2 =
+            community.balances(rewardsAdmin, address(token1));
+        uint256 treasuryBalance2 =
+            community.balances(treasuryAdmin, address(token1));
+        uint256 validationsBalance2 =
+            community.balances(validationsAdmin, address(token1));
+        uint256 foundationBalance2 =
+            community.balances(foundationAdmin, address(token1));
+
+        assertEq(treasuryBalance2, 10);
+        assertEq(validationsBalance2, 10);
+        assertEq(foundationBalance2, 21);
+        assertEq(rewardsBalance2, 170);
     }
 
     function testFailed_deposit_withoutAllowance() public {
@@ -331,7 +345,7 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_setRewardsAdmin_withoutRole() public {
         vm.prank(address(2));
-        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        vm.expectRevert("ThriveProtocol: must have admin role");
         community.setRewardsAdmin(address(2));
 
         vm.prank(address(1));
@@ -343,7 +357,7 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_setTreasuryAdmin_withoutRole() public {
         vm.prank(address(2));
-        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        vm.expectRevert("ThriveProtocol: must have admin role");
         community.setTreasuryAdmin(address(3));
 
         vm.prank(address(1));
@@ -355,7 +369,7 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_setValidationsAdmin_withoutRole() public {
         vm.prank(address(2));
-        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        vm.expectRevert("ThriveProtocol: must have admin role");
         community.setValidationsAdmin(address(4));
 
         vm.prank(address(1));
@@ -367,7 +381,7 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_setFoundationAdmin_withoutRole() public {
         vm.prank(address(2));
-        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        vm.expectRevert("ThriveProtocol: must have admin role");
         community.setFoundationAdmin(address(5));
 
         vm.prank(address(1));
@@ -389,7 +403,7 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_setPercents_withoutRole() public {
         vm.prank(address(2));
-        vm.expectRevert("ThriveProtocolCommunity: must have admin role");
+        vm.expectRevert("ThriveProtocol: must have admin role");
         community.setPercentage(90, 1, 1, 8);
 
         vm.prank(address(1));
