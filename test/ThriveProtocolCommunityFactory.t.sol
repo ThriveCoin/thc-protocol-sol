@@ -8,6 +8,8 @@ import "src/ThriveProtocolCommunityFactory.sol";
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 contract ThriveProtocolCommunityFactoryTest is Test {
+    bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
     ThriveProtocolCommunityFactory factory;
     MockAccessControl accessControl;
 
@@ -40,7 +42,8 @@ contract ThriveProtocolCommunityFactoryTest is Test {
             "test",
             [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
             [uint256(80), 5, 5, 10],
-            address(accessControl)
+            address(accessControl),
+            ADMIN_ROLE
         );
 
         assertEq(ThriveProtocolCommunity(community).name(), "test");

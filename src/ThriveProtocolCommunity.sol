@@ -2,10 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from
-    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IAccessControlEnumerable} from
-    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IAccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
@@ -14,6 +12,7 @@ contract ThriveProtocolCommunity is Ownable {
     using AccessControlHelper for IAccessControlEnumerable;
 
     IAccessControlEnumerable public accessControlEnumerable;
+    bytes32 role;
 
     string public name;
 
@@ -27,8 +26,8 @@ contract ThriveProtocolCommunity is Ownable {
     uint256 public validationsPercentage;
     uint256 public foundationPercentage;
 
-    mapping(address admin => mapping(address token => uint256 amount)) public
-        balances;
+    mapping(address admin => mapping(address token => uint256 amount))
+        public balances;
 
     /**
      * @dev Emitted when a user transfer tokens from the contract
@@ -52,12 +51,16 @@ contract ThriveProtocolCommunity is Ownable {
         string memory _name,
         address[4] memory _admins,
         uint256[4] memory _percentages,
-        address _accessControlEnumerable
+        address _accessControlEnumerable,
+        bytes32 _role
     ) Ownable(_owner) {
         name = _name;
 
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
+        accessControlEnumerable = IAccessControlEnumerable(
+            _accessControlEnumerable
+        );
+
+        role = _role;
 
         rewardsAdmin = _admins[0];
         treasuryAdmin = _admins[1];
@@ -65,7 +68,10 @@ contract ThriveProtocolCommunity is Ownable {
         foundationAdmin = _admins[3];
 
         _setPercentage(
-            _percentages[0], _percentages[1], _percentages[2], _percentages[3]
+            _percentages[0],
+            _percentages[1],
+            _percentages[2],
+            _percentages[3]
         );
     }
 
@@ -74,7 +80,7 @@ contract ThriveProtocolCommunity is Ownable {
      * If the caller is not an admin, reverts with a corresponding message
      */
     modifier onlyAdmin() {
-        accessControlEnumerable.checkAdminRole(msg.sender);
+        accessControlEnumerable.checkRole(role, msg.sender);
         _;
     }
 
@@ -88,18 +94,22 @@ contract ThriveProtocolCommunity is Ownable {
     function deposit(address _token, uint256 _amount) public {
         balances[treasuryAdmin][_token] += (_amount * treasuryPercentage) / 100;
         balances[validationsAdmin][_token] +=
-            (_amount * validationsPercentage) / 100;
+            (_amount * validationsPercentage) /
+            100;
         balances[foundationAdmin][_token] +=
-            (_amount * foundationPercentage) / 100;
+            (_amount * foundationPercentage) /
+            100;
         balances[rewardsAdmin][_token] += (_amount * rewardsPercentage) / 100;
 
-        uint256 dust = _amount
-            - (
-                (_amount * rewardsPercentage) / 100
-                    + (_amount * treasuryPercentage) / 100
-                    + (_amount * validationsPercentage) / 100
-                    + (_amount * foundationPercentage) / 100
-            );
+        uint256 dust = _amount -
+            ((_amount * rewardsPercentage) /
+                100 +
+                (_amount * treasuryPercentage) /
+                100 +
+                (_amount * validationsPercentage) /
+                100 +
+                (_amount * foundationPercentage) /
+                100);
         balances[rewardsAdmin][_token] += dust;
 
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
@@ -157,10 +167,7 @@ contract ThriveProtocolCommunity is Ownable {
      * can call only DEFAULT_ADMIN account
      * @param _validationsAdmin The address of the account who has administrator rights for the funds allocated for validations
      */
-    function setValidationsAdmin(address _validationsAdmin)
-        external
-        onlyAdmin
-    {
+    function setValidationsAdmin(address _validationsAdmin) external onlyAdmin {
         validationsAdmin = _validationsAdmin;
     }
 
@@ -201,12 +208,12 @@ contract ThriveProtocolCommunity is Ownable {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(address _accessControlEnumerable)
-        external
-        onlyOwner
-    {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable
+    ) external onlyOwner {
+        accessControlEnumerable = IAccessControlEnumerable(
+            _accessControlEnumerable
+        );
     }
 
     /**
@@ -223,8 +230,11 @@ contract ThriveProtocolCommunity is Ownable {
         uint256 _foundationPercentage
     ) internal {
         require(
-            _rewardsPercentage + _treasuryPercentage + _validationsPercentage
-                + _foundationPercentage == 100,
+            _rewardsPercentage +
+                _treasuryPercentage +
+                _validationsPercentage +
+                _foundationPercentage ==
+                100,
             "Percentages must add up to 100"
         );
         rewardsPercentage = _rewardsPercentage;

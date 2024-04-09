@@ -17,10 +17,16 @@ contract ThriveProtocolCommunityFactory {
         string memory _name,
         address[4] memory _admins,
         uint256[4] memory _percentages,
-        address _accessControlEnumerable
+        address _accessControlEnumerable,
+        bytes32 _role
     ) external returns (address) {
         ThriveProtocolCommunity community = new ThriveProtocolCommunity(
-            msg.sender, _name, _admins, _percentages, _accessControlEnumerable
+            msg.sender,
+            _name,
+            _admins,
+            _percentages,
+            _accessControlEnumerable,
+            _role
         );
 
         return address(community);

@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AccessControlEnumerable} from
-    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
-import {OwnableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {SafeERC20} from
-    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IAccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 /**
  * @title ThriveProtocolIERC20Reward
@@ -18,9 +15,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
+    using AccessControlHelper for IAccessControlEnumerable;
 
-    AccessControlEnumerable public accessControlEnumerable;
+    IAccessControlEnumerable public accessControlEnumerable;
     IERC20 public token;
+    bytes32 role;
     mapping(address => uint256) public balanceOf;
 
     /**
@@ -37,15 +36,18 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      * @param _accessControlEnumerable The address of the AccessControlEnumerable contract.
      * @param _token The address of ERC20 token contract.
      */
-    function initialize(address _accessControlEnumerable, address _token)
-        public
-        initializer
-    {
+    function initialize(
+        address _accessControlEnumerable,
+        bytes32 _role,
+        address _token
+    ) public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
-        accessControlEnumerable =
-            AccessControlEnumerable(_accessControlEnumerable);
+        accessControlEnumerable = IAccessControlEnumerable(
+            _accessControlEnumerable
+        );
         token = IERC20(_token);
+        role = _role;
     }
 
     /**
@@ -54,23 +56,16 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      *
      * @param newImplementation The address of the new implementation contract.
      */
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 
     /**
      * @dev Modifier to only allow execution by admins.
      * If the caller is not an admin, reverts with a corresponding message
      */
     modifier onlyAdmin() {
-        require(
-            accessControlEnumerable.hasRole(
-                accessControlEnumerable.DEFAULT_ADMIN_ROLE(), _msgSender()
-            ),
-            "ThriveProtocol: must have admin role"
-        );
+        accessControlEnumerable.checkRole(role, msg.sender);
         _;
     }
 
@@ -128,8 +123,8 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
         string[] calldata _reasons
     ) external onlyAdmin {
         require(
-            _recipients.length == _amounts.length
-                && _recipients.length == _reasons.length,
+            _recipients.length == _amounts.length &&
+                _recipients.length == _reasons.length,
             "Array lengths mismatch"
         );
 
@@ -159,11 +154,11 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(address _accessControlEnumerable)
-        external
-        onlyOwner
-    {
-        accessControlEnumerable =
-            AccessControlEnumerable(_accessControlEnumerable);
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable
+    ) external onlyOwner {
+        accessControlEnumerable = IAccessControlEnumerable(
+            _accessControlEnumerable
+        );
     }
 }
