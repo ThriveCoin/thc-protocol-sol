@@ -4,8 +4,6 @@ pragma solidity ^0.8.24;
 import {IAccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
-import {console2} from "forge-std/Script.sol";
-
 contract ThriveProtocolContributors {
     using AccessControlHelper for IAccessControlEnumerable;
 
@@ -131,7 +129,6 @@ contract ThriveProtocolContributors {
         ValidatorReward[] memory validators = new ValidatorReward[](
             contributions[_id].validatorsCount
         );
-        console2.log(validators.length);
         for (uint256 i = 0; i < validators.length; i++) {
             validators[i] = contributions[_id].validators[i];
         }
