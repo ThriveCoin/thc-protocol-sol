@@ -155,7 +155,8 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
     function setAccessControlEnumerable(
-        address _accessControlEnumerable
+        address _accessControlEnumerable,
+        bytes32 _role
     ) external onlyOwner {
         accessControlEnumerable = IAccessControlEnumerable(
             _accessControlEnumerable
