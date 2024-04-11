@@ -161,5 +161,6 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
         accessControlEnumerable = IAccessControlEnumerable(
             _accessControlEnumerable
         );
+        role = _role;
     }
 }
