@@ -19,7 +19,7 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
 
     IAccessControlEnumerable public accessControlEnumerable;
     IERC20 public token;
-    bytes32 role;
+    bytes32 public role;
     mapping(address => uint256) public balanceOf;
 
     /**
@@ -34,6 +34,7 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     /**
      * @dev Initializes the contract.
      * @param _accessControlEnumerable The address of the AccessControlEnumerable contract.
+     * @param _role The access control role.
      * @param _token The address of ERC20 token contract.
      */
     function initialize(
@@ -153,6 +154,7 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      * Only the owner of this contract can call this function.
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     * @param _role The new access control role.
      */
     function setAccessControlEnumerable(
         address _accessControlEnumerable,

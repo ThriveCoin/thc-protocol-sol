@@ -8,6 +8,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 
 contract ThriveProtocolIERC20RewardTest is Test {
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 OTHER_ADMIN_ROLE = keccak256("OTHER_ADMIN_ROLE");
 
     ThriveProtocolIERC20Reward public reward;
     MockAccessControl public admins;
@@ -151,10 +152,12 @@ contract ThriveProtocolIERC20RewardTest is Test {
         MockAccessControl newAccessControl = new MockAccessControl();
 
         vm.prank(address(1));
-        reward.setAccessControlEnumerable(address(newAccessControl));
+        reward.setAccessControlEnumerable(address(newAccessControl), OTHER_ADMIN_ROLE);
 
         address accessAddress = address(reward.accessControlEnumerable());
+        bytes32 newRole = reward.role();
         assertEq(accessAddress, address(newAccessControl));
+        assertEq(newRole, OTHER_ADMIN_ROLE);
     }
 
     function test_AccessControlFromNotOwner() public {
@@ -165,6 +168,6 @@ contract ThriveProtocolIERC20RewardTest is Test {
             keccak256("OwnableUnauthorizedAccount(address)")
         );
         vm.expectRevert(abi.encodeWithSelector(selector, address(2)));
-        reward.setAccessControlEnumerable(address(newAccessControl));
+        reward.setAccessControlEnumerable(address(newAccessControl), OTHER_ADMIN_ROLE);
     }
 }

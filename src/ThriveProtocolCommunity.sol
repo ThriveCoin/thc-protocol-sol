@@ -45,6 +45,7 @@ contract ThriveProtocolCommunity is Ownable {
      * @param _admins The array with addresses of admins
      * @param _percentages The array with value of percents for distribution
      * @param _accessControlEnumerable The address of access control enumerable contract
+     * @param _role The access control role
      */
     constructor(
         address _owner,
@@ -207,6 +208,7 @@ contract ThriveProtocolCommunity is Ownable {
      * Only the owner of this contract can call this function.
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     * @param _role The new access control role
      */
     function setAccessControlEnumerable(
         address _accessControlEnumerable,

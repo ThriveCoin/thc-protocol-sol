@@ -9,6 +9,7 @@ import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 contract ThriveProtocolCommunityTest is Test {
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 OTHER_ADMIN_ROLE = keccak256("OTHER_ADMIN_ROLE");
 
     ThriveProtocolCommunity community;
     MockAccessControl accessControl;
@@ -466,10 +467,12 @@ contract ThriveProtocolCommunityTest is Test {
         MockAccessControl newAccessControl = new MockAccessControl();
 
         vm.prank(address(1));
-        community.setAccessControlEnumerable(address(newAccessControl));
+        community.setAccessControlEnumerable(address(newAccessControl), OTHER_ADMIN_ROLE);
 
         address accessAddress = address(community.accessControlEnumerable());
+        bytes32 newRole = community.role();
         assertEq(accessAddress, address(newAccessControl));
+        assertEq(newRole, OTHER_ADMIN_ROLE);
     }
 
     function test_sAccessControl_fromNotOwner() public {
@@ -480,7 +483,7 @@ contract ThriveProtocolCommunityTest is Test {
             keccak256("OwnableUnauthorizedAccount(address)")
         );
         vm.expectRevert(abi.encodeWithSelector(selector, address(2)));
-        community.setAccessControlEnumerable(address(newAccessControl));
+        community.setAccessControlEnumerable(address(newAccessControl), OTHER_ADMIN_ROLE);
     }
 
     /////////////
