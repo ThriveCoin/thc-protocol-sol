@@ -12,7 +12,7 @@ contract ThriveProtocolCommunity is Ownable {
     using AccessControlHelper for IAccessControlEnumerable;
 
     IAccessControlEnumerable public accessControlEnumerable;
-    bytes32 role;
+    bytes32 public role;
 
     string public name;
 
