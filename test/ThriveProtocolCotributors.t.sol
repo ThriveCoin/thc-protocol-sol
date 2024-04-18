@@ -28,13 +28,17 @@ contract ThriveProtocolContributorsTest is Test {
     }
 
     function test_validatedContribution() public {
-        ThriveProtocolContributors.ValidatorReward memory reward1 = ThriveProtocolContributors.ValidatorReward(address(3), 800);
+        ThriveProtocolContributors.ValidatorReward memory reward1 =
+            ThriveProtocolContributors.ValidatorReward(address(3), 800);
         validatorRewards.push(reward1);
-        ThriveProtocolContributors.ValidatorReward memory reward2 = ThriveProtocolContributors.ValidatorReward(address(4), 50);
+        ThriveProtocolContributors.ValidatorReward memory reward2 =
+            ThriveProtocolContributors.ValidatorReward(address(4), 50);
         validatorRewards.push(reward2);
-        ThriveProtocolContributors.ValidatorReward memory reward3 = ThriveProtocolContributors.ValidatorReward(address(5), 50);
+        ThriveProtocolContributors.ValidatorReward memory reward3 =
+            ThriveProtocolContributors.ValidatorReward(address(5), 50);
         validatorRewards.push(reward3);
-        ThriveProtocolContributors.ValidatorReward memory reward4 = ThriveProtocolContributors.ValidatorReward(address(6), 100);
+        ThriveProtocolContributors.ValidatorReward memory reward4 =
+            ThriveProtocolContributors.ValidatorReward(address(6), 100);
         validatorRewards.push(reward4);
 
         vm.prank(address(1));
@@ -75,13 +79,17 @@ contract ThriveProtocolContributorsTest is Test {
     function test_validatedContributionsCount() public {
         assertEq(contributors.validatedContributionCount(), 0);
 
-        ThriveProtocolContributors.ValidatorReward memory reward1 = ThriveProtocolContributors.ValidatorReward(address(3), 800);
+        ThriveProtocolContributors.ValidatorReward memory reward1 =
+            ThriveProtocolContributors.ValidatorReward(address(3), 800);
         validatorRewards.push(reward1);
-        ThriveProtocolContributors.ValidatorReward memory reward2 = ThriveProtocolContributors.ValidatorReward(address(4), 50);
+        ThriveProtocolContributors.ValidatorReward memory reward2 =
+            ThriveProtocolContributors.ValidatorReward(address(4), 50);
         validatorRewards.push(reward2);
-        ThriveProtocolContributors.ValidatorReward memory reward3 = ThriveProtocolContributors.ValidatorReward(address(5), 50);
+        ThriveProtocolContributors.ValidatorReward memory reward3 =
+            ThriveProtocolContributors.ValidatorReward(address(5), 50);
         validatorRewards.push(reward3);
-        ThriveProtocolContributors.ValidatorReward memory reward4 = ThriveProtocolContributors.ValidatorReward(address(6), 100);
+        ThriveProtocolContributors.ValidatorReward memory reward4 =
+            ThriveProtocolContributors.ValidatorReward(address(6), 100);
         validatorRewards.push(reward4);
 
         vm.prank(address(1));
@@ -96,11 +104,17 @@ contract ThriveProtocolContributorsTest is Test {
         MockAccessControl newAccessControl = new MockAccessControl();
 
         vm.prank(address(1));
-        contributors.setAccessControlEnumerable(address(newAccessControl), 0x0000000000000000000000000000000000000000000000000000000000000111);
+        contributors.setAccessControlEnumerable(
+            address(newAccessControl),
+            0x0000000000000000000000000000000000000000000000000000000000000111
+        );
 
         address accessAddress = address(contributors.accessControlEnumerable());
         assertEq(accessAddress, address(newAccessControl));
-        assertEq(contributors.adminRole(), 0x0000000000000000000000000000000000000000000000000000000000000111);
+        assertEq(
+            contributors.adminRole(),
+            0x0000000000000000000000000000000000000000000000000000000000000111
+        );
     }
 
     function test_sAccessControl_fromNotAdmin() public {
@@ -108,6 +122,9 @@ contract ThriveProtocolContributorsTest is Test {
 
         vm.startPrank(address(2));
         vm.expectRevert("ThriveProtocol: must have admin role");
-        contributors.setAccessControlEnumerable(address(newAccessControl), 0x0000000000000000000000000000000000000000000000000000000000000111);
+        contributors.setAccessControlEnumerable(
+            address(newAccessControl),
+            0x0000000000000000000000000000000000000000000000000000000000000111
+        );
     }
 }

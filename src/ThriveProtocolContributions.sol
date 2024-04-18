@@ -163,13 +163,12 @@ contract ThriveProtocolContributions {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(address _accessControlEnumerable, bytes32 _adminRole)
-        external
-        onlyAdmin
-    {
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable,
+        bytes32 _adminRole
+    ) external onlyAdmin {
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _adminRole;
     }
-        
 }

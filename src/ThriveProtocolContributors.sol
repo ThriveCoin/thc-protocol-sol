@@ -67,10 +67,6 @@ contract ThriveProtocolContributors {
         uint _reward,
         ValidatorReward[] memory _validatorsRewards
     ) public onlyAdmin returns (bool success) {
-        // require(
-        //     _validatorAddresses.length == _validatorRewards.length,
-        //     "Array lengths mismatch"
-        // );
         ValidatedContribution storage contribution =
             contributions[_contributionId];
         contribution.contributionId = _contributionId;
@@ -138,10 +134,10 @@ contract ThriveProtocolContributors {
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
      */
-    function setAccessControlEnumerable(address _accessControlEnumerable, bytes32 _adminRole)
-        external
-        onlyAdmin
-    {
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable,
+        bytes32 _adminRole
+    ) external onlyAdmin {
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _adminRole;
