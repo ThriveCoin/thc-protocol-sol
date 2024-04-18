@@ -48,7 +48,7 @@ contract ThriveProtocolContributions {
         Status status;
     }
 
-    mapping(uint256 id => Contribution contribution) private contributions;
+    mapping(uint256 id => Contribution contribution) internal contributions;
 
     constructor(address _accessControlEnumerable, bytes32 _role) {
         accessControlEnumerable =

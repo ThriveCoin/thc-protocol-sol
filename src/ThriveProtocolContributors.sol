@@ -13,7 +13,7 @@ contract ThriveProtocolContributors {
 
     event ValidatedContributionAdded(
         uint indexed id,
-        uint contributionId,
+        uint indexed contributionId,
         string metadataIdentifier,
         string endEntityAddress,
         string addressChain,
@@ -38,9 +38,9 @@ contract ThriveProtocolContributors {
         mapping(uint => ValidatorReward) validators;
     }
 
-    uint256 private _validatedContributionCount;
+    uint256 internal _validatedContributionCount;
 
-    mapping(uint256 id => ValidatedContribution contribution) private
+    mapping(uint256 id => ValidatedContribution contribution) internal
         contributions;
 
     constructor(address _accessControlEnumerable, bytes32 _role) {
