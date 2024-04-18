@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IAccessControlEnumerable} from
-    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+    "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 contract ThriveProtocolContributors {
@@ -13,10 +13,10 @@ contract ThriveProtocolContributors {
 
     event ValidatedContributionAdded(
         uint indexed id,
-        uint contribution_id,
-        string metadata_identifier,
-        string validator_address,
-        string address_chain,
+        uint contributionId,
+        string metadataIdentifier,
+        string endEntityAddress,
+        string addressChain,
         string token,
         uint reward,
         ValidatorReward[] validators
@@ -28,10 +28,10 @@ contract ThriveProtocolContributors {
     }
 
     struct ValidatedContribution {
-        uint contribution_id;
-        string metadata_identifier;
-        string validator_address;
-        string address_chain;
+        uint contributionId;
+        string metadataIdentifier;
+        string endEntityAddress;
+        string addressChain;
         string token;
         uint reward;
         uint validatorsCount;
@@ -59,51 +59,44 @@ contract ThriveProtocolContributors {
     }
 
     function addValidatedContribution(
-        uint _contribution_id,
-        string memory _metadata_identifier,
-        string memory _validator_address,
-        string memory _address_chain,
+        uint _contributionId,
+        string memory _metadataIdentifier,
+        string memory _endEntityAddress,
+        string memory _addressChain,
         string memory _token,
         uint _reward,
-        address[] memory _validator_addresses,
-        uint[] memory _validator_rewards
-    ) public returns (bool success) {
-        require(
-            _validator_addresses.length == _validator_rewards.length,
-            "Array lengths mismatch"
-        );
+        ValidatorReward[] memory _validatorsRewards
+    ) public onlyAdmin returns (bool success) {
+        // require(
+        //     _validatorAddresses.length == _validatorRewards.length,
+        //     "Array lengths mismatch"
+        // );
         ValidatedContribution storage contribution =
-            contributions[_contribution_id];
-        contribution.contribution_id = _contribution_id;
-        contribution.metadata_identifier = _metadata_identifier;
-        contribution.validator_address = _validator_address;
-        contribution.address_chain = _address_chain;
+            contributions[_contributionId];
+        contribution.contributionId = _contributionId;
+        contribution.metadataIdentifier = _metadataIdentifier;
+        contribution.endEntityAddress = _endEntityAddress;
+        contribution.addressChain = _addressChain;
         contribution.token = _token;
         contribution.reward = _reward;
 
-        ValidatorReward[] memory validators =
-            new ValidatorReward[](_validator_addresses.length);
-        for (uint256 i = 0; i < _validator_addresses.length; i++) {
-            ValidatorReward memory reward = ValidatorReward({
-                validator: _validator_addresses[i],
-                reward: _validator_rewards[i]
-            });
+        for (uint256 i = 0; i < _validatorsRewards.length; i++) {
+            ValidatorReward memory reward = _validatorsRewards[i];
             contribution.validators[i] = reward;
             contribution.validatorsCount++;
-            validators[i] = reward;
         }
 
         _validatedContributionCount++;
 
         emit ValidatedContributionAdded(
             _validatedContributionCount,
-            contribution.contribution_id,
-            contribution.metadata_identifier,
-            contribution.validator_address,
-            contribution.address_chain,
+            contribution.contributionId,
+            contribution.metadataIdentifier,
+            contribution.endEntityAddress,
+            contribution.addressChain,
             contribution.token,
             contribution.reward,
-            validators
+            _validatorsRewards
         );
 
         return true;
@@ -129,10 +122,10 @@ contract ThriveProtocolContributors {
         }
 
         return (
-            contributions[_id].contribution_id,
-            contributions[_id].metadata_identifier,
-            contributions[_id].validator_address,
-            contributions[_id].address_chain,
+            contributions[_id].contributionId,
+            contributions[_id].metadataIdentifier,
+            contributions[_id].endEntityAddress,
+            contributions[_id].addressChain,
             contributions[_id].token,
             contributions[_id].reward,
             validators

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IAccessControlEnumerable} from
-    "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+    "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 contract ThriveProtocolContributions {
@@ -11,7 +11,7 @@ contract ThriveProtocolContributions {
     IAccessControlEnumerable public accessControlEnumerable;
     bytes32 public adminRole;
 
-    uint256 private _contributionCount;
+    uint256 internal _contributionCount;
 
     /**
      * @dev Emitted when a contribution is added
@@ -19,12 +19,12 @@ contract ThriveProtocolContributions {
     event ContributionAdded(
         uint indexed _id,
         address indexed _owner,
-        string _community,
-        string _community_chain,
-        string _metadata_identifier,
-        address indexed _validator,
+        string indexed _community,
+        string _communityChain,
+        string _metadatIdentifier,
+        address _validator,
         uint _reward,
-        uint _validation_reward
+        uint _validationReward
     );
 
     /**
@@ -40,11 +40,11 @@ contract ThriveProtocolContributions {
     struct Contribution {
         address owner;
         string community;
-        string community_chain;
-        string metadata_identifier;
+        string communityChain;
+        string metadataIdentifier;
         address validator;
         uint reward;
-        uint validation_reward;
+        uint validationReward;
         Status status;
     }
 
@@ -71,39 +71,39 @@ contract ThriveProtocolContributions {
     /**
      * @notice Adds a new contribution and increases the  contributionCount, the added contribution should have an active state.
      * @param _community The name of the community
-     * @param _community_chain The chain of the comminity
-     * @param _metadata_identifier Indentifier
+     * @param _communityChain The chain of the comminity
+     * @param _metadataIdentifier Indentifier
      * @param _validator The address of validator
      * @param _reward The value of reward
-     * @param _validation_reward The value of validation reward
+     * @param _validationReward The value of validation reward
      */
     function addContribution(
         string memory _community,
-        string memory _community_chain,
-        string memory _metadata_identifier,
+        string memory _communityChain,
+        string memory _metadataIdentifier,
         address _validator,
         uint _reward,
-        uint _validation_reward
+        uint _validationReward
     ) public returns (bool success) {
         contributions[_contributionCount] = Contribution(
             msg.sender,
             _community,
-            _community_chain,
-            _metadata_identifier,
+            _communityChain,
+            _metadataIdentifier,
             _validator,
             _reward,
-            _validation_reward,
+            _validationReward,
             Status.Active
         );
         emit ContributionAdded(
             _contributionCount,
             msg.sender,
             _community,
-            _community_chain,
-            _metadata_identifier,
+            _communityChain,
+            _metadataIdentifier,
             _validator,
             _reward,
-            _validation_reward
+            _validationReward
         );
         _contributionCount++;
         return true;
@@ -130,11 +130,11 @@ contract ThriveProtocolContributions {
         return (
             contribution.owner,
             contribution.community,
-            contribution.community_chain,
-            contribution.metadata_identifier,
+            contribution.communityChain,
+            contribution.metadataIdentifier,
             contribution.validator,
             contribution.reward,
-            contribution.validation_reward,
+            contribution.validationReward,
             contribution.status
         );
     }
@@ -157,6 +157,12 @@ contract ThriveProtocolContributions {
         return true;
     }
 
+    /**
+     * @dev Sets the AccessControlEnumerable contract address.
+     * Only the owner of this contract can call this function.
+     *
+     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     */
     function setAccessControlEnumerable(address _accessControlEnumerable, bytes32 _adminRole)
         external
         onlyAdmin

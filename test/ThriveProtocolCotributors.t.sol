@@ -12,8 +12,6 @@ contract ThriveProtocolContributorsTest is Test {
     MockAccessControl accessControl;
     MockERC20 token;
     ThriveProtocolContributors contributors;
-    address[] addresses;
-    uint256[] rewards;
 
     ThriveProtocolContributors.ValidatorReward[] validatorRewards;
 
@@ -30,19 +28,18 @@ contract ThriveProtocolContributorsTest is Test {
     }
 
     function test_validatedContribution() public {
-        addresses.push(address(3));
-        addresses.push(address(4));
-        addresses.push(address(5));
-        addresses.push(address(6));
-
-        rewards.push(800);
-        rewards.push(50);
-        rewards.push(50);
-        rewards.push(100);
+        ThriveProtocolContributors.ValidatorReward memory reward1 = ThriveProtocolContributors.ValidatorReward(address(3), 800);
+        validatorRewards.push(reward1);
+        ThriveProtocolContributors.ValidatorReward memory reward2 = ThriveProtocolContributors.ValidatorReward(address(4), 50);
+        validatorRewards.push(reward2);
+        ThriveProtocolContributors.ValidatorReward memory reward3 = ThriveProtocolContributors.ValidatorReward(address(5), 50);
+        validatorRewards.push(reward3);
+        ThriveProtocolContributors.ValidatorReward memory reward4 = ThriveProtocolContributors.ValidatorReward(address(6), 100);
+        validatorRewards.push(reward4);
 
         vm.prank(address(1));
         contributors.addValidatedContribution(
-            111, "test", "0x002", "chain", "0xeb0034", 4, addresses, rewards
+            111, "test", "0x002", "chain", "0xeb0034", 4, validatorRewards
         );
 
         (
@@ -55,12 +52,6 @@ contract ThriveProtocolContributorsTest is Test {
             ThriveProtocolContributors.ValidatorReward[] memory
                 validators_rewards
         ) = contributors.getValidatedContribution(111);
-
-        for (uint i = 0; i < addresses.length; i++) {
-            ThriveProtocolContributors.ValidatorReward memory validatorReward =
-            ThriveProtocolContributors.ValidatorReward(addresses[i], rewards[i]);
-            validatorRewards.push(validatorReward);
-        }
 
         assertEq(id, 111);
         assertEq(metadata, "test");
@@ -81,41 +72,21 @@ contract ThriveProtocolContributorsTest is Test {
         assertEq(validators_rewards[3].reward, validatorRewards[3].reward);
     }
 
-    function test_addValidatedContribution_WithDismatchedArrays() public {
-        addresses.push(address(3));
-        addresses.push(address(4));
-        addresses.push(address(5));
-        addresses.push(address(6));
-
-        rewards.push(800);
-        rewards.push(50);
-        rewards.push(50);
-        rewards.push(100);
-        rewards.push(1);
-
-        vm.startPrank(address(1));
-        vm.expectRevert("Array lengths mismatch");
-        contributors.addValidatedContribution(
-            111, "test", "0x002", "chain", "0xeb0034", 4, addresses, rewards
-        );
-    }
-
     function test_validatedContributionsCount() public {
         assertEq(contributors.validatedContributionCount(), 0);
 
-        addresses.push(address(3));
-        addresses.push(address(4));
-        addresses.push(address(5));
-        addresses.push(address(6));
-
-        rewards.push(800);
-        rewards.push(50);
-        rewards.push(50);
-        rewards.push(100);
+        ThriveProtocolContributors.ValidatorReward memory reward1 = ThriveProtocolContributors.ValidatorReward(address(3), 800);
+        validatorRewards.push(reward1);
+        ThriveProtocolContributors.ValidatorReward memory reward2 = ThriveProtocolContributors.ValidatorReward(address(4), 50);
+        validatorRewards.push(reward2);
+        ThriveProtocolContributors.ValidatorReward memory reward3 = ThriveProtocolContributors.ValidatorReward(address(5), 50);
+        validatorRewards.push(reward3);
+        ThriveProtocolContributors.ValidatorReward memory reward4 = ThriveProtocolContributors.ValidatorReward(address(6), 100);
+        validatorRewards.push(reward4);
 
         vm.prank(address(1));
         contributors.addValidatedContribution(
-            111, "test", "0x002", "chain", "0xeb0034", 4, addresses, rewards
+            111, "test", "0x002", "chain", "0xeb0034", 4, validatorRewards
         );
 
         assertEq(contributors.validatedContributionCount(), 1);

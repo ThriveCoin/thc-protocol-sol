@@ -13,10 +13,10 @@ contract ThriveProtocolContributionsTest is Test {
     event ContributionAdded(
         uint indexed _id,
         address indexed _owner,
-        string _community,
+        string indexed _community,
         string _community_chain,
         string _metadata_identifier,
-        address indexed _validator,
+        address _validator,
         uint _reward,
         uint _validation_reward
     );
