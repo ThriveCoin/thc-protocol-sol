@@ -11,6 +11,17 @@ contract ThriveProtocolContributors {
     IAccessControlEnumerable public accessControlEnumerable;
     bytes32 public adminRole;
 
+    /**
+     * @dev Must trigger when a validated contribution is added
+     * @param id The id of validated contribution
+     * @param contributionId The id of contribution
+     * @param metadataIdentifier The metadata identifier for contribution
+     * @param endEntityAddress The end entity that received reward of token
+     * @param addressChain The address of chain
+     * @param token The address of token
+     * @param reward The value of reward
+     * @param validators Validators and their respective rewards
+     */
     event ValidatedContributionAdded(
         uint indexed id,
         uint indexed contributionId,
@@ -22,11 +33,18 @@ contract ThriveProtocolContributors {
         ValidatorReward[] validators
     );
 
+    /**
+     * @dev The data structure used to represent validators and their respective rewards
+     */
     struct ValidatorReward {
         address validator;
         uint256 reward;
     }
 
+    /**
+     * @dev The data structure used information about validated contributions in the Thrive Protocol. It will contain information
+     * about which address completed which contribution and what was the reward amount associated with it
+     */
     struct ValidatedContribution {
         uint contributionId;
         string metadataIdentifier;
@@ -43,21 +61,44 @@ contract ThriveProtocolContributors {
     mapping(uint256 id => ValidatedContribution contribution) internal
         contributions;
 
+    /**
+     *
+     * @param _accessControlEnumerable The address of access control contract
+     * @param _role The role for access control
+     */
     constructor(address _accessControlEnumerable, bytes32 _role) {
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _role;
     }
 
+    /**
+     * @dev Modifier to only allow execution by admins.
+     * If the caller is not an admin, reverts with a corresponding message
+     */
     modifier onlyAdmin() {
         accessControlEnumerable.checkRole(adminRole, msg.sender);
         _;
     }
 
+    /**
+     * @notice Returns the number of contributions validated
+     * @return The number of contributions validated
+     */
     function validatedContributionCount() public view returns (uint256) {
         return _validatedContributionCount;
     }
 
+    /**
+     * @notice Adds a new validated contribution
+     * @param _contributionId The id of contribution
+     * @param _metadataIdentifier The metadata identifier for contribution
+     * @param _endEntityAddress The end entity that received reward of token
+     * @param _addressChain The address of chain
+     * @param _token The address of token
+     * @param _reward The value of reward
+     * @param _validatorsRewards Validators and their respective rewards
+     */
     function addValidatedContribution(
         uint _contributionId,
         string memory _metadataIdentifier,
@@ -98,6 +139,17 @@ contract ThriveProtocolContributors {
         return true;
     }
 
+    /**
+     * @notice Returns information of a specific validated contribution
+     * @param _id The id of contribution
+     * @return The id of validated contribution
+     * @return The metadata identifier for contribution
+     * @return The end entity that received reward of token
+     * @return The address of chain
+     * @return The address of token
+     * @return The value of reward
+     * @return Validators and their respective rewards
+     */
     function getValidatedContribution(uint _id)
         public
         view
@@ -133,6 +185,7 @@ contract ThriveProtocolContributors {
      * Only the owner of this contract can call this function.
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     * @param _adminRole The role for access control
      */
     function setAccessControlEnumerable(
         address _accessControlEnumerable,

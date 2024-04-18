@@ -37,6 +37,9 @@ contract ThriveProtocolContributions {
         Inactive
     }
 
+    /**
+     * @dev The main data structure that will hold the information regarding the contribution
+     */
     struct Contribution {
         address owner;
         string community;
@@ -50,12 +53,21 @@ contract ThriveProtocolContributions {
 
     mapping(uint256 id => Contribution contribution) internal contributions;
 
+    /**
+     *
+     * @param _accessControlEnumerable The address of access control contract
+     * @param _role The role for access control
+     */
     constructor(address _accessControlEnumerable, bytes32 _role) {
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _role;
     }
 
+    /**
+     * @dev Modifier to only allow execution by admins.
+     * If the caller is not an admin, reverts with a corresponding message
+     */
     modifier onlyAdmin() {
         accessControlEnumerable.checkRole(adminRole, msg.sender);
         _;
@@ -162,6 +174,7 @@ contract ThriveProtocolContributions {
      * Only the owner of this contract can call this function.
      *
      * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
+     * @param _adminRole The role for access control
      */
     function setAccessControlEnumerable(
         address _accessControlEnumerable,
