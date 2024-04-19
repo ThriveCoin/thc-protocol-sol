@@ -13,13 +13,13 @@ contract ThriveProtocolContributors {
 
     /**
      * @dev Must trigger when a validated contribution is added
-     * @param id The id of validated contribution
-     * @param contributionId The id of contribution
-     * @param metadataURI The metadata identifier for contribution
-     * @param endEntityAddress The end entity that received reward of token
-     * @param addressChain The address of chain
-     * @param token The address of token
-     * @param reward The value of reward
+     * @param id The ID of the validated contribution
+     * @param contributionId The ID of contribution
+     * @param metadataURI The metadata identifier for the contribution
+     * @param endEntityAddress The address of the entity that received the token reward
+     * @param addressChain The address of the chain
+     * @param token The address of the token
+     * @param reward The value of the reward
      * @param validators Validators and their respective rewards
      */
     event ValidatedContributionAdded(
@@ -34,7 +34,7 @@ contract ThriveProtocolContributors {
     );
 
     /**
-     * @dev The data structure used to represent validators and their respective rewards
+     * @dev Represents validators and their respective rewards
      */
     struct ValidatorReward {
         address validator;
@@ -42,8 +42,8 @@ contract ThriveProtocolContributors {
     }
 
     /**
-     * @dev The data structure used information about validated contributions in the Thrive Protocol. It will contain information
-     * about which address completed which contribution and what was the reward amount associated with it
+     * @dev Represents a validated contribution in the Thrive Protocol. It contains information
+     * about which address completed which contribution and the associated reward amount.
      */
     struct ValidatedContribution {
         uint contributionId;
@@ -73,8 +73,8 @@ contract ThriveProtocolContributors {
     }
 
     /**
-     * @dev Modifier to only allow execution by admins.
-     * If the caller is not an admin, reverts with a corresponding message
+     * @dev Modifier to allow only admins to execute a function.
+     * Reverts if the caller is not an admin with a corresponding message.
      */
     modifier onlyAdmin() {
         accessControlEnumerable.checkRole(adminRole, msg.sender);
@@ -82,8 +82,8 @@ contract ThriveProtocolContributors {
     }
 
     /**
-     * @notice Returns the number of contributions validated
-     * @return The number of contributions validated
+     * @notice Returns the number of validated contributions
+     * @return The number of validated contributions
      */
     function validatedContributionCount() public view returns (uint256) {
         return _validatedContributionCount;
@@ -91,13 +91,13 @@ contract ThriveProtocolContributors {
 
     /**
      * @notice Adds a new validated contribution
-     * @param _contributionId The id of contribution
-     * @param _metadataURI The metadata identifier for contribution
-     * @param _endEntityAddress The end entity that received reward of token
-     * @param _addressChain The address of chain
-     * @param _token The address of token
-     * @param _reward The value of reward
-     * @param _validatorsRewards Validators and their respective rewards
+     * @param _contributionId The ID of the contribution
+     * @param _metadataURI The metadata identifier for the contribution
+     * @param _endEntityAddress The address of the entity that received the token reward
+     * @param _addressChain The address of the chain
+     * @param _token The address of the token
+     * @param _reward The value of the reward
+     * @param _validatorsRewards Array of validators and their respective rewards
      */
     function addValidatedContribution(
         uint _contributionId,
@@ -141,13 +141,13 @@ contract ThriveProtocolContributors {
 
     /**
      * @notice Returns information of a specific validated contribution
-     * @param _id The id of contribution
-     * @return The id of validated contribution
-     * @return The metadata identifier for contribution
+     * @param _id The ID of the contribution
+     * @return The ID of the validated contribution
+     * @return The metadata identifier for the contribution
      * @return The end entity that received reward of token
-     * @return The address of chain
-     * @return The address of token
-     * @return The value of reward
+     * @return The address of the chain
+     * @return The address of the token
+     * @return The value of the reward
      * @return Validators and their respective rewards
      */
     function getValidatedContribution(uint _id)
@@ -184,8 +184,8 @@ contract ThriveProtocolContributors {
      * @dev Sets the AccessControlEnumerable contract address.
      * Only the owner of this contract can call this function.
      *
-     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
-     * @param _adminRole The role for access control
+     * @param _accessControlEnumerable The new address of the AccessControlEnumerable contract.
+     * @param _adminRole The new admin role to use for access control.
      */
     function setAccessControlEnumerable(
         address _accessControlEnumerable,
