@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IAccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IAccessControlEnumerable} from
+    "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
+import {OwnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
@@ -44,9 +48,8 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     ) public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
-        accessControlEnumerable = IAccessControlEnumerable(
-            _accessControlEnumerable
-        );
+        accessControlEnumerable =
+            IAccessControlEnumerable(_accessControlEnumerable);
         token = IERC20(_token);
         role = _role;
     }
@@ -57,9 +60,11 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      *
      * @param newImplementation The address of the new implementation contract.
      */
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 
     /**
      * @dev Modifier to only allow execution by admins.
@@ -124,8 +129,8 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
         string[] calldata _reasons
     ) external onlyAdmin {
         require(
-            _recipients.length == _amounts.length &&
-                _recipients.length == _reasons.length,
+            _recipients.length == _amounts.length
+                && _recipients.length == _reasons.length,
             "Array lengths mismatch"
         );
 
@@ -160,9 +165,8 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
         address _accessControlEnumerable,
         bytes32 _role
     ) external onlyOwner {
-        accessControlEnumerable = IAccessControlEnumerable(
-            _accessControlEnumerable
-        );
+        accessControlEnumerable =
+            IAccessControlEnumerable(_accessControlEnumerable);
         role = _role;
     }
 }
