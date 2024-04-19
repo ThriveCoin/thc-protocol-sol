@@ -1,16 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IAccessControlEnumerable} from
-    "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
-import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
-
 contract ThriveProtocolContributions {
-    using AccessControlHelper for IAccessControlEnumerable;
-
-    IAccessControlEnumerable public accessControlEnumerable;
-    bytes32 public adminRole;
-
+   
     uint256 internal _contributionCount;
 
     /**
@@ -21,7 +13,7 @@ contract ThriveProtocolContributions {
         address indexed _owner,
         string indexed _community,
         string _communityChain,
-        string _metadatIdentifier,
+        string _metadataURI,
         address _validator,
         uint _reward,
         uint _validationReward
@@ -44,7 +36,7 @@ contract ThriveProtocolContributions {
         address owner;
         string community;
         string communityChain;
-        string metadataIdentifier;
+        string metadataURI;
         address validator;
         uint reward;
         uint validationReward;
@@ -52,26 +44,6 @@ contract ThriveProtocolContributions {
     }
 
     mapping(uint256 id => Contribution contribution) internal contributions;
-
-    /**
-     *
-     * @param _accessControlEnumerable The address of access control contract
-     * @param _role The role for access control
-     */
-    constructor(address _accessControlEnumerable, bytes32 _role) {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
-        adminRole = _role;
-    }
-
-    /**
-     * @dev Modifier to only allow execution by admins.
-     * If the caller is not an admin, reverts with a corresponding message
-     */
-    modifier onlyAdmin() {
-        accessControlEnumerable.checkRole(adminRole, msg.sender);
-        _;
-    }
 
     /**
      * @notice Returns the number of contributions created
@@ -84,7 +56,7 @@ contract ThriveProtocolContributions {
      * @notice Adds a new contribution and increases the  contributionCount, the added contribution should have an active state.
      * @param _community The name of the community
      * @param _communityChain The chain of the comminity
-     * @param _metadataIdentifier Indentifier
+     * @param _metadataURI Metadata indentifier
      * @param _validator The address of validator
      * @param _reward The value of reward
      * @param _validationReward The value of validation reward
@@ -92,7 +64,7 @@ contract ThriveProtocolContributions {
     function addContribution(
         string memory _community,
         string memory _communityChain,
-        string memory _metadataIdentifier,
+        string memory _metadataURI,
         address _validator,
         uint _reward,
         uint _validationReward
@@ -101,7 +73,7 @@ contract ThriveProtocolContributions {
             msg.sender,
             _community,
             _communityChain,
-            _metadataIdentifier,
+            _metadataURI,
             _validator,
             _reward,
             _validationReward,
@@ -112,7 +84,7 @@ contract ThriveProtocolContributions {
             msg.sender,
             _community,
             _communityChain,
-            _metadataIdentifier,
+            _metadataURI,
             _validator,
             _reward,
             _validationReward
@@ -143,7 +115,7 @@ contract ThriveProtocolContributions {
             contribution.owner,
             contribution.community,
             contribution.communityChain,
-            contribution.metadataIdentifier,
+            contribution.metadataURI,
             contribution.validator,
             contribution.reward,
             contribution.validationReward,
@@ -167,21 +139,5 @@ contract ThriveProtocolContributions {
         contribution.status = Status.Inactive;
         emit ContributionDeactivated(_id);
         return true;
-    }
-
-    /**
-     * @dev Sets the AccessControlEnumerable contract address.
-     * Only the owner of this contract can call this function.
-     *
-     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
-     * @param _adminRole The role for access control
-     */
-    function setAccessControlEnumerable(
-        address _accessControlEnumerable,
-        bytes32 _adminRole
-    ) external onlyAdmin {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
-        adminRole = _adminRole;
     }
 }

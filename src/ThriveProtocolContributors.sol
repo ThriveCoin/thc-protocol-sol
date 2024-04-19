@@ -15,7 +15,7 @@ contract ThriveProtocolContributors {
      * @dev Must trigger when a validated contribution is added
      * @param id The id of validated contribution
      * @param contributionId The id of contribution
-     * @param metadataIdentifier The metadata identifier for contribution
+     * @param metadataURI The metadata identifier for contribution
      * @param endEntityAddress The end entity that received reward of token
      * @param addressChain The address of chain
      * @param token The address of token
@@ -25,7 +25,7 @@ contract ThriveProtocolContributors {
     event ValidatedContributionAdded(
         uint indexed id,
         uint indexed contributionId,
-        string metadataIdentifier,
+        string metadataURI,
         string endEntityAddress,
         string addressChain,
         string token,
@@ -47,7 +47,7 @@ contract ThriveProtocolContributors {
      */
     struct ValidatedContribution {
         uint contributionId;
-        string metadataIdentifier;
+        string metadataURI;
         string endEntityAddress;
         string addressChain;
         string token;
@@ -92,7 +92,7 @@ contract ThriveProtocolContributors {
     /**
      * @notice Adds a new validated contribution
      * @param _contributionId The id of contribution
-     * @param _metadataIdentifier The metadata identifier for contribution
+     * @param _metadataURI The metadata identifier for contribution
      * @param _endEntityAddress The end entity that received reward of token
      * @param _addressChain The address of chain
      * @param _token The address of token
@@ -101,7 +101,7 @@ contract ThriveProtocolContributors {
      */
     function addValidatedContribution(
         uint _contributionId,
-        string memory _metadataIdentifier,
+        string memory _metadataURI,
         string memory _endEntityAddress,
         string memory _addressChain,
         string memory _token,
@@ -111,7 +111,7 @@ contract ThriveProtocolContributors {
         ValidatedContribution storage contribution =
             contributions[_contributionId];
         contribution.contributionId = _contributionId;
-        contribution.metadataIdentifier = _metadataIdentifier;
+        contribution.metadataURI = _metadataURI;
         contribution.endEntityAddress = _endEntityAddress;
         contribution.addressChain = _addressChain;
         contribution.token = _token;
@@ -128,7 +128,7 @@ contract ThriveProtocolContributors {
         emit ValidatedContributionAdded(
             _validatedContributionCount,
             contribution.contributionId,
-            contribution.metadataIdentifier,
+            contribution.metadataURI,
             contribution.endEntityAddress,
             contribution.addressChain,
             contribution.token,
@@ -171,7 +171,7 @@ contract ThriveProtocolContributors {
 
         return (
             contributions[_id].contributionId,
-            contributions[_id].metadataIdentifier,
+            contributions[_id].metadataURI,
             contributions[_id].endEntityAddress,
             contributions[_id].addressChain,
             contributions[_id].token,

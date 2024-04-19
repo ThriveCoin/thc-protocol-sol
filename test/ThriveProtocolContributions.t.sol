@@ -6,10 +6,6 @@ import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
 import "test/mock/MockAccessControl.sol";
 
 contract ThriveProtocolContributionsTest is Test {
-    bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
-    MockAccessControl accessControl;
-
     event ContributionAdded(
         uint indexed _id,
         address indexed _owner,
@@ -25,12 +21,8 @@ contract ThriveProtocolContributionsTest is Test {
     ThriveProtocolContributions contributions;
 
     function setUp() public {
-        vm.startPrank(address(6));
-        accessControl = new MockAccessControl();
-        accessControl.grantRole(ADMIN_ROLE, address(1));
-        vm.stopPrank();
         contributions =
-            new ThriveProtocolContributions(address(accessControl), ADMIN_ROLE);
+            new ThriveProtocolContributions();
     }
 
     function test_contributionCount() public {
@@ -124,33 +116,5 @@ contract ThriveProtocolContributionsTest is Test {
         vm.expectRevert("ThriveProtocol: contribution already deactivated");
         contributions.deactivateContribution(0);
         vm.stopPrank();
-    }
-
-    function test_setAccessControl() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
-
-        vm.prank(address(1));
-        contributions.setAccessControlEnumerable(
-            address(newAccessControl),
-            0x0000000000000000000000000000000000000000000000000000000000000111
-        );
-
-        address accessAddress = address(contributions.accessControlEnumerable());
-        assertEq(accessAddress, address(newAccessControl));
-        assertEq(
-            contributions.adminRole(),
-            0x0000000000000000000000000000000000000000000000000000000000000111
-        );
-    }
-
-    function test_sAccessControl_fromNotAdmin() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
-
-        vm.startPrank(address(2));
-        vm.expectRevert("ThriveProtocol: must have admin role");
-        contributions.setAccessControlEnumerable(
-            address(newAccessControl),
-            0x0000000000000000000000000000000000000000000000000000000000000111
-        );
     }
 }
