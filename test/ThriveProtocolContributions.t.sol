@@ -21,8 +21,7 @@ contract ThriveProtocolContributionsTest is Test {
     ThriveProtocolContributions contributions;
 
     function setUp() public {
-        contributions =
-            new ThriveProtocolContributions();
+        contributions = new ThriveProtocolContributions();
     }
 
     function test_contributionCount() public {
