@@ -53,6 +53,12 @@ contract ThriveProtocolPermissions {
         );
     }
 
+    /**
+     * @notice Adds community admin address connected with chain ID and community address
+     * @param _chainId The ID of the chain
+     * @param _communityAddress The address of the community
+     * @param _newCommunityAdmin The address of the admin
+     */
     function addCommunityAdmin(
         string memory _chainId,
         string memory _communityAddress,
@@ -61,6 +67,11 @@ contract ThriveProtocolPermissions {
         communityAdmins[_chainId][_communityAddress] = _newCommunityAdmin;
     }
 
+    /**
+     * @notice Removes the address of the community admin
+     * @param _chainId The ID of the chain
+     * @param _communityAddress The address of thr community
+     */
     function removeCommunityAdmin(
         string memory _chainId,
         string memory _communityAddress
