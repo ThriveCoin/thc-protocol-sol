@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 contract ThriveProtocolContributions {
-   
     uint256 internal _contributionCount;
 
     /**
