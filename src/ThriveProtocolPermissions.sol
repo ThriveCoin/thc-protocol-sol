@@ -21,10 +21,11 @@ contract ThriveProtocolPermissions {
      * @param _accessControlEnumerable The address of access control contract
      * @param _role The role for access control
      */
-    constructor(address _accessControlEnumerable, bytes32 _role) {
+    constructor(address _accessControlEnumerable, bytes32 _role, address _rootAdmin) {
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _role;
+        rootAdmin = _rootAdmin;
     }
 
     /**
@@ -79,5 +80,21 @@ contract ThriveProtocolPermissions {
         string memory _communityAddress
     ) external onlyAdmin {
         communityAdmins[_chainId][_communityAddress] = address(0);
+    }
+
+     /**
+     * @dev Sets the AccessControlEnumerable contract address.
+     * Only the owner of this contract can call this function.
+     *
+     * @param _accessControlEnumerable The new address of the AccessControlEnumerable contract.
+     * @param _adminRole The new admin role to use for access control.
+     */
+    function setAccessControlEnumerable(
+        address _accessControlEnumerable,
+        bytes32 _adminRole
+    ) external onlyAdmin {
+        accessControlEnumerable =
+            IAccessControlEnumerable(_accessControlEnumerable);
+        adminRole = _adminRole;
     }
 }

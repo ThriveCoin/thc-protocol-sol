@@ -16,7 +16,7 @@ contract ThriveProtocolPermissionsTest is Test {
         accessControl.grantRole(ADMIN_ROLE, address(2));
         vm.stopPrank();
 
-        permissions = new ThriveProtocolPermissions(address(accessControl), ADMIN_ROLE);
+        permissions = new ThriveProtocolPermissions(address(accessControl), ADMIN_ROLE, address(2));
     }
 
     function test_addCommuniityAdmin() public {
@@ -55,10 +55,41 @@ contract ThriveProtocolPermissionsTest is Test {
     }
 
     function test_checkCommunityAdmin() public {
+        test_addCommuniityAdmin();
 
+        assertEq(permissions.checkAdmin("0123", "test", address(3)), true);
     }
 
     function test_checkCommunityAdmin_fromNotAdmin() public {
+        vm.expectRevert("ThriveProtocol: not an community admin");
+        permissions.checkAdmin("0123", "test", address(3));
+    }
 
+    function test_setAccessControl() public {
+        MockAccessControl newAccessControl = new MockAccessControl();
+
+        vm.prank(address(2));
+        permissions.setAccessControlEnumerable(
+            address(newAccessControl),
+            0x0000000000000000000000000000000000000000000000000000000000000111
+        );
+
+        address accessAddress = address(permissions.accessControlEnumerable());
+        assertEq(accessAddress, address(newAccessControl));
+        assertEq(
+            permissions.adminRole(),
+            0x0000000000000000000000000000000000000000000000000000000000000111
+        );
+    }
+
+    function test_sAccessControl_fromNotAdmin() public {
+        MockAccessControl newAccessControl = new MockAccessControl();
+
+        vm.startPrank(address(3));
+        vm.expectRevert("ThriveProtocol: must have admin role");
+        permissions.setAccessControlEnumerable(
+            address(newAccessControl),
+            0x0000000000000000000000000000000000000000000000000000000000000111
+        );
     }
 }
