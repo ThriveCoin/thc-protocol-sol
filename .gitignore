@@ -2,7 +2,7 @@
 cache/
 out/
 # Ignores development broadcast logs
-/broadcast/*
+broadcast/*
 !/broadcast/.gitkeep
 # Docs
 docs/
