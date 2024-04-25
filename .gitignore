@@ -10,3 +10,4 @@ docs/
 .vscode/*
 .env*
 !.env.example
+.DS_Store
