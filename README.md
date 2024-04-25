@@ -1,3 +1,13 @@
+# thc-protocol-sol
+
+This project includes the smart contracts related to Thrive Protocol.
+
+## Testing
+
+```
+forge test
+```
+
 ## Deploy
 
 ```
@@ -31,7 +41,9 @@ source .env (or .env.development)
 ```
 
 ```
-forge script --rpc-url $RPC_URL -vvvv --broadcast script/ThriveProtocolIERC20RewardUpgrade.s.sol
+forge script --legacy --rpc-url $RPC_URL -vvvv --broadcast script/ThriveProtocolIERC20RewardUpgrade.s.sol
+
+# similar for other contracts
 ```
 
 ## Init submodules
