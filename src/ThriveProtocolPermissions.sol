@@ -14,7 +14,7 @@ contract ThriveProtocolPermissions {
     address public rootAdmin;
 
     mapping(string chainId => mapping(string communityAddress => address admin))
-        private communityAdmins;
+        public communityAdmins;
 
     /**
      *
@@ -46,11 +46,13 @@ contract ThriveProtocolPermissions {
         string memory _chainId,
         string memory _communityAddress,
         address _communityAdmin
-    ) external view {
+    ) external view returns (bool) {
         require(
             communityAdmins[_chainId][_communityAddress] == _communityAdmin,
             "ThriveProtocol: not an community admin"
         );
+
+        return true;
     }
 
     /**
