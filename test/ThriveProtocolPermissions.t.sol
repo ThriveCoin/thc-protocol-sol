@@ -19,6 +19,12 @@ contract ThriveProtocolPermissionsTest is Test {
         permissions = new ThriveProtocolPermissions(address(accessControl), ADMIN_ROLE, address(2));
     }
 
+    function test_checkAccessControl() public {
+        assertEq(address(permissions.accessControlEnumerable()), address(accessControl));
+        assertEq(permissions.adminRole(), ADMIN_ROLE);
+        assertEq(permissions.rootAdmin(), address(2));
+    }
+
     function test_addCommuniityAdmin() public {
         vm.prank(address(2));
         permissions.addCommunityAdmin("0123", "test", address(3));
