@@ -5,12 +5,12 @@ import {Script, console2} from "forge-std/Script.sol";
 import {ThriveProtocolPermissions} from "src/ThriveProtocolPermissions.sol";
 
 contract ThriveProtocolPermissionsScript is Script {
-    function run(address accessControl, bytes32 role, address rootAdmin) external {
+    function run(address rootAdmin, address accessControl) external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
         ThriveProtocolPermissions permissions =
-            new ThriveProtocolPermissions(accessControl, role, rootAdmin);
+            new ThriveProtocolPermissions(rootAdmin, accessControl);
         vm.stopBroadcast();
         console2.log("permissions address: ", address(permissions));
     }

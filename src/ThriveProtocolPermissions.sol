@@ -1,16 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IAccessControlEnumerable} from
-    "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
-import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
+import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 
 contract ThriveProtocolPermissions {
-    using AccessControlHelper for IAccessControlEnumerable;
-
-    IAccessControlEnumerable public accessControlEnumerable;
-    bytes32 public adminRole;
-
+    ThriveProtocolAccessControl public accessControl;
     address public rootAdmin;
 
     mapping(string chainId => mapping(string communityAddress => address admin))
@@ -18,23 +12,55 @@ contract ThriveProtocolPermissions {
 
     /**
      *
-     * @param _accessControlEnumerable The address of access control contract
-     * @param _role The role for access control
+     * @param _rootAdmin The address of the base admin
      */
-    constructor(address _accessControlEnumerable, bytes32 _role, address _rootAdmin) {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
-        adminRole = _role;
+    constructor(address _rootAdmin, address _accessControl) {
         rootAdmin = _rootAdmin;
+        accessControl = ThriveProtocolAccessControl(_accessControl);
     }
 
-    /**
-     * @dev Modifier to allow only admins to execute a function.
-     * Reverts if the caller is not an admin with a corresponding message.
-     */
-    modifier onlyAdmin() {
-        accessControlEnumerable.checkRole(adminRole, msg.sender);
+    modifier onlyAdmin(bytes32 _role) {
+        require(
+            accessControl.hasRole(_role, msg.sender) == true,
+            "ThriveProtocol: must have role"
+        );
         _;
+    }
+
+    modifier onlyManager(bytes32 _chainId, string memory _community) {
+        bytes32 role =
+            keccak256(abi.encodePacked(_chainId, _community, "MANAGER"));
+        require(
+            accessControl.hasRole(role, msg.sender),
+            "ThriveProtocol: must have MANAGER role"
+        );
+        _;
+    }
+
+    function createRole(
+        bytes32 _chainId,
+        string memory _community,
+        string memory _role,
+        bytes32 _adminRole
+    )
+        external
+        onlyAdmin(accessControl.DEFAULT_ADMIN_ROLE())
+        returns (bytes32)
+    {
+        bytes32 role = keccak256(abi.encodePacked(_chainId, _community, _role));
+        accessControl.setRoleAdmin(role, _adminRole);
+
+        return role;
+    }
+
+    function grantRole(
+        bytes32 _chainId,
+        string memory _community,
+        string memory _role,
+        address _account
+    ) external onlyManager(_chainId, _community) {
+        bytes32 role = keccak256(abi.encodePacked(_chainId, _community, _role));
+        accessControl.setRole(role, _account);
     }
 
     /**
@@ -66,7 +92,8 @@ contract ThriveProtocolPermissions {
         string memory _chainId,
         string memory _communityAddress,
         address _newCommunityAdmin
-    ) external onlyAdmin {
+    ) external {
+        require(msg.sender == rootAdmin, "ThriveProtocol: not a root admin");
         communityAdmins[_chainId][_communityAddress] = _newCommunityAdmin;
     }
 
@@ -78,23 +105,8 @@ contract ThriveProtocolPermissions {
     function removeCommunityAdmin(
         string memory _chainId,
         string memory _communityAddress
-    ) external onlyAdmin {
+    ) external {
+        require(msg.sender == rootAdmin, "ThriveProtocol: not a root admin");
         communityAdmins[_chainId][_communityAddress] = address(0);
-    }
-
-     /**
-     * @dev Sets the AccessControlEnumerable contract address.
-     * Only the owner of this contract can call this function.
-     *
-     * @param _accessControlEnumerable The new address of the AccessControlEnumerable contract.
-     * @param _adminRole The new admin role to use for access control.
-     */
-    function setAccessControlEnumerable(
-        address _accessControlEnumerable,
-        bytes32 _adminRole
-    ) external onlyAdmin {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
-        adminRole = _adminRole;
     }
 }
