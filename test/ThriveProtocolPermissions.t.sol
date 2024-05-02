@@ -6,61 +6,78 @@ import {ThriveProtocolPermissions} from "src/ThriveProtocolPermissions.sol";
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 
 contract ThriveProtocolPermissionsTest is Test {
-    bytes32 public constant PERMISSIONS_CONTRACT =
-        keccak256("PERMISSIONS_CONTRACT");
-
     ThriveProtocolPermissions private permissions;
-    ThriveProtocolAccessControl private accessControl;
 
     function setUp() public {
         vm.prank(address(1));
-        accessControl = new ThriveProtocolAccessControl();
-
-        permissions =
-            new ThriveProtocolPermissions(address(2), address(accessControl));
-
-        vm.prank(address(1));
-        accessControl.grantRole(PERMISSIONS_CONTRACT, address(permissions));
+        permissions = new ThriveProtocolPermissions(address(2));
     }
 
     function test_createRole() public {
         vm.prank(address(1));
-        bytes32 role = permissions.createRole(0x00, "0x34", "MANAGER", 0x00);
+        bytes32 role =
+            permissions.createRole(0x00, "0x34", "MANAGER", address(3));
 
-        vm.prank(address(1));
-        accessControl.grantRole(role, address(2));
-        assertEq(accessControl.hasRole(role, address(2)), true);
+        assertEq(permissions.hasRole(role, address(3)), true);
     }
 
     function test_createRole_withoutRole() public {
-        vm.startPrank(address(2));
+        vm.startPrank(address(3));
         vm.expectRevert("ThriveProtocol: must have role");
-        permissions.createRole(0x00, "0x34", "MANAGER", 0x00);
+        permissions.createRole(0x00, "0x34", "MANAGER", address(2));
     }
 
-    function test_grantRole() public {
+    function test_setRoleAdmin() public {
         vm.startPrank(address(1));
-        bytes32 role = permissions.createRole(0x00, "0x34", "MANAGER", 0x00);
-        accessControl.grantRole(role, address(2));
-        bytes32 testRole = permissions.createRole(0x00, "0x34", "TEST", 0x00);
+        bytes32 role =
+            permissions.createRole(0x00, "0x34", "MANAGER", address(2));
+        bytes32 testRole =
+            permissions.createRole(0x00, "0x34", "TEST", address(3));
+        permissions.setRoleAdmin(testRole);
         vm.stopPrank();
 
         vm.prank(address(2));
-        permissions.grantRole(0x00, "0x34", "TEST", address(3));
+        permissions.grantRole(testRole, address(4));
+        assertEq(permissions.hasRole(testRole, address(4)), true);
 
-        assertEq(accessControl.hasRole(testRole, address(3)), true);
+        vm.startPrank(address(1));
+        vm.expectRevert();
+        permissions.grantRole(testRole, address(5));
+        vm.stopPrank();
+
+        assertEq(permissions.hasRole(testRole, address(3)), true);
+        assertEq(permissions.getRoleAdmin(testRole), role);
     }
 
-    function test_grantRole_withouAdminRole() public {
+    function test_setRoleAdmin_withoutRole() public {
         vm.startPrank(address(1));
-        bytes32 role = permissions.createRole(0x00, "0x34", "MANAGER", 0x00);
-        accessControl.grantRole(role, address(2));
-        permissions.createRole(0x00, "0x34", "TEST", 0x00);
+        bytes32 role =
+            permissions.createRole(0x00, "0x34", "MANAGER", address(2));
+        bytes32 testRole =
+            permissions.createRole(0x00, "0x34", "TEST", address(3));
         vm.stopPrank();
 
         vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: must have MANAGER role");
-        permissions.grantRole(0x00, "0x34", "TEST", address(3));
+        vm.expectRevert("ThriveProtocol: must have role");
+        permissions.setRoleAdmin(testRole);
+    }
+
+    function test_grantRole_forNotCurrentCommunity() public {
+        vm.startPrank(address(1));
+        bytes32 role =
+            permissions.createRole(0x00, "0x34", "MANAGER", address(2));
+        bytes32 testRole =
+            permissions.createRole(0x00, "0x34", "TEST", address(3));
+        permissions.setRoleAdmin(testRole);
+
+        bytes32 test2Role =
+            permissions.createRole(0x00, "0x234", "TEST", address(4));
+        vm.stopPrank();
+
+        vm.startPrank(address(2));
+        vm.expectRevert();
+        permissions.grantRole(test2Role, address(5));
+        vm.stopPrank();
     }
 
     function test_checkRootAdmin() public view {
@@ -100,16 +117,5 @@ contract ThriveProtocolPermissionsTest is Test {
         vm.expectRevert("ThriveProtocol: not a root admin");
         permissions.removeCommunityAdmin("0123", "test");
         vm.stopPrank();
-    }
-
-    function test_checkCommunityAdmin() public {
-        test_addCommuniityAdmin();
-
-        assertEq(permissions.checkAdmin("0123", "test", address(3)), true);
-    }
-
-    function test_checkCommunityAdmin_fromNotAdmin() public {
-        vm.expectRevert("ThriveProtocol: not an community admin");
-        permissions.checkAdmin("0123", "test", address(3));
     }
 }
