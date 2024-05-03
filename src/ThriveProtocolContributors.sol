@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 import {IAccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
+import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
 
-contract ThriveProtocolContributors {
+contract ThriveProtocolContributors is ThriveProtocolContributions {
     using AccessControlHelper for IAccessControlEnumerable;
 
     IAccessControlEnumerable public accessControlEnumerable;
@@ -59,7 +60,7 @@ contract ThriveProtocolContributors {
     uint256 internal _validatedContributionCount;
 
     mapping(uint256 id => ValidatedContribution contribution) internal
-        contributions;
+        validatedContributions;
 
     /**
      *
@@ -78,6 +79,14 @@ contract ThriveProtocolContributors {
      */
     modifier onlyAdmin() {
         accessControlEnumerable.checkRole(adminRole, msg.sender);
+        _;
+    }
+
+    modifier onlyContributionValidator(uint256 _contributionId) {
+        require(
+            contributions[_contributionId].validator == msg.sender,
+            "ThriveProtocol: not a validator of contribution"
+        );
         _;
     }
 
@@ -107,9 +116,13 @@ contract ThriveProtocolContributors {
         string memory _token,
         uint _reward,
         ValidatorReward[] memory _validatorsRewards
-    ) public onlyAdmin returns (bool success) {
+    )
+        public
+        onlyContributionValidator(_contributionId)
+        returns (bool success)
+    {
         ValidatedContribution storage contribution =
-            contributions[_contributionId];
+            validatedContributions[_contributionId];
         contribution.contributionId = _contributionId;
         contribution.metadataURI = _metadataURI;
         contribution.endEntityAddress = _endEntityAddress;
@@ -164,18 +177,18 @@ contract ThriveProtocolContributors {
         )
     {
         ValidatorReward[] memory validators =
-            new ValidatorReward[](contributions[_id].validatorsCount);
+            new ValidatorReward[](validatedContributions[_id].validatorsCount);
         for (uint256 i = 0; i < validators.length; i++) {
-            validators[i] = contributions[_id].validators[i];
+            validators[i] = validatedContributions[_id].validators[i];
         }
 
         return (
-            contributions[_id].contributionId,
-            contributions[_id].metadataURI,
-            contributions[_id].endEntityAddress,
-            contributions[_id].addressChain,
-            contributions[_id].token,
-            contributions[_id].reward,
+            validatedContributions[_id].contributionId,
+            validatedContributions[_id].metadataURI,
+            validatedContributions[_id].endEntityAddress,
+            validatedContributions[_id].addressChain,
+            validatedContributions[_id].token,
+            validatedContributions[_id].reward,
             validators
         );
     }
