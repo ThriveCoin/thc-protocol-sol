@@ -26,13 +26,7 @@ contract ThriveProtocolContributorsTest is Test {
         token = new MockERC20("token", "tkn");
 
         contributions = new ThriveProtocolContributions();
-        contributors = new ThriveProtocolContributors(
-            address(accessControl), ADMIN_ROLE, address(contributions)
-        );
-    }
-
-    function test_checkAdminRole() public view {
-        assertEq(contributors.adminRole(), ADMIN_ROLE);
+        contributors = new ThriveProtocolContributors(address(contributions));
     }
 
     function test_validatedContribution() public {
@@ -143,33 +137,5 @@ contract ThriveProtocolContributorsTest is Test {
         );
 
         assertEq(contributors.validatedContributionCount(), 1);
-    }
-
-    function test_setAccessControl() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
-
-        vm.prank(address(1));
-        contributors.setAccessControlEnumerable(
-            address(newAccessControl),
-            0x0000000000000000000000000000000000000000000000000000000000000111
-        );
-
-        address accessAddress = address(contributors.accessControlEnumerable());
-        assertEq(accessAddress, address(newAccessControl));
-        assertEq(
-            contributors.adminRole(),
-            0x0000000000000000000000000000000000000000000000000000000000000111
-        );
-    }
-
-    function test_sAccessControl_fromNotAdmin() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
-
-        vm.startPrank(address(2));
-        vm.expectRevert("ThriveProtocol: must have admin role");
-        contributors.setAccessControlEnumerable(
-            address(newAccessControl),
-            0x0000000000000000000000000000000000000000000000000000000000000111
-        );
     }
 }

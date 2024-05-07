@@ -14,8 +14,6 @@ contract ThriveProtocolPermissions is ThriveProtocolAccessControl {
 
     mapping(bytes32 role => CommunityData) communityId;
 
-    constructor() {}
-
     function createRole(
         bytes32 _chainId,
         string memory _community,
@@ -34,8 +32,9 @@ contract ThriveProtocolPermissions is ThriveProtocolAccessControl {
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         CommunityData memory data = communityId[_role];
-        bytes32 adminRole =
-            keccak256(abi.encodePacked(data.chainId, data.community, _adminRoleName));
+        bytes32 adminRole = keccak256(
+            abi.encodePacked(data.chainId, data.community, _adminRoleName)
+        );
         _setRoleAdmin(_role, adminRole);
     }
 }

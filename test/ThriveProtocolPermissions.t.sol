@@ -4,8 +4,11 @@ pragma solidity ^0.8.24;
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveProtocolPermissions} from "src/ThriveProtocolPermissions.sol";
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
+import "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
 contract ThriveProtocolPermissionsTest is Test {
+    error AccessControlUnauthorizedAccount(address account, bytes32 neededRole);
+
     ThriveProtocolPermissions private permissions;
 
     function setUp() public {
@@ -23,7 +26,10 @@ contract ThriveProtocolPermissionsTest is Test {
 
     function test_createRole_withoutRole() public {
         vm.startPrank(address(3));
-        vm.expectRevert();
+        bytes4 selector = bytes4(
+            keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
+        );
+        vm.expectRevert(abi.encodeWithSelector(selector, address(3), 0x00));
         permissions.createRole(0x00, "0x34", "MANAGER", address(2));
     }
 
@@ -41,7 +47,10 @@ contract ThriveProtocolPermissionsTest is Test {
         assertEq(permissions.hasRole(testRole, address(4)), true);
 
         vm.startPrank(address(1));
-        vm.expectRevert();
+         bytes4 selector = bytes4(
+            keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
+        );
+        vm.expectRevert(abi.encodeWithSelector(selector, address(1), role));
         permissions.grantRole(testRole, address(5));
         vm.stopPrank();
 
@@ -58,7 +67,10 @@ contract ThriveProtocolPermissionsTest is Test {
         vm.stopPrank();
 
         vm.startPrank(address(3));
-        vm.expectRevert();
+         bytes4 selector = bytes4(
+            keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
+        );
+        vm.expectRevert(abi.encodeWithSelector(selector, address(3), 0x00));
         permissions.setRoleAdmin(testRole, "MANAGER");
     }
 
@@ -72,10 +84,17 @@ contract ThriveProtocolPermissionsTest is Test {
 
         bytes32 test2Role =
             permissions.createRole(0x00, "0x234", "TEST", address(4));
+
+        bytes32 test2AdminRole = permissions.createRole(0x00, "0x234", "MANAGER", address(4));
+
+        permissions.setRoleAdmin(test2Role, "MANAGER");
         vm.stopPrank();
 
         vm.startPrank(address(2));
-        vm.expectRevert();
+         bytes4 selector = bytes4(
+            keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
+        );
+        vm.expectRevert(abi.encodeWithSelector(selector, address(2), test2AdminRole));
         permissions.grantRole(test2Role, address(5));
         vm.stopPrank();
     }
