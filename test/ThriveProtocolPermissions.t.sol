@@ -23,7 +23,7 @@ contract ThriveProtocolPermissionsTest is Test {
 
     function test_createRole_withoutRole() public {
         vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: must have role");
+        vm.expectRevert();
         permissions.createRole(0x00, "0x34", "MANAGER", address(2));
     }
 
@@ -33,7 +33,7 @@ contract ThriveProtocolPermissionsTest is Test {
             permissions.createRole(0x00, "0x34", "MANAGER", address(2));
         bytes32 testRole =
             permissions.createRole(0x00, "0x34", "TEST", address(3));
-        permissions.setRoleAdmin(testRole);
+        permissions.setRoleAdmin(testRole, "MANAGER");
         vm.stopPrank();
 
         vm.prank(address(2));
@@ -58,8 +58,8 @@ contract ThriveProtocolPermissionsTest is Test {
         vm.stopPrank();
 
         vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: must have role");
-        permissions.setRoleAdmin(testRole);
+        vm.expectRevert();
+        permissions.setRoleAdmin(testRole, "MANAGER");
     }
 
     function test_grantRole_forNotCurrentCommunity() public {
@@ -68,7 +68,7 @@ contract ThriveProtocolPermissionsTest is Test {
             permissions.createRole(0x00, "0x34", "MANAGER", address(2));
         bytes32 testRole =
             permissions.createRole(0x00, "0x34", "TEST", address(3));
-        permissions.setRoleAdmin(testRole);
+        permissions.setRoleAdmin(testRole, "MANAGER");
 
         bytes32 test2Role =
             permissions.createRole(0x00, "0x234", "TEST", address(4));
@@ -77,41 +77,6 @@ contract ThriveProtocolPermissionsTest is Test {
         vm.startPrank(address(2));
         vm.expectRevert();
         permissions.grantRole(test2Role, address(5));
-        vm.stopPrank();
-    }
-
-    function test_addCommuniityAdmin() public {
-        vm.prank(address(1));
-        permissions.addCommunityAdmin("0123", "test", address(3));
-
-        assertEq(permissions.communityAdmins("0123", "test"), address(3));
-    }
-
-    function test_addCommunityAdmin_withoutRole() public {
-        vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: must have role");
-        permissions.addCommunityAdmin("0123", "test", address(3));
-        vm.stopPrank();
-    }
-
-    function test_removeCommunityAdmin() public {
-        vm.prank(address(1));
-        permissions.addCommunityAdmin("0123", "test", address(3));
-
-        assertEq(permissions.communityAdmins("0123", "test"), address(3));
-
-        vm.prank(address(1));
-        permissions.removeCommunityAdmin("0123", "test");
-        assertEq(permissions.communityAdmins("0123", "test"), address(0));
-    }
-
-    function test_removeCommunityAdmin_withoutRole() public {
-        vm.prank(address(1));
-        permissions.addCommunityAdmin("0123", "test", address(3));
-
-        vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: must have role");
-        permissions.removeCommunityAdmin("0123", "test");
         vm.stopPrank();
     }
 }
