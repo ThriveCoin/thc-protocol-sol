@@ -39,7 +39,7 @@ contract ThriveProtocolPermissionsTest is Test {
             permissions.createRole(0x00, "0x34", "MANAGER", address(2));
         bytes32 testRole =
             permissions.createRole(0x00, "0x34", "TEST", address(3));
-        permissions.setRoleAdmin(testRole, "MANAGER");
+        permissions.setRoleAdmin(testRole, role);
         vm.stopPrank();
 
         vm.prank(address(2));
@@ -71,7 +71,7 @@ contract ThriveProtocolPermissionsTest is Test {
             keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
         );
         vm.expectRevert(abi.encodeWithSelector(selector, address(3), 0x00));
-        permissions.setRoleAdmin(testRole, "MANAGER");
+        permissions.setRoleAdmin(testRole, role);
     }
 
     function test_grantRole_forNotCurrentCommunity() public {
@@ -80,14 +80,14 @@ contract ThriveProtocolPermissionsTest is Test {
             permissions.createRole(0x00, "0x34", "MANAGER", address(2));
         bytes32 testRole =
             permissions.createRole(0x00, "0x34", "TEST", address(3));
-        permissions.setRoleAdmin(testRole, "MANAGER");
+        permissions.setRoleAdmin(testRole, role);
 
         bytes32 test2Role =
             permissions.createRole(0x00, "0x234", "TEST", address(4));
 
         bytes32 test2AdminRole = permissions.createRole(0x00, "0x234", "MANAGER", address(4));
 
-        permissions.setRoleAdmin(test2Role, "MANAGER");
+        permissions.setRoleAdmin(test2Role, test2AdminRole);
         vm.stopPrank();
 
         vm.startPrank(address(2));
