@@ -4,8 +4,6 @@ pragma solidity ^0.8.24;
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 
 contract ThriveProtocolPermissions is ThriveProtocolAccessControl {
-    address public rootAdmin;
-
     mapping(string chainId => mapping(string communityAddress => address admin))
         public communityAdmins;
 
@@ -16,13 +14,7 @@ contract ThriveProtocolPermissions is ThriveProtocolAccessControl {
 
     mapping(bytes32 role => CommunityData) communityId;
 
-    /**
-     *
-     * @param _rootAdmin The address of the base admin
-     */
-    constructor(address _rootAdmin) {
-        rootAdmin = _rootAdmin;
-    }
+    constructor() {}
 
     modifier onlyAdmin(bytes32 _role) {
         require(
@@ -64,8 +56,7 @@ contract ThriveProtocolPermissions is ThriveProtocolAccessControl {
         string memory _chainId,
         string memory _communityAddress,
         address _newCommunityAdmin
-    ) external {
-        require(msg.sender == rootAdmin, "ThriveProtocol: not a root admin");
+    ) external onlyAdmin(DEFAULT_ADMIN_ROLE) {
         communityAdmins[_chainId][_communityAddress] = _newCommunityAdmin;
     }
 
@@ -77,8 +68,7 @@ contract ThriveProtocolPermissions is ThriveProtocolAccessControl {
     function removeCommunityAdmin(
         string memory _chainId,
         string memory _communityAddress
-    ) external {
-        require(msg.sender == rootAdmin, "ThriveProtocol: not a root admin");
+    ) external onlyAdmin(DEFAULT_ADMIN_ROLE) {
         communityAdmins[_chainId][_communityAddress] = address(0);
     }
 }

@@ -5,6 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import "test/mock/MockAccessControl.sol";
 import {ThriveProtocolContributors} from "src/ThriveProtocolContributors.sol";
+import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
 
 contract ThriveProtocolContributorsTest is Test {
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -12,6 +13,7 @@ contract ThriveProtocolContributorsTest is Test {
     MockAccessControl accessControl;
     MockERC20 token;
     ThriveProtocolContributors contributors;
+    ThriveProtocolContributions contributions;
 
     ThriveProtocolContributors.ValidatorReward[] validatorRewards;
 
@@ -23,8 +25,10 @@ contract ThriveProtocolContributorsTest is Test {
 
         token = new MockERC20("token", "tkn");
 
-        contributors =
-            new ThriveProtocolContributors(address(accessControl), ADMIN_ROLE);
+        contributions = new ThriveProtocolContributions();
+        contributors = new ThriveProtocolContributors(
+            address(accessControl), ADMIN_ROLE, address(contributions)
+        );
     }
 
     function test_checkAdminRole() public view {
@@ -46,7 +50,7 @@ contract ThriveProtocolContributorsTest is Test {
         validatorRewards.push(reward4);
 
         vm.prank(address(1));
-        contributors.addContribution(
+        contributions.addContribution(
             "test", "123", "test-test", address(2), 1000, 100
         );
 
@@ -100,7 +104,7 @@ contract ThriveProtocolContributorsTest is Test {
         validatorRewards.push(reward4);
 
         vm.prank(address(1));
-        contributors.addContribution(
+        contributions.addContribution(
             "test", "123", "test-test", address(2), 1000, 100
         );
 
@@ -129,7 +133,7 @@ contract ThriveProtocolContributorsTest is Test {
         validatorRewards.push(reward4);
 
         vm.prank(address(1));
-        contributors.addContribution(
+        contributions.addContribution(
             "test", "123", "test-test", address(2), 1000, 100
         );
 

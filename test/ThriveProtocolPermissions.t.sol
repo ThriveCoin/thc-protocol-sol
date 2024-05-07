@@ -10,7 +10,7 @@ contract ThriveProtocolPermissionsTest is Test {
 
     function setUp() public {
         vm.prank(address(1));
-        permissions = new ThriveProtocolPermissions(address(2));
+        permissions = new ThriveProtocolPermissions();
     }
 
     function test_createRole() public {
@@ -80,12 +80,8 @@ contract ThriveProtocolPermissionsTest is Test {
         vm.stopPrank();
     }
 
-    function test_checkRootAdmin() public view {
-        assertEq(permissions.rootAdmin(), address(2));
-    }
-
     function test_addCommuniityAdmin() public {
-        vm.prank(address(2));
+        vm.prank(address(1));
         permissions.addCommunityAdmin("0123", "test", address(3));
 
         assertEq(permissions.communityAdmins("0123", "test"), address(3));
@@ -93,28 +89,28 @@ contract ThriveProtocolPermissionsTest is Test {
 
     function test_addCommunityAdmin_withoutRole() public {
         vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: not a root admin");
+        vm.expectRevert("ThriveProtocol: must have role");
         permissions.addCommunityAdmin("0123", "test", address(3));
         vm.stopPrank();
     }
 
     function test_removeCommunityAdmin() public {
-        vm.prank(address(2));
+        vm.prank(address(1));
         permissions.addCommunityAdmin("0123", "test", address(3));
 
         assertEq(permissions.communityAdmins("0123", "test"), address(3));
 
-        vm.prank(address(2));
+        vm.prank(address(1));
         permissions.removeCommunityAdmin("0123", "test");
         assertEq(permissions.communityAdmins("0123", "test"), address(0));
     }
 
     function test_removeCommunityAdmin_withoutRole() public {
-        vm.prank(address(2));
+        vm.prank(address(1));
         permissions.addCommunityAdmin("0123", "test", address(3));
 
         vm.startPrank(address(3));
-        vm.expectRevert("ThriveProtocol: not a root admin");
+        vm.expectRevert("ThriveProtocol: must have role");
         permissions.removeCommunityAdmin("0123", "test");
         vm.stopPrank();
     }

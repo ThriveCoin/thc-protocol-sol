@@ -6,11 +6,13 @@ import {IAccessControlEnumerable} from
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
 
-contract ThriveProtocolContributors is ThriveProtocolContributions {
+contract ThriveProtocolContributors {
     using AccessControlHelper for IAccessControlEnumerable;
 
     IAccessControlEnumerable public accessControlEnumerable;
     bytes32 public adminRole;
+
+    ThriveProtocolContributions public contributions;
 
     /**
      * @dev Must trigger when a validated contribution is added
@@ -67,10 +69,15 @@ contract ThriveProtocolContributors is ThriveProtocolContributions {
      * @param _accessControlEnumerable The address of access control contract
      * @param _role The role for access control
      */
-    constructor(address _accessControlEnumerable, bytes32 _role) {
+    constructor(
+        address _accessControlEnumerable,
+        bytes32 _role,
+        address _contributions
+    ) {
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _role;
+        contributions = ThriveProtocolContributions(_contributions);
     }
 
     /**
@@ -83,8 +90,10 @@ contract ThriveProtocolContributors is ThriveProtocolContributions {
     }
 
     modifier onlyContributionValidator(uint256 _contributionId) {
+        (,,,, address validator,,,) =
+            contributions.contributions(_contributionId);
         require(
-            contributions[_contributionId].validator == msg.sender,
+            validator == msg.sender,
             "ThriveProtocol: not a validator of contribution"
         );
         _;
