@@ -42,7 +42,7 @@ contract ThriveProtocolContributions {
         Status status;
     }
 
-    mapping(uint256 id => Contribution contribution) internal contributions;
+    mapping(uint256 id => Contribution contribution) public contributions;
 
     /**
      * @notice Returns the number of contributions created

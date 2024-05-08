@@ -12,4 +12,11 @@ contract ThriveProtocolAccessControl is AccessControlEnumerable {
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
+
+    function setRoleAdmin(bytes32 _role, bytes32 _adminRole)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        _setRoleAdmin(_role, _adminRole);
+    }
 }

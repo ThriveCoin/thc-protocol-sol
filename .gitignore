@@ -2,7 +2,7 @@
 cache/
 out/
 # Ignores development broadcast logs
-/broadcast/*
+broadcast/*
 !/broadcast/.gitkeep
 # Docs
 docs/
@@ -10,3 +10,4 @@ docs/
 .vscode/*
 .env*
 !.env.example
+.DS_Store

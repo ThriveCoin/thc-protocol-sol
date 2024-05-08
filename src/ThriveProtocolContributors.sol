@@ -4,12 +4,10 @@ pragma solidity ^0.8.24;
 import {IAccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
+import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
 
 contract ThriveProtocolContributors {
-    using AccessControlHelper for IAccessControlEnumerable;
-
-    IAccessControlEnumerable public accessControlEnumerable;
-    bytes32 public adminRole;
+    ThriveProtocolContributions public contributions;
 
     /**
      * @dev Must trigger when a validated contribution is added
@@ -59,25 +57,19 @@ contract ThriveProtocolContributors {
     uint256 internal _validatedContributionCount;
 
     mapping(uint256 id => ValidatedContribution contribution) internal
-        contributions;
+        validatedContributions;
 
-    /**
-     *
-     * @param _accessControlEnumerable The address of access control contract
-     * @param _role The role for access control
-     */
-    constructor(address _accessControlEnumerable, bytes32 _role) {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
-        adminRole = _role;
+    constructor(address _contributions) {
+        contributions = ThriveProtocolContributions(_contributions);
     }
 
-    /**
-     * @dev Modifier to allow only admins to execute a function.
-     * Reverts if the caller is not an admin with a corresponding message.
-     */
-    modifier onlyAdmin() {
-        accessControlEnumerable.checkRole(adminRole, msg.sender);
+    modifier onlyContributionValidator(uint256 _contributionId) {
+        (,,,, address validator,,,) =
+            contributions.contributions(_contributionId);
+        require(
+            validator == msg.sender,
+            "ThriveProtocol: not a validator of contribution"
+        );
         _;
     }
 
@@ -107,9 +99,13 @@ contract ThriveProtocolContributors {
         string memory _token,
         uint _reward,
         ValidatorReward[] memory _validatorsRewards
-    ) public onlyAdmin returns (bool success) {
+    )
+        public
+        onlyContributionValidator(_contributionId)
+        returns (bool success)
+    {
         ValidatedContribution storage contribution =
-            contributions[_contributionId];
+            validatedContributions[_contributionId];
         contribution.contributionId = _contributionId;
         contribution.metadataURI = _metadataURI;
         contribution.endEntityAddress = _endEntityAddress;
@@ -164,35 +160,19 @@ contract ThriveProtocolContributors {
         )
     {
         ValidatorReward[] memory validators =
-            new ValidatorReward[](contributions[_id].validatorsCount);
+            new ValidatorReward[](validatedContributions[_id].validatorsCount);
         for (uint256 i = 0; i < validators.length; i++) {
-            validators[i] = contributions[_id].validators[i];
+            validators[i] = validatedContributions[_id].validators[i];
         }
 
         return (
-            contributions[_id].contributionId,
-            contributions[_id].metadataURI,
-            contributions[_id].endEntityAddress,
-            contributions[_id].addressChain,
-            contributions[_id].token,
-            contributions[_id].reward,
+            validatedContributions[_id].contributionId,
+            validatedContributions[_id].metadataURI,
+            validatedContributions[_id].endEntityAddress,
+            validatedContributions[_id].addressChain,
+            validatedContributions[_id].token,
+            validatedContributions[_id].reward,
             validators
         );
-    }
-
-    /**
-     * @dev Sets the AccessControlEnumerable contract address.
-     * Only the owner of this contract can call this function.
-     *
-     * @param _accessControlEnumerable The new address of the AccessControlEnumerable contract.
-     * @param _adminRole The new admin role to use for access control.
-     */
-    function setAccessControlEnumerable(
-        address _accessControlEnumerable,
-        bytes32 _adminRole
-    ) external onlyAdmin {
-        accessControlEnumerable =
-            IAccessControlEnumerable(_accessControlEnumerable);
-        adminRole = _adminRole;
     }
 }
