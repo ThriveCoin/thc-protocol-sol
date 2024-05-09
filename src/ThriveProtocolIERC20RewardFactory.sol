@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
+import {ThriveProtocolIERC20Reward} from "src/ThriveProtocolIERC20Reward.sol";
 import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UUPSUpgradeable} from
@@ -9,7 +9,7 @@ import {UUPSUpgradeable} from
 import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ThriveProtocolAccessControlFactory is OwnableUpgradeable, UUPSUpgradeable {
+contract ThriveProtocolIERC20RewardFactory is OwnableUpgradeable, UUPSUpgradeable {
     function initialize() public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
@@ -21,16 +21,13 @@ contract ThriveProtocolAccessControlFactory is OwnableUpgradeable, UUPSUpgradeab
         onlyOwner
     {}
 
-    /**
-     * @notice Deploy the AccessControl contract
-     */
-    function deploy() external returns (address, address) {
-        ThriveProtocolAccessControl implementation = new ThriveProtocolAccessControl();
+    function deploy(address _accessControlEnumerable, bytes32 _role, address _token) external returns (address, address) {
+        ThriveProtocolIERC20Reward implementation = new ThriveProtocolIERC20Reward();
         address implAddress = address(implementation);
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
-        implementation = ThriveProtocolAccessControl(address(proxy));
-        implementation.initialize();
+        implementation = ThriveProtocolIERC20Reward(address(proxy));
+        implementation.initialize(_accessControlEnumerable, _role, _token);
         return (implAddress, address(proxy));
     }
 }
