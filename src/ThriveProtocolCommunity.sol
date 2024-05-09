@@ -6,10 +6,13 @@ import {SafeERC20} from
     "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IAccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
-contract ThriveProtocolCommunity is Ownable {
+contract ThriveProtocolCommunity is OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
     using AccessControlHelper for IAccessControlEnumerable;
 
@@ -41,29 +44,25 @@ contract ThriveProtocolCommunity is Ownable {
         uint256 _amount
     );
 
-    /**
-     * @param _owner The address of contract owner
+     /**
      * @param _name The name of the community
      * @param _admins The array with addresses of admins
      * @param _percentages The array with value of percents for distribution
      * @param _accessControlEnumerable The address of access control enumerable contract
      * @param _role The access control role
      */
-    constructor(
-        address _owner,
-        string memory _name,
+    function initialize(string memory _name,
         address[4] memory _admins,
         uint256[4] memory _percentages,
         address _accessControlEnumerable,
-        bytes32 _role
-    ) Ownable(_owner) {
-        name = _name;
+        bytes32 _role) public initializer {
+        __Ownable_init(_msgSender());
+        __UUPSUpgradeable_init();
 
+        name = _name;
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
-
         role = _role;
-
         rewardsAdmin = _admins[0];
         treasuryAdmin = _admins[1];
         validationsAdmin = _admins[2];
@@ -73,6 +72,18 @@ contract ThriveProtocolCommunity is Ownable {
             _percentages[0], _percentages[1], _percentages[2], _percentages[3]
         );
     }
+
+    /**
+     * @dev Overrides the authorization check for upgrading the contract implementation.
+     * Only the owner of this contract can authorize upgrades.
+     *
+     * @param newImplementation The address of the new implementation contract.
+     */
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 
     /**
      * @dev Modifier to only allow execution by admins.

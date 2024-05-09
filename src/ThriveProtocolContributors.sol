@@ -5,8 +5,12 @@ import {IAccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
+import {UUPSUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ThriveProtocolContributors {
+contract ThriveProtocolContributors is OwnableUpgradeable, UUPSUpgradeable {
     ThriveProtocolContributions public contributions;
 
     /**
@@ -59,9 +63,18 @@ contract ThriveProtocolContributors {
     mapping(uint256 id => ValidatedContribution contribution) internal
         validatedContributions;
 
-    constructor(address _contributions) {
+    function initialize(address _contributions) public initializer {
+        __Ownable_init(_msgSender());
+        __UUPSUpgradeable_init();
+
         contributions = ThriveProtocolContributions(_contributions);
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 
     modifier onlyContributionValidator(uint256 _contributionId) {
         (,,,, address validator,,,) =

@@ -2,11 +2,27 @@
 pragma solidity ^0.8.24;
 
 import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {UUPSUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ThriveProtocolCommunityFactory {
+contract ThriveProtocolCommunityFactory is OwnableUpgradeable, UUPSUpgradeable {
+    function initialize() public initializer {
+        __Ownable_init(_msgSender());
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
+
     /**
      * @notice Deploy the community contract
-     * can calls only user with DEFAULT_ADMIN role
      * @param _name The name of the community
      * @param _admins The array with addresses of admins
      * @param _percentages The array with value of percents for distribution
@@ -19,16 +35,13 @@ contract ThriveProtocolCommunityFactory {
         uint256[4] memory _percentages,
         address _accessControlEnumerable,
         bytes32 _role
-    ) external returns (address) {
-        ThriveProtocolCommunity community = new ThriveProtocolCommunity(
-            msg.sender,
-            _name,
-            _admins,
-            _percentages,
-            _accessControlEnumerable,
-            _role
-        );
+    ) external returns (address, address) {
+        ThriveProtocolCommunity implementation = new ThriveProtocolCommunity();
+        address implAddress = address(implementation);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
-        return address(community);
+        implementation = ThriveProtocolCommunity(address(proxy));
+        implementation.initialize(_name, _admins, _percentages, _accessControlEnumerable, _role);
+        return (implAddress, address(proxy));
     }
 }
