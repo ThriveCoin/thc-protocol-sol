@@ -51,14 +51,18 @@ contract ThriveProtocolIERC20RewardTest is Test {
         assertEq(token.balanceOf(address(reward)), rewardBalance + 1 ether);
     }
 
-    function testFail_DepositWithoutAllowance() public {
-        vm.prank(address(2));
+    function test_DepositWithoutAllowance() public {
+        vm.startPrank(address(1));
+        bytes4 selector = bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, address(reward), 0, 1 ether));
         reward.deposit(1 ether);
     }
 
-    function testFaild_DepositWithLowAllowance() public {
+    function test_DepositWithLowAllowance() public {
         vm.startPrank(address(2));
         token.approve(address(reward), 0.5 ether);
+        bytes4 selector = bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, address(reward), 0.5 ether, 1 ether));
         reward.deposit(1 ether);
         vm.stopPrank();
     }

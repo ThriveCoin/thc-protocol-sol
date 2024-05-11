@@ -39,15 +39,16 @@ contract ThriveProtocolCommunityTest is Test {
         accessControl.grantRole(ADMIN_ROLE, address(1));
         vm.stopPrank();
 
-        vm.prank(address(1));
-        community = new ThriveProtocolCommunity(
-            address(1),
+        vm.startPrank(address(1));
+        community = new ThriveProtocolCommunity();
+        community.initialize(
             "test",
             [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
             [uint256(80), 5, 5, 10],
             address(accessControl),
             ADMIN_ROLE
         );
+        vm.stopPrank();
 
         token1 = new MockERC20("token1", "tkn1");
         token2 = new MockERC20("token2", "tkn2");
@@ -101,9 +102,10 @@ contract ThriveProtocolCommunityTest is Test {
     }
 
     function test_deposit_withDust() public {
+        uint256 amount = 100;
         vm.startPrank(address(1));
-        token1.approve(address(community), 100);
-        community.deposit(address(token1), 100);
+        token1.approve(address(community), amount);
+        community.deposit(address(token1), amount);
         vm.stopPrank();
 
         uint256 rewardsBalance1 =
@@ -120,7 +122,7 @@ contract ThriveProtocolCommunityTest is Test {
         assertEq(validationsBalance1, 5);
         assertEq(foundationBalance1, 10);
 
-        uint amount = 111;
+        amount = 111;
         vm.startPrank(address(1));
         token1.approve(address(community), amount);
         community.deposit(address(token1), amount);
@@ -141,8 +143,10 @@ contract ThriveProtocolCommunityTest is Test {
         assertEq(rewardsBalance2, 170);
     }
 
-    function testFailed_deposit_withoutAllowance() public {
-        vm.prank(address(1));
+    function test_deposit_withoutAllowance() public {
+        vm.startPrank(address(1));
+        bytes4 selector = bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, address(community), 0, 100));
         community.deposit(address(token1), 100);
     }
 
@@ -176,8 +180,10 @@ contract ThriveProtocolCommunityTest is Test {
         assertEq(community.balances(validationsAdmin, address(token2)), 1000);
     }
 
-    function testFaild_validationsDeposit_withoutAllowance() public {
-        vm.prank(address(1));
+    function test_validationsDeposit_withoutAllowance() public {
+        vm.startPrank(address(1));
+        bytes4 selector = bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, address(community), 0, 100));
         community.validationsDeposit(address(token1), 100);
     }
 

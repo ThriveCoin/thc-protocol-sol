@@ -9,7 +9,10 @@ import {UUPSUpgradeable} from
 import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ThriveProtocolCommunityFactory is OwnableUpgradeable, UUPSUpgradeable {
+contract ThriveProtocolCommunityFactory is
+    OwnableUpgradeable,
+    UUPSUpgradeable
+{
     function initialize() public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
@@ -41,7 +44,9 @@ contract ThriveProtocolCommunityFactory is OwnableUpgradeable, UUPSUpgradeable {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
         implementation = ThriveProtocolCommunity(address(proxy));
-        implementation.initialize(_name, _admins, _percentages, _accessControlEnumerable, _role);
+        implementation.initialize(
+            _name, _admins, _percentages, _accessControlEnumerable, _role
+        );
         return (implAddress, address(proxy));
     }
 }

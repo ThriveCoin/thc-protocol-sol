@@ -26,7 +26,8 @@ contract ThriveProtocolContributorsTest is Test {
         token = new MockERC20("token", "tkn");
 
         contributions = new ThriveProtocolContributions();
-        contributors = new ThriveProtocolContributors(address(contributions));
+        contributors = new ThriveProtocolContributors();
+        contributors.initialize(address(contributions));
     }
 
     function test_validatedContribution() public {

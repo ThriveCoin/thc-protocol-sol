@@ -12,8 +12,13 @@ import {OwnableUpgradeable} from
  * @title ThriveProtocolAccessControl
  * @notice Contract that is used to manage access control.
  */
-contract ThriveProtocolAccessControl is AccessControlEnumerableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
+contract ThriveProtocolAccessControl is
+    AccessControlEnumerableUpgradeable,
+    OwnableUpgradeable,
+    UUPSUpgradeable
+{
     function initialize() public initializer {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
     }
@@ -23,7 +28,7 @@ contract ThriveProtocolAccessControl is AccessControlEnumerableUpgradeable, Owna
         override
         onlyOwner
     {}
-    
+
     function setRoleAdmin(bytes32 _role, bytes32 _adminRole)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)

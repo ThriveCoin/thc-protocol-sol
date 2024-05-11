@@ -30,6 +30,7 @@ contract ThriveProtocolCommunityFactoryTest is Test {
 
         vm.prank(address(1));
         factory = new ThriveProtocolCommunityFactory();
+        factory.initialize();
     }
 
     ////////////
@@ -38,7 +39,7 @@ contract ThriveProtocolCommunityFactoryTest is Test {
 
     function test_deploy() public {
         vm.startPrank(address(1));
-        address community = factory.deploy(
+        (address communityImpl, address communityProxy) = factory.deploy(
             "test",
             [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
             [uint256(80), 5, 5, 10],
@@ -46,6 +47,6 @@ contract ThriveProtocolCommunityFactoryTest is Test {
             ADMIN_ROLE
         );
 
-        assertEq(ThriveProtocolCommunity(community).name(), "test");
+        assertEq(ThriveProtocolCommunity(communityProxy).name(), "test");
     }
 }
