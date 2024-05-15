@@ -1,53 +1,142 @@
-# thc-protocol-sol
+# THC Protocol (Solidity)
 
 This project includes the smart contracts related to Thrive Protocol.
 
+## Table of Contents
+
+- [Setup](#setup)
+- [Testing](#testing)
+- [Build](#build)
+- [Deployment](#deployment)
+- [Updating Contracts](#updating-contracts)
+- [Initializing Submodules](#initializing-submodules)
+- [Check balance](#check-balance)
+- [Notes](#notes)
+
+## Setup
+
+To set up the project, follow these steps:
+
+1. **Clone the repository:**
+
+2. **Install dependencies:**
+
+   Ensure you have [Foundry](https://github.com/gakonst/foundry) installed. If not, install it by running:
+
+   ```sh
+   curl -L https://foundry.paradigm.xyz | bash
+   foundryup
+   ```
+
+   Then install project dependencies:
+
+   ```sh
+   forge install
+   ```
+
+3. **Set up environment variables:**
+
+   Create a `.env` file in the root directory of the project and add all variables from `.env.example` adding the actual values.
+
+4. **Generate remappings:**
+
+   Run the following command to generate remappings for your dependencies:
+
+   ```sh
+   forge remappings > remappings.txt
+   ```
+
 ## Testing
 
-```
+To run the tests for the smart contracts, use the following command:
+
+```sh
 forge test
 ```
 
-## Deploy
+### Build
 
-```
-source .env (or .env.development)
-```
+Make sure you have built the latest version of the contracts before a deployment
 
-```
-forge script --sig "run(address,bytes32,address)" --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $API_KEY ThriveProtocolIERC20RewardScript  <access_control_address> <admin_role> <token_address>
+```sh
+forge build
 ```
 
-```
-forge script --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $API_KEY ThriveProtocolCommunityFactoryScript
+## Deployment
+
+Before deploying, ensure you have your environment variables set up. You can source your environment configuration from a file:
+
+```sh
+source .env
 ```
 
-```
-forge create --constructor-args <owner_address> <community_name> <admins_address> <rewards> <access_control_address> <admin_role>  --rpc-url $SEPOLIA_RPC_URL  --private-key $PRIVATE_KEY --etherscan-api-key $API_KEY --verify ThriveProtocolCommunity
+### Deploying Contracts
+
+```sh
+forge script <path>/<name.s.sol> --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
 ```
 
-```
-forge script --sig "run(address,bytes32)" --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $API_KEY ThriveProtocolContributorsScript  <access_control_address> <admin_role>
+Deploy the `ThriveProtocolAccessControl` with specific arguments:
+
+```sh
+forge script script/ThriveProtocolAccessControl.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast
 ```
 
-```
-forge script --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $API_KEY ThriveProtocolContributionsScript
+### Updating Contracts
+
+Before upgrading contracts, ensure your environment variables are set also as $PROXY_ADDRESS, then run the following commands for a contract upgrade:
+
+```sh
+forge script <path>/<name.s.sol> --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
 ```
 
-## Update
+Upgrade the `ThriveProtocolAccessControl` with specific arguments:
 
-```
-source .env (or .env.development)
-```
-
-```
-forge script --legacy --rpc-url $RPC_URL -vvvv --broadcast script/ThriveProtocolIERC20RewardUpgrade.s.sol
-
-# similar for other contracts
+```sh
+forge script script/ThriveProtocolAccessControlUpgrade.s.sol  --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast
 ```
 
-## Init submodules
+You can follow a similar process for other contract upgrades.
 
+### Verifying Contracts
+
+Source code can be taken from both script files and source files
+
+```sh
+forge verify-contract <address> <path>:<contractname> --chain <look for chain in `foundry.toml`>
 ```
+
+Example 1 (source code):
+
+```sh
+forge verify-contract 0xD6D018D47E858764A9e3712c0538D0f9FC2a64cA script/ThriveProtocolAccessControl.s.sol:ThriveProtocolAccessControl --chain polygon-amoy
+```
+
+Example 2 (libs):
+
+```sh
+forge verify-contract 0xF860dc2CC31c75b5CA163DB20D1Fe9fDb504f4cf lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy --chain polygon-amoy
+```
+
+## Initializing Submodules
+
+If your project includes submodules, initialize them with the following command:
+
+```sh
 git submodule update --init --recursive
 ```
+
+## Check balance
+
+Show address balance in ETH
+
+```sh
+cast balance <address>  --rpc-url $RPC_URL -e
+```
+
+## Notes
+
+- Ensure you have the necessary environment variables set in your `.env` or `.env.development` file.
+- The `-vvvv` flag in the `forge` commands is for verbose output, which can be helpful for debugging.
+- The `--broadcast` flag executes the deployment on the specified network.
+- The `--verify` flag automatically verifies the contract on Etherscan using the provided API key.
