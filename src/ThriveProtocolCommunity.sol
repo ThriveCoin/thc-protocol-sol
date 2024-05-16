@@ -44,18 +44,20 @@ contract ThriveProtocolCommunity is OwnableUpgradeable, UUPSUpgradeable {
         uint256 _amount
     );
 
-     /**
+    /**
      * @param _name The name of the community
      * @param _admins The array with addresses of admins
      * @param _percentages The array with value of percents for distribution
      * @param _accessControlEnumerable The address of access control enumerable contract
      * @param _role The access control role
      */
-    function initialize(string memory _name,
+    function initialize(
+        string memory _name,
         address[4] memory _admins,
         uint256[4] memory _percentages,
         address _accessControlEnumerable,
-        bytes32 _role) public initializer {
+        bytes32 _role
+    ) public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
 

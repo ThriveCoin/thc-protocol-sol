@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 
-import {ThriveProtocolIERC20RewardFactory} from "src/ThriveProtocolIERC20RewardFactory.sol";
+import {ThriveProtocolIERC20RewardFactory} from
+    "src/ThriveProtocolIERC20RewardFactory.sol";
 
 contract ThriveProtocolCommunityFactoryUpgradeScript is Script {
     function run() public {

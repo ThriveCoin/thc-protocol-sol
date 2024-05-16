@@ -9,7 +9,10 @@ import {UUPSUpgradeable} from
 import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ThriveProtocolIERC20RewardFactory is OwnableUpgradeable, UUPSUpgradeable {
+contract ThriveProtocolIERC20RewardFactory is
+    OwnableUpgradeable,
+    UUPSUpgradeable
+{
     function initialize() public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
@@ -21,8 +24,13 @@ contract ThriveProtocolIERC20RewardFactory is OwnableUpgradeable, UUPSUpgradeabl
         onlyOwner
     {}
 
-    function deploy(address _accessControlEnumerable, bytes32 _role, address _token) external returns (address, address) {
-        ThriveProtocolIERC20Reward implementation = new ThriveProtocolIERC20Reward();
+    function deploy(
+        address _accessControlEnumerable,
+        bytes32 _role,
+        address _token
+    ) external returns (address, address) {
+        ThriveProtocolIERC20Reward implementation =
+            new ThriveProtocolIERC20Reward();
         address implAddress = address(implementation);
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
