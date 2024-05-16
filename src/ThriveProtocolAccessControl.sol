@@ -21,6 +21,7 @@ contract ThriveProtocolAccessControl is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
+        __AccessControlEnumerable_init();
     }
 
     function _authorizeUpgrade(address newImplementation)
