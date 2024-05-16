@@ -10,29 +10,43 @@ import {OwnableUpgradeable} from
 
 /**
  * @title ThriveProtocolAccessControl
- * @notice Contract that is used to manage access control.
+ * @notice This contract manages access control using roles and provides upgradeability.
  */
 contract ThriveProtocolAccessControl is
     AccessControlEnumerableUpgradeable,
     OwnableUpgradeable,
     UUPSUpgradeable
 {
+    /**
+     * @notice Initializes the contract, setting up roles and ownership.
+     */
     function initialize() public initializer {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        __AccessControlEnumerable_init();
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
+    /**
+     * @notice Authorizes the upgrade of the contract.
+     * @param newImplementation The address of the new implementation.
+     */
     function _authorizeUpgrade(address newImplementation)
         internal
         override
         onlyOwner
     {}
 
-    function setRoleAdmin(bytes32 _role, bytes32 _adminRole)
+    /**
+     * @notice Sets the admin role for a given role.
+     * @param role The role to change the admin for.
+     * @param adminRole The new admin role.
+     */
+    function setRoleAdmin(bytes32 role, bytes32 adminRole)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        _setRoleAdmin(_role, _adminRole);
+        _setRoleAdmin(role, adminRole);
     }
 }
