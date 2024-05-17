@@ -44,6 +44,11 @@ contract ThriveProtocolIERC20RewardFactoryTest is Test {
         (address rewardImpl, address rewardProxy) =
             factory.deploy(address(accessControl), ADMIN_ROLE, address(token));
 
+        assertEq(rewardImpl != address(0), true);
+        assertEq(rewardProxy != address(0), true);
+        
+        assertEq(address(ThriveProtocolIERC20Reward(rewardProxy).accessControlEnumerable()), address(accessControl));
+        assertEq(address(ThriveProtocolIERC20Reward(rewardProxy).token()), address(token));
         assertEq(ThriveProtocolIERC20Reward(rewardProxy).role(), ADMIN_ROLE);
     }
 }

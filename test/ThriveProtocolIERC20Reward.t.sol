@@ -77,6 +77,7 @@ contract ThriveProtocolIERC20RewardTest is Test {
             abi.encodeWithSelector(selector, address(reward), 0, 1 ether)
         );
         reward.deposit(1 ether);
+        vm.stopPrank();
     }
 
     function test_DepositWithLowAllowance() public {
@@ -219,5 +220,6 @@ contract ThriveProtocolIERC20RewardTest is Test {
         reward.setAccessControlEnumerable(
             address(newAccessControl), OTHER_ADMIN_ROLE
         );
+        vm.stopPrank();
     }
 }

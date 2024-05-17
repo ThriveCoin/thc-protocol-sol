@@ -166,6 +166,7 @@ contract ThriveProtocolCommunityTest is Test {
             abi.encodeWithSelector(selector, address(community), 0, 100)
         );
         community.deposit(address(token1), 100);
+        vm.stopPrank();
     }
 
     function test_deposit_ZeroAmount() public {
@@ -207,6 +208,7 @@ contract ThriveProtocolCommunityTest is Test {
             abi.encodeWithSelector(selector, address(community), 0, 100)
         );
         community.validationsDeposit(address(token1), 100);
+        vm.stopPrank();
     }
 
     //////////////
@@ -267,6 +269,7 @@ contract ThriveProtocolCommunityTest is Test {
         community.withdraw(address(token1), 90);
         vm.expectRevert("Insufficient balance");
         community.withdraw(address(token2), 1);
+        vm.stopPrank();
     }
 
     function test_withdraw_fromNotAdminAccount() public {
@@ -280,6 +283,7 @@ contract ThriveProtocolCommunityTest is Test {
         community.withdraw(address(token1), 1);
         vm.expectRevert("Insufficient balance");
         community.withdraw(address(token2), 1);
+        vm.stopPrank();
     }
 
     //////////////
@@ -332,6 +336,7 @@ contract ThriveProtocolCommunityTest is Test {
         community.transfer(address(5), address(token1), 90);
         vm.expectRevert("Insufficient balance");
         community.transfer(address(5), address(token2), 1);
+        vm.stopPrank();
     }
 
     function test_transfer_fromNotAdminAccount() public {
@@ -345,6 +350,7 @@ contract ThriveProtocolCommunityTest is Test {
         community.transfer(address(6), address(token1), 1);
         vm.expectRevert("Insufficient balance");
         community.transfer(address(6), address(token2), 1);
+        vm.stopPrank();
     }
 
     /////////////
@@ -485,6 +491,7 @@ contract ThriveProtocolCommunityTest is Test {
         community.setAccessControlEnumerable(
             address(newAccessControl), OTHER_ADMIN_ROLE
         );
+        vm.stopPrank();
     }
 
     /////////////

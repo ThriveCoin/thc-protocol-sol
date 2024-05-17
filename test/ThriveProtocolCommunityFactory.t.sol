@@ -37,13 +37,14 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         accessControl = ThriveProtocolAccessControl(accessControlProxy);
         vm.stopPrank();
 
-        vm.prank(address(1));
+        vm.startPrank(address(1));
         ThriveProtocolCommunityFactory factoryImpl =
             new ThriveProtocolCommunityFactory();
         bytes memory factoryData = abi.encodeCall(factoryImpl.initialize, ());
         address factoryProxy =
             address(new ERC1967Proxy(address(factoryImpl), factoryData));
         factory = ThriveProtocolCommunityFactory(factoryProxy);
+        vm.stopPrank();
     }
 
     ////////////
@@ -59,7 +60,21 @@ contract ThriveProtocolCommunityFactoryTest is Test {
             address(accessControl),
             ADMIN_ROLE
         );
+        vm.stopPrank();
+
+        assertEq(communityImpl != address(0), true);
+        assertEq(communityProxy != address (0), true);
 
         assertEq(ThriveProtocolCommunity(communityProxy).name(), "test");
+        assertEq(ThriveProtocolCommunity(communityProxy).rewardsAdmin(), rewardsAdmin);
+        assertEq(ThriveProtocolCommunity(communityProxy).treasuryAdmin(), treasuryAdmin);
+        assertEq(ThriveProtocolCommunity(communityProxy).validationsAdmin(), validationsAdmin);
+        assertEq(ThriveProtocolCommunity(communityProxy).foundationAdmin(), foundationAdmin);
+        assertEq(ThriveProtocolCommunity(communityProxy).rewardsPercentage(), uint256(80));
+        assertEq(ThriveProtocolCommunity(communityProxy).treasuryPercentage(), uint256(5));
+        assertEq(ThriveProtocolCommunity(communityProxy).validationsPercentage(), uint256(5));
+        assertEq(ThriveProtocolCommunity(communityProxy).foundationPercentage(), uint256(10));
+        assertEq(address(ThriveProtocolCommunity(communityProxy).accessControlEnumerable()), address(accessControl));
+        assertEq(ThriveProtocolCommunity(communityProxy).role(), ADMIN_ROLE);
     }
 }
