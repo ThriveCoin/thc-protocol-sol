@@ -3,15 +3,17 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
-import "test/mock/MockAccessControl.sol";
-import "src/ThriveProtocolCommunityFactory.sol";
-import "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
+import {ThriveProtocolCommunityFactory} from
+    "src/ThriveProtocolCommunityFactory.sol";
 
 contract ThriveProtocolCommunityFactoryTest is Test {
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     ThriveProtocolCommunityFactory factory;
-    MockAccessControl accessControl;
+    ThriveProtocolAccessControl accessControl;
 
     address rewardsAdmin;
     address treasuryAdmin;
@@ -25,12 +27,23 @@ contract ThriveProtocolCommunityFactoryTest is Test {
         foundationAdmin = address(5);
 
         vm.startPrank(address(6));
-        accessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        accessControl = ThriveProtocolAccessControl(accessControlProxy);
         vm.stopPrank();
 
         vm.prank(address(1));
-        factory = new ThriveProtocolCommunityFactory();
-        factory.initialize();
+        ThriveProtocolCommunityFactory factoryImpl =
+            new ThriveProtocolCommunityFactory();
+        bytes memory factoryData = abi.encodeCall(factoryImpl.initialize, ());
+        address factoryProxy =
+            address(new ERC1967Proxy(address(factoryImpl), factoryData));
+        factory = ThriveProtocolCommunityFactory(factoryProxy);
     }
 
     ////////////

@@ -4,15 +4,16 @@ pragma solidity ^0.8.24;
 import {Test, console2} from "forge-std/Test.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
-import "test/mock/MockAccessControl.sol";
-import "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 
 contract ThriveProtocolCommunityTest is Test {
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 OTHER_ADMIN_ROLE = keccak256("OTHER_ADMIN_ROLE");
 
     ThriveProtocolCommunity community;
-    MockAccessControl accessControl;
+    ThriveProtocolAccessControl accessControl;
     MockERC20 token1;
     MockERC20 token2;
 
@@ -35,19 +36,32 @@ contract ThriveProtocolCommunityTest is Test {
         foundationAdmin = address(4);
 
         vm.startPrank(address(6));
-        accessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        accessControl = ThriveProtocolAccessControl(accessControlProxy);
         accessControl.grantRole(ADMIN_ROLE, address(1));
         vm.stopPrank();
 
         vm.startPrank(address(1));
-        community = new ThriveProtocolCommunity();
-        community.initialize(
-            "test",
-            [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
-            [uint256(80), 5, 5, 10],
-            address(accessControl),
-            ADMIN_ROLE
+        ThriveProtocolCommunity communityImpl = new ThriveProtocolCommunity();
+        bytes memory communityData = abi.encodeCall(
+            communityImpl.initialize,
+            (
+                "test",
+                [rewardsAdmin, treasuryAdmin, validationsAdmin, foundationAdmin],
+                [uint256(80), 5, 5, 10],
+                address(accessControl),
+                ADMIN_ROLE
+            )
         );
+        address communityProxy =
+            address(new ERC1967Proxy(address(communityImpl), communityData));
+        community = ThriveProtocolCommunity(communityProxy);
         vm.stopPrank();
 
         token1 = new MockERC20("token1", "tkn1");
@@ -145,8 +159,12 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_deposit_withoutAllowance() public {
         vm.startPrank(address(1));
-        bytes4 selector = bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)"));
-        vm.expectRevert(abi.encodeWithSelector(selector, address(community), 0, 100));
+        bytes4 selector = bytes4(
+            keccak256("ERC20InsufficientAllowance(address,uint256,uint256)")
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(selector, address(community), 0, 100)
+        );
         community.deposit(address(token1), 100);
     }
 
@@ -182,8 +200,12 @@ contract ThriveProtocolCommunityTest is Test {
 
     function test_validationsDeposit_withoutAllowance() public {
         vm.startPrank(address(1));
-        bytes4 selector = bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)"));
-        vm.expectRevert(abi.encodeWithSelector(selector, address(community), 0, 100));
+        bytes4 selector = bytes4(
+            keccak256("ERC20InsufficientAllowance(address,uint256,uint256)")
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(selector, address(community), 0, 100)
+        );
         community.validationsDeposit(address(token1), 100);
     }
 
@@ -424,7 +446,15 @@ contract ThriveProtocolCommunityTest is Test {
     }
 
     function test_setAccessControl() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        ThriveProtocolAccessControl newAccessControl =
+            ThriveProtocolAccessControl(accessControlProxy);
 
         vm.prank(address(1));
         community.setAccessControlEnumerable(
@@ -438,7 +468,15 @@ contract ThriveProtocolCommunityTest is Test {
     }
 
     function test_sAccessControl_fromNotOwner() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        ThriveProtocolAccessControl newAccessControl =
+            ThriveProtocolAccessControl(accessControlProxy);
 
         vm.startPrank(address(2));
         bytes4 selector =

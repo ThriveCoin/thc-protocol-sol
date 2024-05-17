@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ThriveProtocolAccessControlTest is Test {
     ThriveProtocolAccessControl accessControl;
@@ -13,8 +15,10 @@ contract ThriveProtocolAccessControlTest is Test {
 
     function setUp() public {
         vm.startPrank(address(1));
-        accessControl = new ThriveProtocolAccessControl();
-        accessControl.initialize();
+        ThriveProtocolAccessControl impl = new ThriveProtocolAccessControl();
+        bytes memory data = abi.encodeCall(impl.initialize, ());
+        address proxy = address(new ERC1967Proxy(address(impl), data));
+        accessControl = ThriveProtocolAccessControl(proxy);
         vm.stopPrank();
     }
 
@@ -23,8 +27,12 @@ contract ThriveProtocolAccessControlTest is Test {
         accessControl.grantRole(ADMIN_ROLE, address(2));
         accessControl.setRoleAdmin(TEST_ROLE, ADMIN_ROLE);
 
-        bytes4 selector = bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)"));
-        vm.expectRevert(abi.encodeWithSelector(selector, address(1), ADMIN_ROLE));
+        bytes4 selector = bytes4(
+            keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(selector, address(1), ADMIN_ROLE)
+        );
         accessControl.grantRole(TEST_ROLE, address(3));
         vm.stopPrank();
 
@@ -35,8 +43,12 @@ contract ThriveProtocolAccessControlTest is Test {
 
     function test_setAdminRole_fromNotDefaultAdmin() public {
         vm.startPrank(address(2));
-        bytes4 selector = bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)"));
-        vm.expectRevert(abi.encodeWithSelector(selector, address(2), DEFAULT_ADMIN_ROLE));
+        bytes4 selector = bytes4(
+            keccak256("AccessControlUnauthorizedAccount(address,bytes32)")
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(selector, address(2), DEFAULT_ADMIN_ROLE)
+        );
         accessControl.setRoleAdmin(TEST_ROLE, ADMIN_ROLE);
         vm.stopPrank();
     }
