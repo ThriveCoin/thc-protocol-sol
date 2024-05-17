@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ThriveProtocolCommunity} from "src/ThriveProtocolCommunity.sol";
+import {ThriveProtocolIERC20Reward} from "src/ThriveProtocolIERC20Reward.sol";
 import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {UUPSUpgradeable} from
@@ -9,7 +9,7 @@ import {UUPSUpgradeable} from
 import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ThriveProtocolCommunityFactory is
+contract ThriveProtocolIERC20RewardFactory is
     OwnableUpgradeable,
     UUPSUpgradeable
 {
@@ -24,29 +24,18 @@ contract ThriveProtocolCommunityFactory is
         onlyOwner
     {}
 
-    /**
-     * @notice Deploy the community contract
-     * @param _name The name of the community
-     * @param _admins The array with addresses of admins
-     * @param _percentages The array with value of percents for distribution
-     * @param _accessControlEnumerable The address of access control enumerable contract
-     * @return The address of deployed comminity contract
-     */
     function deploy(
-        string memory _name,
-        address[4] memory _admins,
-        uint256[4] memory _percentages,
         address _accessControlEnumerable,
-        bytes32 _role
+        bytes32 _role,
+        address _token
     ) external returns (address, address) {
-        ThriveProtocolCommunity implementation = new ThriveProtocolCommunity();
+        ThriveProtocolIERC20Reward implementation =
+            new ThriveProtocolIERC20Reward();
         address implAddress = address(implementation);
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
-        implementation = ThriveProtocolCommunity(address(proxy));
-        implementation.initialize(
-            _name, _admins, _percentages, _accessControlEnumerable, _role
-        );
+        implementation = ThriveProtocolIERC20Reward(address(proxy));
+        implementation.initialize(_accessControlEnumerable, _role, _token);
         return (implAddress, address(proxy));
     }
 }
