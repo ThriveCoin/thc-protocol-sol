@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
-import "test/mock/MockAccessControl.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ThriveProtocolContributionsTest is Test {
     event ContributionAdded(
@@ -21,7 +22,10 @@ contract ThriveProtocolContributionsTest is Test {
     ThriveProtocolContributions contributions;
 
     function setUp() public {
-        contributions = new ThriveProtocolContributions();
+        ThriveProtocolContributions impl = new ThriveProtocolContributions();
+        bytes memory data = abi.encodeCall(impl.initialize, ());
+        address proxy = address(new ERC1967Proxy(address(impl), data));
+        contributions = ThriveProtocolContributions(proxy);
     }
 
     function test_contributionCount() public {

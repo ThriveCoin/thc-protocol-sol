@@ -3,14 +3,16 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
-import "test/mock/MockAccessControl.sol";
+import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 import {ThriveProtocolContributors} from "src/ThriveProtocolContributors.sol";
 import {ThriveProtocolContributions} from "src/ThriveProtocolContributions.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ThriveProtocolContributorsTest is Test {
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    MockAccessControl accessControl;
+    ThriveProtocolAccessControl accessControl;
     MockERC20 token;
     ThriveProtocolContributors contributors;
     ThriveProtocolContributions contributions;
@@ -19,14 +21,37 @@ contract ThriveProtocolContributorsTest is Test {
 
     function setUp() public {
         vm.startPrank(address(6));
-        accessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        accessControl = ThriveProtocolAccessControl(accessControlProxy);
         accessControl.grantRole(ADMIN_ROLE, address(1));
         vm.stopPrank();
 
         token = new MockERC20("token", "tkn");
 
-        contributions = new ThriveProtocolContributions();
-        contributors = new ThriveProtocolContributors(address(contributions));
+        ThriveProtocolContributions contributionsImpl =
+            new ThriveProtocolContributions();
+        bytes memory contributionsData =
+            abi.encodeCall(contributionsImpl.initialize, ());
+        address contributionsProxy = address(
+            new ERC1967Proxy(address(contributionsImpl), contributionsData)
+        );
+        contributions = ThriveProtocolContributions(contributionsProxy);
+
+        ThriveProtocolContributors contributorsImpl =
+            new ThriveProtocolContributors();
+        bytes memory contributorsData = abi.encodeCall(
+            contributorsImpl.initialize, (address(contributions))
+        );
+        address contributorsProxy = address(
+            new ERC1967Proxy(address(contributorsImpl), contributorsData)
+        );
+        contributors = ThriveProtocolContributors(contributorsProxy);
     }
 
     function test_validatedContribution() public {

@@ -3,7 +3,9 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveProtocolIERC20Reward} from "../src/ThriveProtocolIERC20Reward.sol";
-import {MockAccessControl} from "test/mock/MockAccessControl.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 
 contract ThriveProtocolIERC20RewardTest is Test {
@@ -11,7 +13,7 @@ contract ThriveProtocolIERC20RewardTest is Test {
     bytes32 OTHER_ADMIN_ROLE = keccak256("OTHER_ADMIN_ROLE");
 
     ThriveProtocolIERC20Reward public reward;
-    MockAccessControl public admins;
+    ThriveProtocolAccessControl public accessControl;
 
     MockERC20 public token;
 
@@ -24,11 +26,26 @@ contract ThriveProtocolIERC20RewardTest is Test {
 
     function setUp() public {
         token = new MockERC20("test token", "TST");
+
         vm.startPrank(address(1));
-        admins = new MockAccessControl();
-        admins.grantRole(ADMIN_ROLE, address(1));
-        reward = new ThriveProtocolIERC20Reward();
-        reward.initialize(address(admins), ADMIN_ROLE, address(token));
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        accessControl = ThriveProtocolAccessControl(accessControlProxy);
+        accessControl.grantRole(ADMIN_ROLE, address(1));
+
+        ThriveProtocolIERC20Reward rewardImpl = new ThriveProtocolIERC20Reward();
+        bytes memory rewardData = abi.encodeCall(
+            rewardImpl.initialize,
+            (address(accessControl), ADMIN_ROLE, address(token))
+        );
+        address rewardProxy =
+            address(new ERC1967Proxy(address(rewardImpl), rewardData));
+        reward = ThriveProtocolIERC20Reward(rewardProxy);
         vm.stopPrank();
 
         token.mint(address(2), 10 ether);
@@ -51,14 +68,29 @@ contract ThriveProtocolIERC20RewardTest is Test {
         assertEq(token.balanceOf(address(reward)), rewardBalance + 1 ether);
     }
 
-    function testFail_DepositWithoutAllowance() public {
-        vm.prank(address(2));
+    function test_DepositWithoutAllowance() public {
+        vm.startPrank(address(1));
+        bytes4 selector = bytes4(
+            keccak256("ERC20InsufficientAllowance(address,uint256,uint256)")
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(selector, address(reward), 0, 1 ether)
+        );
         reward.deposit(1 ether);
+        vm.stopPrank();
     }
 
-    function testFaild_DepositWithLowAllowance() public {
+    function test_DepositWithLowAllowance() public {
         vm.startPrank(address(2));
         token.approve(address(reward), 0.5 ether);
+        bytes4 selector = bytes4(
+            keccak256("ERC20InsufficientAllowance(address,uint256,uint256)")
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                selector, address(reward), 0.5 ether, 1 ether
+            )
+        );
         reward.deposit(1 ether);
         vm.stopPrank();
     }
@@ -149,7 +181,15 @@ contract ThriveProtocolIERC20RewardTest is Test {
     ////////////////////////////////
 
     function test_SetAccessControl() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        ThriveProtocolAccessControl newAccessControl =
+            ThriveProtocolAccessControl(accessControlProxy);
 
         vm.prank(address(1));
         reward.setAccessControlEnumerable(
@@ -163,7 +203,15 @@ contract ThriveProtocolIERC20RewardTest is Test {
     }
 
     function test_AccessControlFromNotOwner() public {
-        MockAccessControl newAccessControl = new MockAccessControl();
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
+        ThriveProtocolAccessControl newAccessControl =
+            ThriveProtocolAccessControl(accessControlProxy);
 
         vm.startPrank(address(2));
         bytes4 selector =
@@ -172,5 +220,6 @@ contract ThriveProtocolIERC20RewardTest is Test {
         reward.setAccessControlEnumerable(
             address(newAccessControl), OTHER_ADMIN_ROLE
         );
+        vm.stopPrank();
     }
 }
