@@ -73,13 +73,13 @@ source .env
 ### Deploying Contracts
 
 ```sh
-forge script [--legacy] <path>/<name.s.sol> --chain <chain name> --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $SCAN_API_KEY
+forge script --chain <chain name> [--legacy] --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $SCAN_API_KEY <path>/<name.s.sol>
 ```
 
 Deploy the `ThriveProtocolAccessControl` with specific arguments:
 
 ```sh
-forge script --legacy script/ThriveProtocolAccessControl.s.sol --chain sepolia --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $SCAN_API_KEY
+forge script --chain sepolia --legacy  --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $SCAN_API_KEY script/ThriveProtocolAccessControl.s.sol
 ```
 
 ### Updating Contracts
@@ -87,13 +87,13 @@ forge script --legacy script/ThriveProtocolAccessControl.s.sol --chain sepolia -
 Before upgrading contracts, ensure your environment variables are set also as $PROXY_ADDRESS, then run the following commands for a contract upgrade:
 
 ```sh
-forge script <path>/<name.s.sol> --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
+forge script --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast <path>/<name.s.sol> 
 ```
 
 Upgrade the `ThriveProtocolAccessControl` with specific arguments:
 
 ```sh
-forge script script/ThriveProtocolAccessControlUpgrade.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast
+forge script --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast script/ThriveProtocolAccessControlUpgrade.s.sol
 ```
 
 You can follow a similar process for other contract upgrades.
