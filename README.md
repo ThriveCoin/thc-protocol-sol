@@ -73,13 +73,13 @@ source .env
 ### Deploying Contracts
 
 ```sh
-forge script <path>/<name.s.sol> --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
+forge script [--legacy] <path>/<name.s.sol> --chain <chain name> --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $SCAN_API_KEY
 ```
 
 Deploy the `ThriveProtocolAccessControl` with specific arguments:
 
 ```sh
-forge script script/ThriveProtocolAccessControl.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast
+forge script --legacy script/ThriveProtocolAccessControl.s.sol --chain sepolia --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast --verify --etherscan-api-key $SCAN_API_KEY
 ```
 
 ### Updating Contracts
@@ -93,7 +93,7 @@ forge script <path>/<name.s.sol> --rpc-url $RPC_URL --private-key $PRIVATE_KEY -
 Upgrade the `ThriveProtocolAccessControl` with specific arguments:
 
 ```sh
-forge script script/ThriveProtocolAccessControlUpgrade.s.sol  --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast
+forge script script/ThriveProtocolAccessControlUpgrade.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY -vvvv --broadcast
 ```
 
 You can follow a similar process for other contract upgrades.
@@ -103,19 +103,19 @@ You can follow a similar process for other contract upgrades.
 Source code can be taken from both script files and source files
 
 ```sh
-forge verify-contract <address> <path>:<contractname> --chain <look for chain in `foundry.toml`>
+forge verify-contract --chain <chain name> --etherscan-api-key $SCAN_API_KEY --watch <look for chain in `foundry.toml`> <address> <path>:<contractname>
 ```
 
 Example 1 (source code):
 
 ```sh
-forge verify-contract 0xD6D018D47E858764A9e3712c0538D0f9FC2a64cA script/ThriveProtocolAccessControl.s.sol:ThriveProtocolAccessControl --chain polygon-amoy
+forge verify-contract --chain sepolia --etherscan-api-key $SCAN_API_KEY --watch 0xDC448EA9951e2A6038260784Cc96A0adb81Cc4f8 src/ThriveProtocolAccessControl.sol:ThriveProtocolAccessControl
 ```
 
 Example 2 (libs):
 
 ```sh
-forge verify-contract 0xF860dc2CC31c75b5CA163DB20D1Fe9fDb504f4cf lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy --chain polygon-amoy
+forge verify-contract --chain sepolia --etherscan-api-key $SCAN_API_KEY --watch --constructor-args $(cast abi-encode "constructor(address,bytes)" "0xDC448EA9951e2A6038260784Cc96A0adb81Cc4f8" "0x") 0x6508Dc35baF1dd6b07874Ff6174E1e8E989E8300 lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy
 ```
 
 ## Initializing Submodules
