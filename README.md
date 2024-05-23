@@ -73,7 +73,7 @@ source .env
 ### Deploying Contracts
 
 ```sh
-forge script --chain <chain name> [--legacy] --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $SCAN_API_KEY <path>/<name.s.sol>
+forge script --chain <chain name> [--legacy] --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $SCAN_API_KEY [--sig "run()"] <path>/<name.s.sol>
 ```
 
 Deploy the `ThriveProtocolAccessControl` with specific arguments:
