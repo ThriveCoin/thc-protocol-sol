@@ -77,6 +77,16 @@ contract ThriveProtocolNativeReward is OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /**
+     * @notice Allows depositing native tokens without data
+     */
+    receive() external payable {}
+
+    /**
+     * @notice Allows depositing native tokens with arbitrary data
+     */
+    fallback() external payable {}
+
+    /**
      * @notice Withdraw native tokens from the contract.
      * This function allows users to withdraw their rewards from the contract.
      * Users can only withdraw rewards that they have earned.

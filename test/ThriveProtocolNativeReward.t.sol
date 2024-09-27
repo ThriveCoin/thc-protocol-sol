@@ -40,7 +40,7 @@ contract ThriveProtocolNativeRewardTest is Test {
         );
         address rewardProxy =
             address(new ERC1967Proxy(address(rewardImpl), rewardData));
-        reward = ThriveProtocolNativeReward(rewardProxy);
+        reward = ThriveProtocolNativeReward(payable(rewardProxy));
         vm.stopPrank();
 
         recipients = [address(2), address(3)];

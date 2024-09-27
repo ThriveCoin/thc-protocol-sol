@@ -21,7 +21,7 @@ contract ThriveProtocolNativeRewardScript is Script {
 
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
-        implementation = ThriveProtocolNativeReward(address(proxy));
+        implementation = ThriveProtocolNativeReward(payable(address(proxy)));
         implementation.initialize(accessControl, role);
         vm.stopBroadcast();
 
