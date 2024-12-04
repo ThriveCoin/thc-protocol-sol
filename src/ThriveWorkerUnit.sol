@@ -95,6 +95,23 @@ contract ThriveWorkerUnit {
     }
 
     /**
+     * @notice Deposit native tokens into the contract.
+     */
+    function deposit() external payable {
+        require(msg.value > 0, "Deposit amount must be greater than zero");
+    }
+
+    /**
+     * @notice Allows depositing native tokens without data.
+     */
+    receive() external payable {}
+
+    /**
+     * @notice Allows depositing native tokens with arbitrary data.
+     */
+    fallback() external payable {}
+
+    /**
      * @notice Rewards a user for completing the work unit.
      * @param _recipient Address of the contributor.
      * @param _reason Reason for the reward.
@@ -133,19 +150,12 @@ contract ThriveWorkerUnit {
         balanceOf[msg.sender] -= _amount;
 
         if (rewardToken == address(0)) {
-            // Native token transfer
             require(address(this).balance >= _amount, "Insufficient contract balance");
             payable(msg.sender).transfer(_amount);
         } else {
-            // ERC20 token transfer
             IERC20(rewardToken).transfer(msg.sender, _amount);
         }
 
         emit Withdrawal(msg.sender, _amount);
     }
-
-    /**
-     * @dev Fallback function to receive native tokens.
-     */
-    receive() external payable {}
 }
