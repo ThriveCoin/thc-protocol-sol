@@ -12,5 +12,5 @@ interface IBadgeQuery {
      * @param badgeId The ID of the badge to check.
      * @return hasBadge A boolean indicating whether the address holds the badge.
      */
-    function hasBadge(address account, uint256 badgeId) external view returns (bool hasBadge);
+    function hasBadge(address account, bytes32 badgeId) external view returns (bool hasBadge);
 }
