@@ -8,23 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @dev Contract of a work unit representing a task where contributors complete and earn rewards.
  */
 contract ThriveWorkerUnit {
-    struct Metadata {
-        bytes32 requiredBadge;
-        address assignedAddress;
-        address validator;
-        string validationMetadata;
-        uint256 metadataVersion;
-        string metadata;
-    }
-
     address public immutable moderator;
     address public immutable rewardToken;
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
     uint256 public immutable deadline;
     uint256 public immutable maxCompletionsPerUser;
-
-    Metadata public metadataInfo;
+    address public immutable assignedAddress;
+    string public metadata;
 
     enum Status {
         Active,
@@ -40,7 +31,6 @@ contract ThriveWorkerUnit {
 
     /**
      * @notice Constructor to initialize the work unit.
-     * Reduced number of parameters passed to avoid "stack too deep".
      */
     constructor(
         address _moderator,
@@ -48,7 +38,9 @@ contract ThriveWorkerUnit {
         uint256 _rewardAmount,
         uint256 _maxRewards,
         uint256 _deadline,
-        uint256 _maxCompletionsPerUser
+        uint256 _maxCompletionsPerUser,
+        address _assignedAddress,
+        string memory _metadata
     ) {
         require(_moderator != address(0), "Moderator address is required");
         require(_deadline > block.timestamp, "Deadline must be in the future");
@@ -59,30 +51,10 @@ contract ThriveWorkerUnit {
         maxRewards = _maxRewards;
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
+        assignedAddress = _assignedAddress;
+        metadata = _metadata;
 
         status = Status.Active;
-    }
-
-    /**
-     * @notice Sets the metadata for the work unit. Update after creation also.
-     */
-    function setMetadata(
-        bytes32 _requiredBadge,
-        address _assignedAddress,
-        address _validator,
-        string memory _validationMetadata,
-        uint256 _metadataVersion,
-        string memory _metadata
-    ) external {
-        require(msg.sender == moderator, "Only moderator can update metadata");
-        metadataInfo = Metadata({
-            requiredBadge: _requiredBadge,
-            assignedAddress: _assignedAddress,
-            validator: _validator,
-            validationMetadata: _validationMetadata,
-            metadataVersion: _metadataVersion,
-            metadata: _metadata
-        });
     }
 
     /**
@@ -117,7 +89,6 @@ contract ThriveWorkerUnit {
      * @param _reason Reason for the reward.
      */
     function reward(address _recipient, string calldata _reason) external {
-        require(status == Status.Active, "Work unit is not active");
         require(block.timestamp <= deadline, "Work unit has expired");
         require(
             completions[_recipient] < maxCompletionsPerUser,
@@ -127,9 +98,11 @@ contract ThriveWorkerUnit {
             balanceOf[_recipient] + rewardAmount <= maxRewards,
             "Reward pool exceeded"
         );
-        if (metadataInfo.assignedAddress != address(0)) {
+        require(address(this).balance >= rewardAmount, "Insufficient contract balance");
+
+        if (assignedAddress != address(0)) {
             require(
-                _recipient == metadataInfo.assignedAddress,
+                _recipient == assignedAddress,
                 "Work unit restricted to a specific address"
             );
         }
