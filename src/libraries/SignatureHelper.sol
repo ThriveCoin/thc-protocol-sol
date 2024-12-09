@@ -18,14 +18,6 @@ library SignatureHelper {
         );
     }
 
-    function recoverSigner(bytes32 hash, bytes memory signature)
-        internal
-        pure
-        returns (address)
-    {
-        return ECDSA.recover(hash, signature);
-    }
-
     function verifyBridgeRequest(
         address signer,
         bytes32 hash,
