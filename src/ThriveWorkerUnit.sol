@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IBadgeQuery.sol";
 
 /**
  * @title ThriveWorkerUnit
@@ -9,13 +10,22 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract ThriveWorkerUnit {
     address public immutable moderator;
-    address public immutable rewardToken;
-    uint256 public immutable rewardAmount;
-    uint256 public immutable maxRewards;
-    uint256 public immutable deadline;
-    uint256 public immutable maxCompletionsPerUser;
-    address public immutable assignedAddress;
+    address public rewardToken;
+    uint256 public rewardAmount;
+    uint256 public maxRewards;
+    uint256 public deadline;
+    uint256 public maxCompletionsPerUser;
+    uint256 public validationRewardAmount;
+    bytes32[] public requiredBadges;
+    address[] public validators;
+    address public assignedContributor;
+    string public validationMetadata;
+    string public metadataVersion;
     string public metadata;
+
+    mapping(address => uint256) public completions;
+
+    IBadgeQuery public badgeQuery;
 
     enum Status {
         Active,
@@ -23,15 +33,34 @@ contract ThriveWorkerUnit {
     }
     Status public status;
 
-    mapping(address => uint256) public completions;
-    mapping(address => uint256) public balanceOf;
+    struct Confirmation {
+        address contributor;
+        string validationMetadata;
+        uint256 rewardAmount;
+        address validator;
+    }
+    Confirmation[] public confirmations;
 
-    event Reward(address indexed recipient, uint256 amount, string reason);
-    event Withdrawal(address indexed user, uint256 amount);
+    event ConfirmationAdded(
+        address indexed contributor,
+        string validationMetadata,
+        uint256 rewardAmount,
+        address indexed validator
+    );
 
-    /**
-     * @notice Constructor to initialize the work unit.
-     */
+    event ConfigurationUpdated(string field, uint256 newValue);
+    event MetadataUpdated(string field, string newValue);
+
+    modifier onlyModerator() {
+        require(msg.sender == moderator, "Only the moderator can perform this action");
+        _;
+    }
+
+    modifier onlyValidator() {
+        require(isValidator(msg.sender), "Only a validator can perform this action");
+        _;
+    }
+
     constructor(
         address _moderator,
         address _rewardToken,
@@ -39,11 +68,15 @@ contract ThriveWorkerUnit {
         uint256 _maxRewards,
         uint256 _deadline,
         uint256 _maxCompletionsPerUser,
-        address _assignedAddress,
-        string memory _metadata
+        address[] memory _validators,
+        string memory _validationMetadata,
+        string memory _metadataVersion,
+        string memory _metadata,
+        address _badgeQuery
     ) {
         require(_moderator != address(0), "Moderator address is required");
         require(_deadline > block.timestamp, "Deadline must be in the future");
+        require(_badgeQuery != address(0), "BadgeQuery address is required");
 
         moderator = _moderator;
         rewardToken = _rewardToken;
@@ -51,84 +84,154 @@ contract ThriveWorkerUnit {
         maxRewards = _maxRewards;
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
-        assignedAddress = _assignedAddress;
+        validators = _validators;
+        validationMetadata = _validationMetadata;
+        metadataVersion = _metadataVersion;
         metadata = _metadata;
+        badgeQuery = IBadgeQuery(_badgeQuery);
 
         status = Status.Active;
     }
 
-    /**
-     * @notice Updates the status of the work unit to Expired if the deadline has passed.
-     */
+    function isValidator(address user) public view returns (bool) {
+        for (uint256 i = 0; i < validators.length; i++) {
+            if (validators[i] == user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _confirm(address contributor, string memory inputValidationMetadata) internal virtual {
+        require(status == Status.Active, "Work unit is not active");
+        require(block.timestamp <= deadline, "Work unit has expired");
+        require(
+            completions[contributor] < maxCompletionsPerUser,
+            "Max completions per user reached"
+        );
+        require(
+            assignedContributor == address(0) || assignedContributor == contributor,
+            "Contributor is not eligible for this work unit"
+        );
+
+        for (uint256 i = 0; i < requiredBadges.length; i++) {
+            require(
+                badgeQuery.hasBadge(contributor, requiredBadges[i]),
+                "Contributor does not hold the required badge"
+            );
+        }
+
+        completions[contributor] += 1;
+
+        // contributor
+        if (rewardToken == address(0)) {
+            require(address(this).balance >= rewardAmount, "Insufficient contract balance");
+            payable(contributor).transfer(rewardAmount);
+        } else {
+            IERC20(rewardToken).transfer(contributor, rewardAmount);
+        }
+
+        // validator
+        if (rewardToken == address(0)) {
+            require(address(this).balance >= validationRewardAmount, "Insufficient contract balance");
+            payable(msg.sender).transfer(validationRewardAmount);
+        } else {
+            IERC20(rewardToken).transfer(msg.sender, validationRewardAmount);
+        }
+
+        confirmations.push(
+            Confirmation({
+                contributor: contributor,
+                validationMetadata: inputValidationMetadata,
+                rewardAmount: rewardAmount,
+                validator: msg.sender
+            })
+        );
+
+        emit ConfirmationAdded(contributor, inputValidationMetadata, rewardAmount, msg.sender);
+    }
+
+    function confirm(address contributor, string memory inputValidationMetadata) external onlyValidator {
+        _confirm(contributor, inputValidationMetadata);
+    }
+
     function updateStatus() external {
         if (block.timestamp > deadline) {
             status = Status.Expired;
         }
     }
 
-    /**
-     * @notice Deposit native tokens into the contract.
-     */
-    function deposit() external payable {
-        require(msg.value > 0, "Deposit amount must be greater than zero");
+    function setAssignedContributor(address _assignedContributor) external onlyModerator {
+        assignedContributor = _assignedContributor;
+        emit MetadataUpdated("assignedContributor", addressToString(_assignedContributor));
     }
 
-    /**
-     * @notice Allows depositing native tokens without data.
-     */
+    function setRewardToken(address _rewardToken) external onlyModerator {
+        rewardToken = _rewardToken;
+        emit MetadataUpdated("rewardToken", addressToString(_rewardToken));
+    }
+
+    function setRewardAmount(uint256 _rewardAmount) external onlyModerator {
+        rewardAmount = _rewardAmount;
+        emit ConfigurationUpdated("rewardAmount", _rewardAmount);
+    }
+
+    function setMaxRewards(uint256 _maxRewards) external onlyModerator {
+        maxRewards = _maxRewards;
+        emit ConfigurationUpdated("maxRewards", _maxRewards);
+    }
+
+    function setDeadline(uint256 _deadline) external onlyModerator {
+        require(_deadline > block.timestamp, "Deadline must be in the future");
+        deadline = _deadline;
+        emit ConfigurationUpdated("deadline", _deadline);
+    }
+
+    function setMaxCompletionsPerUser(uint256 _maxCompletionsPerUser) external onlyModerator {
+        maxCompletionsPerUser = _maxCompletionsPerUser;
+        emit ConfigurationUpdated("maxCompletionsPerUser", _maxCompletionsPerUser);
+    }
+
+    function setValidationRewardAmount(uint256 _validationRewardAmount) external onlyModerator {
+        validationRewardAmount = _validationRewardAmount;
+        emit ConfigurationUpdated("validationRewardAmount", _validationRewardAmount);
+    }
+
+    function setValidators(address[] calldata _validators) external onlyModerator {
+        validators = _validators;
+        emit MetadataUpdated("validators", "Updated validator list");
+    }
+
+    function setValidationMetadata(string calldata _validationMetadata) external onlyModerator {
+        validationMetadata = _validationMetadata;
+        emit MetadataUpdated("validationMetadata", _validationMetadata);
+    }
+
+    function setMetadataVersion(string calldata _metadataVersion) external onlyModerator {
+        metadataVersion = _metadataVersion;
+        emit MetadataUpdated("metadataVersion", _metadataVersion);
+    }
+
+    function setMetadata(string calldata _metadata) external onlyModerator {
+        metadata = _metadata;
+        emit MetadataUpdated("metadata", _metadata);
+    }
+
+    function addressToString(address _addr) internal pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_addr)));
+        bytes memory alphabet = "0123456789abcdef";
+
+        bytes memory str = new bytes(42);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint256 i = 0; i < 20; i++) {
+            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
+    }
+
     receive() external payable {}
 
-    /**
-     * @notice Allows depositing native tokens with arbitrary data.
-     */
     fallback() external payable {}
-
-    /**
-     * @notice Rewards a user for completing the work unit.
-     * @param _recipient Address of the contributor.
-     * @param _reason Reason for the reward.
-     */
-    function reward(address _recipient, string calldata _reason) external {
-        require(block.timestamp <= deadline, "Work unit has expired");
-        require(
-            completions[_recipient] < maxCompletionsPerUser,
-            "Max completions per user reached"
-        );
-        require(
-            balanceOf[_recipient] + rewardAmount <= maxRewards,
-            "Reward pool exceeded"
-        );
-        require(address(this).balance >= rewardAmount, "Insufficient contract balance");
-
-        if (assignedAddress != address(0)) {
-            require(
-                _recipient == assignedAddress,
-                "Work unit restricted to a specific address"
-            );
-        }
-
-        completions[_recipient] += 1;
-        balanceOf[_recipient] += rewardAmount;
-
-        emit Reward(_recipient, rewardAmount, _reason);
-    }
-
-    /**
-     * @notice Allows a user to withdraw their earned rewards.
-     * @param _amount Amount to withdraw.
-     */
-    function withdraw(uint256 _amount) external {
-        require(balanceOf[msg.sender] >= _amount, "Insufficient balance");
-
-        balanceOf[msg.sender] -= _amount;
-
-        if (rewardToken == address(0)) {
-            require(address(this).balance >= _amount, "Insufficient contract balance");
-            payable(msg.sender).transfer(_amount);
-        } else {
-            IERC20(rewardToken).transfer(msg.sender, _amount);
-        }
-
-        emit Withdrawal(msg.sender, _amount);
-    }
 }
