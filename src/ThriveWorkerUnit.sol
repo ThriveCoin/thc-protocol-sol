@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./IBadgeQuery.sol";
 
 /**
@@ -9,38 +10,29 @@ import "./IBadgeQuery.sol";
  * @dev Contract of a work unit representing a task where contributors complete and earn rewards.
  */
 contract ThriveWorkerUnit {
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     address public immutable moderator;
-    address public rewardToken;
-    uint256 public rewardAmount;
-    uint256 public maxRewards;
-    uint256 public deadline;
+    address public immutable rewardToken;
+    uint256 public immutable rewardAmount;
+    uint256 public immutable maxRewards;
+    uint256 public immutable validationRewardAmount;
     uint256 public maxCompletionsPerUser;
-    uint256 public validationRewardAmount;
-    bytes32[] public requiredBadges;
-    address[] public validators;
-    address public assignedContributor;
+    uint256 public deadline;
+
+    IBadgeQuery public badgeQuery;
+    bool public ready;
+
     string public validationMetadata;
     string public metadataVersion;
     string public metadata;
 
+    EnumerableSet.AddressSet private validators;
+    EnumerableSet.Bytes32Set private requiredBadges;
     mapping(address => uint256) public completions;
 
-    IBadgeQuery public badgeQuery;
-
-    enum Status {
-        Active,
-        Expired
-    }
-    Status public status;
-
-    struct Confirmation {
-        address contributor;
-        string validationMetadata;
-        uint256 rewardAmount;
-        address validator;
-    }
-    Confirmation[] public confirmations;
-
+    event Initialized();
     event ConfirmationAdded(
         address indexed contributor,
         string validationMetadata,
@@ -57,7 +49,12 @@ contract ThriveWorkerUnit {
     }
 
     modifier onlyValidator() {
-        require(isValidator(msg.sender), "Only a validator can perform this action");
+        require(validators.contains(msg.sender), "Only a validator can perform this action");
+        _;
+    }
+
+    modifier onceReady() {
+        require(ready, "Contract is not ready");
         _;
     }
 
@@ -75,163 +72,78 @@ contract ThriveWorkerUnit {
         address _badgeQuery
     ) {
         require(_moderator != address(0), "Moderator address is required");
-        require(_deadline > block.timestamp, "Deadline must be in the future");
         require(_badgeQuery != address(0), "BadgeQuery address is required");
+        require(_deadline > block.timestamp, "Deadline must be in the future");
 
         moderator = _moderator;
         rewardToken = _rewardToken;
         rewardAmount = _rewardAmount;
         maxRewards = _maxRewards;
+        validationRewardAmount = _rewardAmount / 10; // Validators = 10% of contributor reward
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
-        validators = _validators;
+
+        for (uint256 i = 0; i < _validators.length; i++) {
+            validators.add(_validators[i]);
+        }
+
         validationMetadata = _validationMetadata;
         metadataVersion = _metadataVersion;
         metadata = _metadata;
         badgeQuery = IBadgeQuery(_badgeQuery);
-
-        status = Status.Active;
     }
 
-    function isValidator(address user) public view returns (bool) {
-        for (uint256 i = 0; i < validators.length; i++) {
-            if (validators[i] == user) {
-                return true;
-            }
-        }
-        return false;
+    function initialize() external payable onlyModerator {
+        uint256 requiredEther = validators.length() * validationRewardAmount;
+        require(msg.value >= requiredEther, "Insufficient Ether for validators");
+        require(IERC20(rewardToken).balanceOf(msg.sender) >= rewardAmount * maxRewards, "Insufficient ERC20 for contributors");
+
+        IERC20(rewardToken).transferFrom(msg.sender, address(this), rewardAmount * maxRewards);
+        ready = true;
+
+        emit Initialized();
     }
 
-    function _confirm(address contributor, string memory inputValidationMetadata) internal virtual {
-        require(status == Status.Active, "Work unit is not active");
+    function confirm(address contributor, string memory inputValidationMetadata) external onlyValidator onceReady {
         require(block.timestamp <= deadline, "Work unit has expired");
-        require(
-            completions[contributor] < maxCompletionsPerUser,
-            "Max completions per user reached"
-        );
-        require(
-            assignedContributor == address(0) || assignedContributor == contributor,
-            "Contributor is not eligible for this work unit"
-        );
+        require(completions[contributor] < maxCompletionsPerUser, "Max completions per user reached");
 
-        for (uint256 i = 0; i < requiredBadges.length; i++) {
-            require(
-                badgeQuery.hasBadge(contributor, requiredBadges[i]),
-                "Contributor does not hold the required badge"
-            );
+        for (uint256 i = 0; i < requiredBadges.length(); i++) {
+            require(badgeQuery.hasBadge(contributor, requiredBadges.at(i)), "Contributor lacks required badge");
         }
 
-        completions[contributor] += 1;
-
+        completions[contributor]++;
         // contributor
-        if (rewardToken == address(0)) {
-            require(address(this).balance >= rewardAmount, "Insufficient contract balance");
-            payable(contributor).transfer(rewardAmount);
-        } else {
-            IERC20(rewardToken).transfer(contributor, rewardAmount);
-        }
-
+        IERC20(rewardToken).transfer(contributor, rewardAmount);
         // validator
-        if (rewardToken == address(0)) {
-            require(address(this).balance >= validationRewardAmount, "Insufficient contract balance");
-            payable(msg.sender).transfer(validationRewardAmount);
-        } else {
-            IERC20(rewardToken).transfer(msg.sender, validationRewardAmount);
-        }
-
-        confirmations.push(
-            Confirmation({
-                contributor: contributor,
-                validationMetadata: inputValidationMetadata,
-                rewardAmount: rewardAmount,
-                validator: msg.sender
-            })
-        );
+        payable(msg.sender).transfer(validationRewardAmount);
 
         emit ConfirmationAdded(contributor, inputValidationMetadata, rewardAmount, msg.sender);
     }
 
-    function confirm(address contributor, string memory inputValidationMetadata) external onlyValidator {
-        _confirm(contributor, inputValidationMetadata);
+    function addValidator(address _validator) external onlyModerator {
+        validators.add(_validator);
     }
 
-    function updateStatus() external {
-        if (block.timestamp > deadline) {
-            status = Status.Expired;
-        }
+    function removeValidator(address _validator) external onlyModerator {
+        validators.remove(_validator);
     }
 
-    function setAssignedContributor(address _assignedContributor) external onlyModerator {
-        assignedContributor = _assignedContributor;
-        emit MetadataUpdated("assignedContributor", addressToString(_assignedContributor));
+    function addRequiredBadge(bytes32 badge) external onlyModerator {
+        requiredBadges.add(badge);
     }
 
-    function setRewardToken(address _rewardToken) external onlyModerator {
-        rewardToken = _rewardToken;
-        emit MetadataUpdated("rewardToken", addressToString(_rewardToken));
+    function removeRequiredBadge(bytes32 badge) external onlyModerator {
+        requiredBadges.remove(badge);
     }
 
-    function setRewardAmount(uint256 _rewardAmount) external onlyModerator {
-        rewardAmount = _rewardAmount;
-        emit ConfigurationUpdated("rewardAmount", _rewardAmount);
+    function getValidators() external view returns (address[] memory) {
+        return validators.values();
     }
 
-    function setMaxRewards(uint256 _maxRewards) external onlyModerator {
-        maxRewards = _maxRewards;
-        emit ConfigurationUpdated("maxRewards", _maxRewards);
-    }
-
-    function setDeadline(uint256 _deadline) external onlyModerator {
-        require(_deadline > block.timestamp, "Deadline must be in the future");
-        deadline = _deadline;
-        emit ConfigurationUpdated("deadline", _deadline);
-    }
-
-    function setMaxCompletionsPerUser(uint256 _maxCompletionsPerUser) external onlyModerator {
-        maxCompletionsPerUser = _maxCompletionsPerUser;
-        emit ConfigurationUpdated("maxCompletionsPerUser", _maxCompletionsPerUser);
-    }
-
-    function setValidationRewardAmount(uint256 _validationRewardAmount) external onlyModerator {
-        validationRewardAmount = _validationRewardAmount;
-        emit ConfigurationUpdated("validationRewardAmount", _validationRewardAmount);
-    }
-
-    function setValidators(address[] calldata _validators) external onlyModerator {
-        validators = _validators;
-        emit MetadataUpdated("validators", "Updated validator list");
-    }
-
-    function setValidationMetadata(string calldata _validationMetadata) external onlyModerator {
-        validationMetadata = _validationMetadata;
-        emit MetadataUpdated("validationMetadata", _validationMetadata);
-    }
-
-    function setMetadataVersion(string calldata _metadataVersion) external onlyModerator {
-        metadataVersion = _metadataVersion;
-        emit MetadataUpdated("metadataVersion", _metadataVersion);
-    }
-
-    function setMetadata(string calldata _metadata) external onlyModerator {
-        metadata = _metadata;
-        emit MetadataUpdated("metadata", _metadata);
-    }
-
-    function addressToString(address _addr) internal pure returns (string memory) {
-        bytes32 value = bytes32(uint256(uint160(_addr)));
-        bytes memory alphabet = "0123456789abcdef";
-
-        bytes memory str = new bytes(42);
-        str[0] = "0";
-        str[1] = "x";
-        for (uint256 i = 0; i < 20; i++) {
-            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
-            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
-        }
-        return string(str);
+    function getRequiredBadges() external view returns (bytes32[] memory) {
+        return requiredBadges.values();
     }
 
     receive() external payable {}
-
-    fallback() external payable {}
 }
