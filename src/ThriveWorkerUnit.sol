@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IBadgeQuery.sol";
 
 /**
@@ -10,6 +11,7 @@ import "./IBadgeQuery.sol";
  * @dev Contract of a work unit representing a task where contributors complete and earn rewards.
  */
 contract ThriveWorkerUnit {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -18,19 +20,20 @@ contract ThriveWorkerUnit {
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
     uint256 public immutable validationRewardAmount;
+    address public immutable assignedAddress;
     uint256 public maxCompletionsPerUser;
     uint256 public deadline;
-
-    IBadgeQuery public badgeQuery;
-    bool public ready;
-
     string public validationMetadata;
     string public metadataVersion;
     string public metadata;
 
     EnumerableSet.AddressSet private validators;
     EnumerableSet.Bytes32Set private requiredBadges;
+
     mapping(address => uint256) public completions;
+
+    IBadgeQuery public badgeQuery;
+    bool public ready;
 
     event Initialized();
     event ConfirmationAdded(
@@ -39,22 +42,20 @@ contract ThriveWorkerUnit {
         uint256 rewardAmount,
         address indexed validator
     );
-
-    event ConfigurationUpdated(string field, uint256 newValue);
-    event MetadataUpdated(string field, string newValue);
+    event Withdrawn(address token, uint256 amount);
 
     modifier onlyModerator() {
-        require(msg.sender == moderator, "Only the moderator can perform this action");
+        require(msg.sender == moderator, "ThriveProtocol: only the moderator can perform this action");
         _;
     }
 
     modifier onlyValidator() {
-        require(validators.contains(msg.sender), "Only a validator can perform this action");
+        require(validators.contains(msg.sender), "ThriveProtocol: only a validator can perform this action");
         _;
     }
 
     modifier onceReady() {
-        require(ready, "Contract is not ready");
+        require(ready, "ThriveProtocol: contract is not ready");
         _;
     }
 
@@ -69,19 +70,21 @@ contract ThriveWorkerUnit {
         string memory _validationMetadata,
         string memory _metadataVersion,
         string memory _metadata,
-        address _badgeQuery
+        address _badgeQuery,
+        address _assignedAddress
     ) {
-        require(_moderator != address(0), "Moderator address is required");
-        require(_badgeQuery != address(0), "BadgeQuery address is required");
-        require(_deadline > block.timestamp, "Deadline must be in the future");
+        require(_moderator != address(0), "ThriveProtocol: moderator address is required");
+        require(_badgeQuery != address(0), "ThriveProtocol: badgeQuery address is required");
+        require(_deadline > block.timestamp, "ThriveProtocol: deadline must be in the future");
 
         moderator = _moderator;
         rewardToken = _rewardToken;
         rewardAmount = _rewardAmount;
         maxRewards = _maxRewards;
-        validationRewardAmount = _rewardAmount / 10; // Validators = 10% of contributor reward
+        validationRewardAmount = _rewardAmount / 10; // Validator Reward = 10% of contributor reward
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
+        assignedAddress = _assignedAddress;
 
         for (uint256 i = 0; i < _validators.length; i++) {
             validators.add(_validators[i]);
@@ -94,39 +97,36 @@ contract ThriveWorkerUnit {
     }
 
     function initialize() external payable onlyModerator {
+        require(!ready, "ThriveProtocol: already initialized");
         uint256 requiredEther = validators.length() * validationRewardAmount;
-        require(msg.value >= requiredEther, "Insufficient Ether for validators");
-        require(IERC20(rewardToken).balanceOf(msg.sender) >= rewardAmount * maxRewards, "Insufficient ERC20 for contributors");
+        uint256 totalRequiredEther = maxRewards + requiredEther;
+        require(msg.value >= totalRequiredEther, "ThriveProtocol: insufficient value for validators and contributors");
+        require(IERC20(rewardToken).balanceOf(msg.sender) >= rewardAmount * maxRewards, "ThriveProtocol: insufficient value for contributors");
 
-        IERC20(rewardToken).transferFrom(msg.sender, address(this), rewardAmount * maxRewards);
+        IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), rewardAmount * maxRewards);
         ready = true;
 
         emit Initialized();
     }
 
     function confirm(address contributor, string memory inputValidationMetadata) external onlyValidator onceReady {
-        require(block.timestamp <= deadline, "Work unit has expired");
-        require(completions[contributor] < maxCompletionsPerUser, "Max completions per user reached");
+        require(block.timestamp <= deadline, "ThriveProtocol: work unit has expired");
+        require(completions[contributor] < maxCompletionsPerUser, "ThriveProtocol: max completions per user reached");
+        if (assignedAddress != address(0)) {
+            require(contributor == assignedAddress, "ThriveProtocol: contributor is not the assigned address");
+        }
 
         for (uint256 i = 0; i < requiredBadges.length(); i++) {
-            require(badgeQuery.hasBadge(contributor, requiredBadges.at(i)), "Contributor lacks required badge");
+            require(badgeQuery.hasBadge(contributor, requiredBadges.at(i)), "ThriveProtocol: required badge missing");
         }
 
         completions[contributor]++;
         // contributor
-        IERC20(rewardToken).transfer(contributor, rewardAmount);
+        IERC20(rewardToken).safeTransfer(contributor, rewardAmount);
         // validator
         payable(msg.sender).transfer(validationRewardAmount);
 
         emit ConfirmationAdded(contributor, inputValidationMetadata, rewardAmount, msg.sender);
-    }
-
-    function addValidator(address _validator) external onlyModerator {
-        validators.add(_validator);
-    }
-
-    function removeValidator(address _validator) external onlyModerator {
-        validators.remove(_validator);
     }
 
     function addRequiredBadge(bytes32 badge) external onlyModerator {
@@ -137,12 +137,53 @@ contract ThriveWorkerUnit {
         requiredBadges.remove(badge);
     }
 
+    function setValidationMetadata(string calldata _validationMetadata) external onlyModerator {
+        validationMetadata = _validationMetadata;
+    }
+
+    function setMetadataVersion(string calldata _metadataVersion) external onlyModerator {
+        metadataVersion = _metadataVersion;
+    }
+
+    function setMetadata(string calldata _metadata) external onlyModerator {
+        metadata = _metadata;
+    }
+
+    function setDeadline(uint256 _deadline) external onlyModerator {
+        require(_deadline > block.timestamp, "ThriveProtocol: deadline must be in the future");
+        deadline = _deadline;
+    }
+
+    function setMaxCompletionsPerUser(uint256 _maxCompletionsPerUser) external onlyModerator {
+        maxCompletionsPerUser = _maxCompletionsPerUser;
+    }
+
+    function withdrawRemaining() external onlyModerator {
+        require(block.timestamp > deadline, "ThriveProtocol: work unit is still active");
+
+        uint256 remainingERC20 = IERC20(rewardToken).balanceOf(address(this));
+        if (remainingERC20 > 0) {
+            IERC20(rewardToken).safeTransfer(moderator, remainingERC20);
+            emit Withdrawn(rewardToken, remainingERC20);
+        }
+
+        uint256 remainingEther = address(this).balance;
+        if (remainingEther > 0) {
+            payable(moderator).transfer(remainingEther);
+            emit Withdrawn(address(0), remainingEther);
+        }
+    }
+
     function getValidators() external view returns (address[] memory) {
         return validators.values();
     }
 
     function getRequiredBadges() external view returns (bytes32[] memory) {
         return requiredBadges.values();
+    }
+
+    function status() external view returns (string memory) {
+        return block.timestamp <= deadline ? "active" : "expired";
     }
 
     receive() external payable {}
