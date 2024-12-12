@@ -13,20 +13,13 @@ import {ReentrancyGuard} from
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 import {SignatureHelper} from "src/libraries/SignatureHelper.sol";
 
-/**
- * @title ThriveBridgeSourceERC20
- * @notice This contract manages...
- */
-contract ThriveBridgeSourceBase is
+abstract contract ThriveBridgeSourceBase is
     OwnableUpgradeable,
     UUPSUpgradeable,
     ReentrancyGuard
 {
     using AccessControlHelper for IAccessControlEnumerable;
 
-    /**
-     * @dev Emitted when an admin rewads a user with tokens.
-     */
     event TokenLocked(
         address indexed sender,
         address indexed receiver,
@@ -36,9 +29,6 @@ contract ThriveBridgeSourceBase is
         bytes signature
     );
 
-    /**
-     * @dev Emitted when an admin rewads a user with tokens.
-     */
     event TokenUnlocked(
         address indexed sender,
         address indexed receiver,
@@ -55,16 +45,11 @@ contract ThriveBridgeSourceBase is
     mapping(address => uint256) public lockNonces;
     mapping(address => mapping(uint256 => bool)) public unlockNonces;
 
-    /**
-     * @dev Initializes the contract.
-     * @param _accessControlEnumerable The address of the AccessControlEnumerable contract.
-     * @param _role The access control role.
-     */
-    function initialize(
+    function _initialize(
         address _destContract,
         address _accessControlEnumerable,
         bytes32 _role
-    ) public initializer {
+    ) internal virtual {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
 
@@ -74,34 +59,17 @@ contract ThriveBridgeSourceBase is
         role = _role;
     }
 
-    /**
-     * @dev Overrides the authorization check for upgrading the contract implementation.
-     * Only the owner of this contract can authorize upgrades.
-     *
-     * @param newImplementation The address of the new implementation contract.
-     */
     function _authorizeUpgrade(address newImplementation)
         internal
         override
         onlyOwner
     {}
 
-    /**
-     * @dev Modifier to only allow execution by admins.
-     * If the caller is not an admin, reverts with a corresponding message
-     */
     modifier onlyAdmin() {
         accessControlEnumerable.checkRole(role, _msgSender());
         _;
     }
 
-    /**
-     * @dev Sets the AccessControlEnumerable contract address.
-     * Only the owner of this contract can call this function.
-     *
-     * @param _accessControlEnumerable The address of the new AccessControlEnumerable contract.
-     * @param _role The new access control role.
-     */
     function setAccessControlEnumerable(
         address _accessControlEnumerable,
         bytes32 _role
@@ -111,11 +79,15 @@ contract ThriveBridgeSourceBase is
         role = _role;
     }
 
+    function setDestContract(address _destContract) external onlyOwner {
+        destContract = _destContract;
+    }
+
     function lockTokens(
         address receiver,
         uint256 amount,
         bytes calldata signature
-    ) external payable {
+    ) external payable nonReentrant {
         _lockTokens(_msgSender(), receiver, amount, signature);
     }
 
@@ -124,14 +96,14 @@ contract ThriveBridgeSourceBase is
         address receiver,
         uint256 amount,
         bytes calldata signature
-    ) internal virtual nonReentrant {
+    ) internal virtual {
         require(amount > 0, "ThriveProtocol: amount must be greater than zero");
 
         uint256 nonce = lockNonces[sender];
         lockNonces[sender]++;
 
         bytes32 hash = SignatureHelper.hashBridgeRequest(
-            destContract, sender, receiver, nonce, amount
+            address(this), sender, receiver, nonce, amount
         );
         bool validSig =
             SignatureHelper.verifyBridgeRequest(sender, hash, signature);
@@ -150,7 +122,7 @@ contract ThriveBridgeSourceBase is
         uint256 amount,
         uint256 nonce,
         bytes calldata signature
-    ) external onlyAdmin {
+    ) external onlyAdmin nonReentrant {
         _unlockTokens(sender, receiver, amount, nonce, signature);
     }
 
@@ -160,7 +132,7 @@ contract ThriveBridgeSourceBase is
         uint256 amount,
         uint256 nonce,
         bytes calldata signature
-    ) internal virtual nonReentrant {
+    ) internal virtual {
         require(amount > 0, "ThriveProtocol: amount must be greater than zero");
 
         require(
@@ -170,7 +142,7 @@ contract ThriveBridgeSourceBase is
         unlockNonces[sender][nonce] = true;
 
         bytes32 hash = SignatureHelper.hashBridgeRequest(
-            address(this), sender, receiver, nonce, amount
+            destContract, sender, receiver, nonce, amount
         );
         bool validSig =
             SignatureHelper.verifyBridgeRequest(sender, hash, signature);

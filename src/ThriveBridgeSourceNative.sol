@@ -8,17 +8,21 @@ import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 import {SignatureHelper} from "src/libraries/SignatureHelper.sol";
 import {ThriveBridgeSourceBase} from "./ThriveBridgeSourceBase.sol";
 
-/**
- * @title ThriveBridgeSourceERC20
- * @notice This contract manages...
- */
 contract ThriveBridgeSourceNative is ThriveBridgeSourceBase {
+    function initialize(
+        address _destContract,
+        address _accessControlEnumerable,
+        bytes32 _role
+    ) public initializer {
+        _initialize(_destContract, _accessControlEnumerable, _role);
+    }
+
     function _lockTokens(
         address sender,
         address receiver,
         uint256 amount,
         bytes calldata signature
-    ) internal virtual override nonReentrant {
+    ) internal virtual override {
         super._lockTokens(sender, receiver, amount, signature);
         require(
             msg.value == amount,
@@ -32,7 +36,7 @@ contract ThriveBridgeSourceNative is ThriveBridgeSourceBase {
         uint256 amount,
         uint256 nonce,
         bytes calldata signature
-    ) internal virtual override nonReentrant {
+    ) internal virtual override {
         super._unlockTokens(sender, receiver, amount, nonce, signature);
         payable(receiver).transfer(amount);
     }

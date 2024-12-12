@@ -9,17 +9,21 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IThriveIERC20Wrapper} from "src/IThriveIERC20Wrapper.sol";
 
 contract ThriveIERC20Wrapper is IThriveIERC20Wrapper, ERC20Burnable, Ownable {
+    uint8 private _decimals;
     address public minter;
 
-    constructor(string memory name, string memory symbol)
-        ERC20(name, symbol)
-        Ownable(msg.sender)
-    {}
+    constructor(string memory name_, string memory symbol_, uint8 decimals_)
+        ERC20(name_, symbol_)
+        Ownable(_msgSender())
+    {
+        _decimals = decimals_;
+        minter = _msgSender();
+    }
 
-    /**
-     * @dev Modifier to only allow execution by minter.
-     * If the caller is not minter, reverts with a corresponding message
-     */
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
+    }
+
     modifier onlyMinter() {
         require(_msgSender() == minter, "ThriveProtocol: must be minter");
         _;
