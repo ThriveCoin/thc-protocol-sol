@@ -118,9 +118,9 @@ contract ThriveBridgeDestination is
         bytes32 hash = SignatureHelper.hashBridgeRequest(
             srcContract, sender, receiver, nonce, amount
         );
-        bool validSig =
+        bool validSignature =
             SignatureHelper.verifyBridgeRequest(sender, hash, signature);
-        require(validSig, "ThriveProtocol: invalid signature");
+        require(validSignature, "ThriveProtocol: invalid signature");
 
         supply += amount;
 
@@ -153,9 +153,9 @@ contract ThriveBridgeDestination is
         bytes32 hash = SignatureHelper.hashBridgeRequest(
             address(this), sender, receiver, nonce, amount
         );
-        bool validSig =
+        bool validSignature =
             SignatureHelper.verifyBridgeRequest(sender, hash, signature);
-        require(validSig, "ThriveProtocol: invalid signature");
+        require(validSignature, "ThriveProtocol: invalid signature");
 
         supply -= amount;
 
