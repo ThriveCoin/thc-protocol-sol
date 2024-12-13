@@ -19,7 +19,7 @@ contract ThriveWorkerUnit {
     address public immutable rewardToken;
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
-    uint256 public immutable validationRewardAmount;
+    uint256 public validationRewardAmount;
     address public assignedAddress;
     uint256 public maxCompletionsPerUser;
     uint256 public deadline;
@@ -80,7 +80,6 @@ contract ThriveWorkerUnit {
         rewardToken = _rewardToken;
         rewardAmount = _rewardAmount;
         maxRewards = _maxRewards;
-        validationRewardAmount = _rewardAmount / 10; // Validator Reward = 10% of contributor reward
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
 
@@ -96,9 +95,9 @@ contract ThriveWorkerUnit {
 
     function initialize() external payable onlyModerator {
         require(!ready, "ThriveProtocol: already initialized");
-        uint256 requiredEther = validators.length() * validationRewardAmount;
-        uint256 totalRequiredEther = maxRewards + requiredEther;
-        require(msg.value >= totalRequiredEther, "ThriveProtocol: insufficient value for validators and contributors");
+        require(validationRewardAmount > 0, "ThriveProtocol: validation reward amount not set");
+        uint256 totalRequiredValue = maxRewards * validationRewardAmount;
+        require(msg.value >= totalRequiredValue, "ThriveProtocol: insufficient value for validators and contributors");
         require(IERC20(rewardToken).balanceOf(msg.sender) >= rewardAmount * maxRewards, "ThriveProtocol: insufficient value for contributors");
 
         IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), rewardAmount * maxRewards);
@@ -114,9 +113,16 @@ contract ThriveWorkerUnit {
             require(contributor == assignedAddress, "ThriveProtocol: contributor is not the assigned address");
         }
 
+        bool hasAtLeastOneBadge = false;
+
         for (uint256 i = 0; i < requiredBadges.length(); i++) {
-            require(badgeQuery.hasBadge(contributor, requiredBadges.at(i)), "ThriveProtocol: required badge missing");
+            if (badgeQuery.hasBadge(contributor, requiredBadges.at(i))) {
+                hasAtLeastOneBadge = true;
+                break;
+            }
         }
+
+        require(hasAtLeastOneBadge, "ThriveProtocol: required badge is missing!");
 
         completions[contributor]++;
         // contributor
@@ -129,6 +135,10 @@ contract ThriveWorkerUnit {
 
     function setAssignedAddress(address _assignedAddress) external onlyModerator {
         assignedAddress = _assignedAddress;
+    }
+
+    function setValidationRewardAmount(uint256 _validationRewardAmount) external onlyModerator {
+        validationRewardAmount = _validationRewardAmount;
     }
     
     function addRequiredBadge(bytes32 badge) external onlyModerator {
