@@ -20,7 +20,7 @@ contract ThriveWorkerUnit {
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
     uint256 public immutable validationRewardAmount;
-    address public immutable assignedAddress;
+    address public assignedAddress;
     uint256 public maxCompletionsPerUser;
     uint256 public deadline;
     string public validationMetadata;
@@ -70,8 +70,7 @@ contract ThriveWorkerUnit {
         string memory _validationMetadata,
         string memory _metadataVersion,
         string memory _metadata,
-        address _badgeQuery,
-        address _assignedAddress
+        address _badgeQuery
     ) {
         require(_moderator != address(0), "ThriveProtocol: moderator address is required");
         require(_badgeQuery != address(0), "ThriveProtocol: badgeQuery address is required");
@@ -84,7 +83,6 @@ contract ThriveWorkerUnit {
         validationRewardAmount = _rewardAmount / 10; // Validator Reward = 10% of contributor reward
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
-        assignedAddress = _assignedAddress;
 
         for (uint256 i = 0; i < _validators.length; i++) {
             validators.add(_validators[i]);
@@ -129,6 +127,10 @@ contract ThriveWorkerUnit {
         emit ConfirmationAdded(contributor, inputValidationMetadata, rewardAmount, msg.sender);
     }
 
+    function setAssignedAddress(address _assignedAddress) external onlyModerator {
+        assignedAddress = _assignedAddress;
+    }
+    
     function addRequiredBadge(bytes32 badge) external onlyModerator {
         requiredBadges.add(badge);
     }
