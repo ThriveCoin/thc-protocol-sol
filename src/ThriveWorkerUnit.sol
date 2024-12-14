@@ -128,7 +128,8 @@ contract ThriveWorkerUnit {
         // contributor
         IERC20(rewardToken).safeTransfer(contributor, rewardAmount);
         // validator
-        payable(msg.sender).transfer(validationRewardAmount);
+        (bool success, ) = msg.sender.call{value: validationRewardAmount}("");
+        require(success, "ThriveProtocol: Ether transfer to validator failed");
 
         emit ConfirmationAdded(contributor, inputValidationMetadata, rewardAmount, msg.sender);
     }
@@ -181,7 +182,8 @@ contract ThriveWorkerUnit {
 
         uint256 remainingEther = address(this).balance;
         if (remainingEther > 0) {
-            payable(moderator).transfer(remainingEther);
+            (bool success, ) = payable(moderator).call{value: remainingEther}("");
+            require(success, "ThriveProtocol: Ether transfer to validator failed");
             emit Withdrawn(address(0), remainingEther);
         }
     }
