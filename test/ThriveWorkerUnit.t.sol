@@ -41,7 +41,92 @@ contract ThriveWorkerUnitTest is Test {
         thriveWorkerUnit.initialize{value: 100 ether}();
     }
 
-    function testInitialization() public {
+    function testConstructorRequirements() public {
+        vm.expectRevert("ThriveProtocol: moderator address is required");
+
+        new ThriveWorkerUnit(
+            address(0),
+            address(mockToken),
+            10,
+            100 ether,
+            block.timestamp + 1 days,
+            2,
+            validators,
+            "ValidationMetadata",
+            "1.0",
+            "Task metadata",
+            badgeQuery
+        );
+
+        vm.expectRevert("ThriveProtocol: badgeQuery address is required");
+
+        new ThriveWorkerUnit(
+            moderator,
+            address(mockToken),
+            10,
+            100 ether,
+            block.timestamp + 1 days,
+            2,
+            validators,
+            "ValidationMetadata",
+            "1.0",
+            "Task metadata",
+            address(0)
+        );
+    }
+
+    function testInitializeRequirements() public {
+        ThriveWorkerUnit newWorkerUnit = new ThriveWorkerUnit(
+            moderator,
+            address(mockToken),
+            10,
+            100 ether,
+            block.timestamp + 1 days,
+            2,
+            validators,
+            "ValidationMetadata",
+            "1.0",
+            "Task metadata",
+            badgeQuery
+        );
+
+        mockToken.approve(address(newWorkerUnit), 1_000 ether);
+
+        // case: already initialized
+        newWorkerUnit.setValidationRewardAmount(1);
+        newWorkerUnit.initialize{value: 100 ether}();
+        vm.expectRevert("ThriveProtocol: already initialized");
+        newWorkerUnit.initialize{value: 100 ether}();
+
+        // case: validation reward amount not set
+        ThriveWorkerUnit uninitializedWorkerUnit = new ThriveWorkerUnit(
+            moderator,
+            address(mockToken),
+            10,
+            100 ether,
+            block.timestamp + 1 days,
+            2,
+            validators,
+            "ValidationMetadata",
+            "1.0",
+            "Task metadata",
+            badgeQuery
+        );
+
+        mockToken.approve(address(uninitializedWorkerUnit), 1_000 ether);
+
+        vm.expectRevert("ThriveProtocol: validation reward amount not set");
+        uninitializedWorkerUnit.initialize{value: 100 ether}();
+
+        // case: insufficient value for validators and contributors
+        uninitializedWorkerUnit.setValidationRewardAmount(1);
+        vm.expectRevert(
+            "ThriveProtocol: insufficient value for validators and contributors"
+        );
+        uninitializedWorkerUnit.initialize{value: 1 ether}();
+    }
+
+    function testInitialization() public view {
         assertEq(thriveWorkerUnit.rewardAmount(), 10);
         assertEq(thriveWorkerUnit.maxRewards(), 100 ether);
         assertEq(thriveWorkerUnit.status(), "active");
@@ -51,6 +136,61 @@ contract ThriveWorkerUnitTest is Test {
         assertEq(validatorList[1], validators[1]);
 
         assertEq(address(thriveWorkerUnit).balance, 100 ether);
+    }
+
+    function testConfirmRequirements() public {
+        thriveWorkerUnit.addRequiredBadge(keccak256("TestBadge"));
+
+        vm.mockCall(
+            badgeQuery,
+            abi.encodeWithSelector(IBadgeQuery.hasBadge.selector),
+            abi.encode(true)
+        );
+
+        // case: work unit expired
+        vm.warp(block.timestamp + 2 days);
+        address contributor = address(0xdead);
+        vm.prank(validators[0]);
+
+        vm.expectRevert("ThriveProtocol: work unit has expired");
+
+        thriveWorkerUnit.confirm(contributor, "TestMetadata");
+
+        // case: max completions per user reached
+        vm.warp(block.timestamp - 2 days);
+        for (uint256 i = 0; i < 2; i++) {
+            vm.prank(validators[0]);
+            thriveWorkerUnit.confirm(contributor, "TestMetadata");
+        }
+        vm.prank(validators[0]);
+
+        vm.expectRevert("ThriveProtocol: max completions per user reached");
+
+        thriveWorkerUnit.confirm(contributor, "TestMetadata");
+
+        // case: contributor is not the assigned address
+        thriveWorkerUnit.setMaxCompletionsPerUser(10);
+        thriveWorkerUnit.setAssignedAddress(address(0x123));
+
+        vm.prank(validators[0]);
+        vm.expectRevert(
+            "ThriveProtocol: contributor is not the assigned address"
+        );
+
+        thriveWorkerUnit.confirm(contributor, "TestMetadata");
+        thriveWorkerUnit.setAssignedAddress(contributor);
+
+        // case: required badge is missing
+        vm.mockCall(
+            badgeQuery,
+            abi.encodeWithSelector(IBadgeQuery.hasBadge.selector),
+            abi.encode(false)
+        );
+        vm.prank(validators[0]);
+
+        vm.expectRevert("ThriveProtocol: required badge is missing!");
+
+        thriveWorkerUnit.confirm(contributor, "TestMetadata");
     }
 
     function testConfirm() public {
@@ -103,11 +243,11 @@ contract ThriveWorkerUnitTest is Test {
 
         vm.prank(validators[0]);
         vm.expectRevert("ThriveProtocol: work unit has expired");
- 
+
         thriveWorkerUnit.confirm(contributor, "TestMetadata");
     }
 
-    function testGetValidators() public {
+    function testGetValidators() public view {
         address[] memory validatorList = thriveWorkerUnit.getValidators();
 
         assertEq(validatorList.length, validators.length);
@@ -169,6 +309,14 @@ contract ThriveWorkerUnitTest is Test {
         assertEq(thriveWorkerUnit.assignedAddress(), newAddress);
     }
 
+    function testSetAssignedAddressToZero() public {
+        address newAddress = address(0);
+
+        vm.expectRevert("ThriveProtocol: invalid address!");
+
+        thriveWorkerUnit.setAssignedAddress(newAddress);
+    }
+
     function testSetValidationRewardAmount() public {
         uint256 newRewardAmount = 2;
 
@@ -177,52 +325,76 @@ contract ThriveWorkerUnitTest is Test {
         assertEq(thriveWorkerUnit.validationRewardAmount(), newRewardAmount);
     }
 
+    function testSetValidationRewardAmountToZero() public {
+        uint256 newRewardAmount = 0;
+
+        vm.expectRevert("ThriveProtocol: invalid validation reward amount!");
+
+        thriveWorkerUnit.setValidationRewardAmount(newRewardAmount);
+    }
+
     function testRemoveRequiredBadge() public {
         bytes32 badge = keccak256("TestBadge");
-        
+
         thriveWorkerUnit.addRequiredBadge(badge);
         thriveWorkerUnit.removeRequiredBadge(badge);
         bytes32[] memory badges = thriveWorkerUnit.getRequiredBadges();
-        
+
         assertEq(badges.length, 0);
+    }
+
+    function testRemoveNonExistentBadge() public {
+        bytes32 badge = keccak256("NonExistentBadge");
+
+        vm.expectRevert("ThriveProtocol: badge does not exist");
+
+        thriveWorkerUnit.removeRequiredBadge(badge);
     }
 
     function testSetValidationMetadata() public {
         string memory newMetadata = "NewValidationMetadata";
-        
+
         thriveWorkerUnit.setValidationMetadata(newMetadata);
-        
+
         assertEq(thriveWorkerUnit.validationMetadata(), newMetadata);
     }
 
     function testSetMetadataVersion() public {
         string memory newVersion = "2.0";
-        
+
         thriveWorkerUnit.setMetadataVersion(newVersion);
-        
+
         assertEq(thriveWorkerUnit.metadataVersion(), newVersion);
     }
 
     function testSetMetadata() public {
         string memory newMetadata = "NewTaskMetadata";
-        
+
         thriveWorkerUnit.setMetadata(newMetadata);
-        
+
         assertEq(thriveWorkerUnit.metadata(), newMetadata);
     }
 
     function testSetDeadline() public {
         uint256 newDeadline = block.timestamp + 3 days;
-        
+
         thriveWorkerUnit.setDeadline(newDeadline);
-        
+
         assertEq(thriveWorkerUnit.deadline(), newDeadline);
     }
 
     function testSetMaxCompletionsPerUser() public {
         uint256 newMaxCompletions = 5;
+
         thriveWorkerUnit.setMaxCompletionsPerUser(newMaxCompletions);
+
         assertEq(thriveWorkerUnit.maxCompletionsPerUser(), newMaxCompletions);
+    }
+
+    function testWithdrawRemainingRequirements() public {
+        vm.expectRevert("ThriveProtocol: work unit is still active");
+
+        thriveWorkerUnit.withdrawRemaining();
     }
 
     function testWithdrawRemaining() public {
@@ -232,8 +404,6 @@ contract ThriveWorkerUnitTest is Test {
             address(thriveWorkerUnit)
         );
         assertGt(contractERC20Balance, 0);
-
-        uint256 contractEtherBalance = address(thriveWorkerUnit).balance;
 
         thriveWorkerUnit.withdrawRemaining();
 
