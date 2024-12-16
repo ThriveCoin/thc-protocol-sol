@@ -8,6 +8,7 @@ import {ERC1967Proxy} from
 
 contract ThriveProtocolAccessControlTest is Test {
     ThriveProtocolAccessControl accessControl;
+    ThriveProtocolAccessControl newImplementation;
 
     bytes32 ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 TEST_ROLE = keccak256("TEST_ROLE");

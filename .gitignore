@@ -11,3 +11,8 @@ docs/
 .env*
 !.env.example
 .DS_Store
+*.log
+node_modules
+package-lock.json
+lcov.info
+report/
