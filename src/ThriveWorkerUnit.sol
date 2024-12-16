@@ -4,13 +4,14 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./IBadgeQuery.sol";
 
 /**
  * @title ThriveWorkerUnit
  * @dev Contract of a work unit representing a task where contributors complete and earn rewards.
  */
-contract ThriveWorkerUnit {
+contract ThriveWorkerUnit is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -70,11 +71,11 @@ contract ThriveWorkerUnit {
         address _rewardToken,
         uint256 _rewardAmount,
         uint256 _maxRewards,
+        uint256 _validationRewardAmount,
         uint256 _deadline,
         uint256 _maxCompletionsPerUser,
         address[] memory _validators,
         string memory _validationMetadata,
-        string memory _metadataVersion,
         string memory _metadata,
         address _badgeQuery
     ) {
@@ -90,11 +91,17 @@ contract ThriveWorkerUnit {
             _deadline > block.timestamp,
             "ThriveProtocol: deadline must be in the future"
         );
+        require(_rewardAmount > 0, "ThriveProtocol: invalid reward amount!");
+        require(
+            _validationRewardAmount > 0,
+            "ThriveProtocol: invalid validation reward amount!"
+        );
 
         moderator = _moderator;
         rewardToken = _rewardToken;
         rewardAmount = _rewardAmount;
         maxRewards = _maxRewards;
+        validationRewardAmount = _validationRewardAmount;
         deadline = _deadline;
         maxCompletionsPerUser = _maxCompletionsPerUser;
 
@@ -103,17 +110,12 @@ contract ThriveWorkerUnit {
         }
 
         validationMetadata = _validationMetadata;
-        metadataVersion = _metadataVersion;
         metadata = _metadata;
         badgeQuery = IBadgeQuery(_badgeQuery);
     }
 
     function initialize() external payable onlyModerator {
         require(!ready, "ThriveProtocol: already initialized");
-        require(
-            validationRewardAmount > 0,
-            "ThriveProtocol: validation reward amount not set"
-        );
         uint256 totalRequiredValue = maxRewards * validationRewardAmount;
         require(
             msg.value >= totalRequiredValue,
@@ -138,7 +140,7 @@ contract ThriveWorkerUnit {
     function confirm(
         address contributor,
         string memory inputValidationMetadata
-    ) external onlyValidator onceReady {
+    ) external onlyValidator onceReady nonReentrant {
         require(
             block.timestamp <= deadline,
             "ThriveProtocol: work unit has expired"
@@ -191,16 +193,6 @@ contract ThriveWorkerUnit {
             "ThriveProtocol: invalid address!"
         );
         assignedAddress = _assignedAddress;
-    }
-
-    function setValidationRewardAmount(
-        uint256 _validationRewardAmount
-    ) external onlyModerator {
-        require(
-            _validationRewardAmount > 0,
-            "ThriveProtocol: invalid validation reward amount!"
-        );
-        validationRewardAmount = _validationRewardAmount;
     }
 
     function addRequiredBadge(bytes32 badge) external onlyModerator {

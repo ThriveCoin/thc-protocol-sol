@@ -25,11 +25,11 @@ contract ThriveWorkerUnitTest is Test {
             address(mockToken), // Reward token address
             10, // Reward amount per user
             100 ether, // Max rewards
+            1,
             block.timestamp + 1 days, // Deadline
             2, // Max completions per user
             validators, // Validators
             "ValidationMetadata", // Validation metadata
-            "1.0", // Metadata version
             "Task metadata", // Metadata
             badgeQuery // Badge query address
         );
@@ -37,41 +37,68 @@ contract ThriveWorkerUnitTest is Test {
         mockToken.transfer(address(thriveWorkerUnit), 1_000 ether);
         mockToken.approve(address(thriveWorkerUnit), 1_000 ether);
 
-        thriveWorkerUnit.setValidationRewardAmount(1);
         thriveWorkerUnit.initialize{value: 100 ether}();
     }
 
     function testConstructorRequirements() public {
         vm.expectRevert("ThriveProtocol: moderator address is required");
-
         new ThriveWorkerUnit(
             address(0),
             address(mockToken),
             10,
             100 ether,
+            1,
             block.timestamp + 1 days,
             2,
             validators,
             "ValidationMetadata",
-            "1.0",
             "Task metadata",
             badgeQuery
         );
 
         vm.expectRevert("ThriveProtocol: badgeQuery address is required");
-
         new ThriveWorkerUnit(
             moderator,
             address(mockToken),
             10,
             100 ether,
+            1,
             block.timestamp + 1 days,
             2,
             validators,
             "ValidationMetadata",
-            "1.0",
             "Task metadata",
             address(0)
+        );
+
+        vm.expectRevert("ThriveProtocol: invalid reward amount!");
+        new ThriveWorkerUnit(
+            moderator,
+            address(mockToken),
+            0,
+            100 ether,
+            1,
+            block.timestamp + 1 days,
+            2,
+            validators,
+            "ValidationMetadata",
+            "Task metadata",
+            badgeQuery
+        );
+
+        vm.expectRevert("ThriveProtocol: invalid validation reward amount!");
+        new ThriveWorkerUnit(
+            moderator,
+            address(mockToken),
+            10,
+            100 ether,
+            0,
+            block.timestamp + 1 days,
+            2,
+            validators,
+            "ValidationMetadata",
+            "Task metadata",
+            badgeQuery
         );
     }
 
@@ -81,11 +108,11 @@ contract ThriveWorkerUnitTest is Test {
             address(mockToken),
             10,
             100 ether,
+            1,
             block.timestamp + 1 days,
             2,
             validators,
             "ValidationMetadata",
-            "1.0",
             "Task metadata",
             badgeQuery
         );
@@ -93,7 +120,6 @@ contract ThriveWorkerUnitTest is Test {
         mockToken.approve(address(newWorkerUnit), 1_000 ether);
 
         // case: already initialized
-        newWorkerUnit.setValidationRewardAmount(1);
         newWorkerUnit.initialize{value: 100 ether}();
         vm.expectRevert("ThriveProtocol: already initialized");
         newWorkerUnit.initialize{value: 100 ether}();
@@ -104,22 +130,18 @@ contract ThriveWorkerUnitTest is Test {
             address(mockToken),
             10,
             100 ether,
+            1,
             block.timestamp + 1 days,
             2,
             validators,
             "ValidationMetadata",
-            "1.0",
             "Task metadata",
             badgeQuery
         );
 
         mockToken.approve(address(uninitializedWorkerUnit), 1_000 ether);
 
-        vm.expectRevert("ThriveProtocol: validation reward amount not set");
-        uninitializedWorkerUnit.initialize{value: 100 ether}();
-
         // case: insufficient value for validators and contributors
-        uninitializedWorkerUnit.setValidationRewardAmount(1);
         vm.expectRevert(
             "ThriveProtocol: insufficient value for validators and contributors"
         );
@@ -279,11 +301,11 @@ contract ThriveWorkerUnitTest is Test {
             address(mockToken),
             10,
             100 ether,
+            1,
             block.timestamp + 1 days,
             2,
             validators,
             "ValidationMetadata",
-            "1.0",
             "Task metadata",
             badgeQuery
         );
@@ -315,22 +337,6 @@ contract ThriveWorkerUnitTest is Test {
         vm.expectRevert("ThriveProtocol: invalid address!");
 
         thriveWorkerUnit.setAssignedAddress(newAddress);
-    }
-
-    function testSetValidationRewardAmount() public {
-        uint256 newRewardAmount = 2;
-
-        thriveWorkerUnit.setValidationRewardAmount(newRewardAmount);
-
-        assertEq(thriveWorkerUnit.validationRewardAmount(), newRewardAmount);
-    }
-
-    function testSetValidationRewardAmountToZero() public {
-        uint256 newRewardAmount = 0;
-
-        vm.expectRevert("ThriveProtocol: invalid validation reward amount!");
-
-        thriveWorkerUnit.setValidationRewardAmount(newRewardAmount);
     }
 
     function testRemoveRequiredBadge() public {
