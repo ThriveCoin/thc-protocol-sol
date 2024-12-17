@@ -29,8 +29,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days, // Deadline
             2, // Max completions per user
             validators, // Validators
-            "ValidationMetadata", // Validation metadata
-            "Task metadata", // Metadata
+            address(0),
             badgeQuery // Badge query address
         );
 
@@ -51,8 +50,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
+            address(0),
             badgeQuery
         );
 
@@ -66,9 +64,8 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
-            address(0)
+            address(0x123), // assginedContributor
+            address(0) // badgeQuery
         );
 
         vm.expectRevert("ThriveProtocol: invalid reward amount!");
@@ -81,8 +78,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
+            address(0),
             badgeQuery
         );
 
@@ -96,8 +92,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
+            address(0),
             badgeQuery
         );
     }
@@ -112,8 +107,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
+            address(0),
             badgeQuery
         );
 
@@ -134,8 +128,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
+            address(0),
             badgeQuery
         );
 
@@ -192,7 +185,7 @@ contract ThriveWorkerUnitTest is Test {
 
         // case: contributor is not the assigned address
         thriveWorkerUnit.setMaxCompletionsPerUser(10);
-        thriveWorkerUnit.setAssignedAddress(address(0x123));
+        thriveWorkerUnit.setAssignedContributor(address(0x123));
 
         vm.prank(validators[0]);
         vm.expectRevert(
@@ -200,7 +193,7 @@ contract ThriveWorkerUnitTest is Test {
         );
 
         thriveWorkerUnit.confirm(contributor, "TestMetadata");
-        thriveWorkerUnit.setAssignedAddress(contributor);
+        thriveWorkerUnit.setAssignedContributor(contributor);
 
         // case: required badge is missing
         vm.mockCall(
@@ -305,8 +298,7 @@ contract ThriveWorkerUnitTest is Test {
             block.timestamp + 1 days,
             2,
             validators,
-            "ValidationMetadata",
-            "Task metadata",
+            address(0),
             badgeQuery
         );
         address contributor = address(0xdead);
@@ -323,20 +315,20 @@ contract ThriveWorkerUnitTest is Test {
         newWorkerUnit.confirm(contributor, "TestMetadata");
     }
 
-    function testSetAssignedAddress() public {
+    function testSetAssignedContributor() public {
         address newAddress = address(0x123);
 
-        thriveWorkerUnit.setAssignedAddress(newAddress);
+        thriveWorkerUnit.setAssignedContributor(newAddress);
 
-        assertEq(thriveWorkerUnit.assignedAddress(), newAddress);
+        assertEq(thriveWorkerUnit.assignedContributor(), newAddress);
     }
 
-    function testSetAssignedAddressToZero() public {
+    function testSetAssignedContributorToZero() public {
         address newAddress = address(0);
 
         vm.expectRevert("ThriveProtocol: invalid address!");
 
-        thriveWorkerUnit.setAssignedAddress(newAddress);
+        thriveWorkerUnit.setAssignedContributor(newAddress);
     }
 
     function testRemoveRequiredBadge() public {

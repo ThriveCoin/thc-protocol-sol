@@ -21,7 +21,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
     uint256 public validationRewardAmount;
-    address public assignedAddress;
+    address public assignedContributor;
     uint256 public maxCompletionsPerUser;
     uint256 public deadline;
     string public validationMetadata;
@@ -75,8 +75,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         uint256 _deadline,
         uint256 _maxCompletionsPerUser,
         address[] memory _validators,
-        string memory _validationMetadata,
-        string memory _metadata,
+        address _assignedContributor,
         address _badgeQuery
     ) {
         require(
@@ -109,8 +108,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             validators.add(_validators[i]);
         }
 
-        validationMetadata = _validationMetadata;
-        metadata = _metadata;
+        assignedContributor = _assignedContributor;
         badgeQuery = IBadgeQuery(_badgeQuery);
     }
 
@@ -149,9 +147,9 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             completions[contributor] < maxCompletionsPerUser,
             "ThriveProtocol: max completions per user reached"
         );
-        if (assignedAddress != address(0)) {
+        if (assignedContributor != address(0)) {
             require(
-                contributor == assignedAddress,
+                contributor == assignedContributor,
                 "ThriveProtocol: contributor is not the assigned address"
             );
         }
@@ -185,14 +183,14 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         );
     }
 
-    function setAssignedAddress(
-        address _assignedAddress
+    function setAssignedContributor(
+        address _assignedContributor
     ) external onlyModerator {
         require(
-            _assignedAddress != address(0),
+            _assignedContributor != address(0),
             "ThriveProtocol: invalid address!"
         );
-        assignedAddress = _assignedAddress;
+        assignedContributor = _assignedContributor;
     }
 
     function addRequiredBadge(bytes32 badge) external onlyModerator {
