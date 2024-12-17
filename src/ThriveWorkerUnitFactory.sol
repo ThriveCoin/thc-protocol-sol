@@ -24,8 +24,7 @@ contract ThriveWorkerUnitFactory {
      * @param _deadline Timestamp after which the work unit expires.
      * @param _maxCompletionsPerUser Maximum completions allowed per user.
      * @param _validators Array of addresses responsible for validation.
-     * @param _validationMetadata Validation metadata string.
-     * @param _metadata Metadata describing the work unit.
+     * @param _assignedContributor Address of the assigned contributor.
      * @param _badgeQuery Address of the badge query contract.
      * @return Address of the newly created ThriveWorkerUnit contract.
      */
@@ -38,8 +37,7 @@ contract ThriveWorkerUnitFactory {
         uint256 _deadline,
         uint256 _maxCompletionsPerUser,
         address[] memory _validators,
-        string memory _validationMetadata,
-        string memory _metadata,
+        address _assignedContributor,
         address _badgeQuery
     ) external returns (address) {
         ThriveWorkerUnit unit = new ThriveWorkerUnit(
@@ -51,8 +49,7 @@ contract ThriveWorkerUnitFactory {
             _deadline,
             _maxCompletionsPerUser,
             _validators,
-            _validationMetadata,
-            _metadata,
+            _assignedContributor,
             _badgeQuery
         );
 
