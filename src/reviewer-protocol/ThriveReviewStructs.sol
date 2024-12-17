@@ -2,5 +2,6 @@
 pragma solidity ^0.8.24;
 
 struct ReviewConfiguration {
-    address workUnit;
+    // Represents the address of the WorkerUnit contract.
+    address workerUnit; // @dev change to IWorkerUnit
 }
