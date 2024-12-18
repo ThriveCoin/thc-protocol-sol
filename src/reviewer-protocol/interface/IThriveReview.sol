@@ -7,8 +7,26 @@ pragma solidity ^0.8.24;
  */
 interface IThriveReview {
 
-    /*
-    
+/*
+    // Review content submiteed by a reviewer
+    struct Review {
+        // Reference to a submission
+        uint256 submissionId; // @dev this is probably not a correct way to reference a submission
+        // The address of the reviewer
+        address reviewer;
+        // The review metadata
+        string reviewMetadata;
+        // The reviewers' decision
+        bool decision; // accepted or rejected
+    }
+
+    // Review status
+    enum ReviewStatus {
+        PENDING,
+        IN_PROGRESS,
+        COMPLETED
+    }
+
     // Create a submission for review
     function createSubmission() external;
 
@@ -24,5 +42,5 @@ interface IThriveReview {
     // Any user can trigger the deletion of a pending review if the review window has expired without the review being completed.
     function deletePendingReview() external;
 
-    */
+*/
 }
