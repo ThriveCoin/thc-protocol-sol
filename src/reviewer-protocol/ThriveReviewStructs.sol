@@ -21,3 +21,20 @@ struct ReviewConfiguration {
     // Reference to the submission or its metadata.
     // Pending: We'll see how to handle this in code
 }
+
+struct Review {
+    // Reference to a submission
+    uint256 submissionId; // @dev this is probably not a correct way to reference a submission
+    // The address of the reviewer
+    address reviewer;
+    // The review metadata
+    string reviewMetadata;
+    // The reviewers' decision
+    bool decision; // accepted or rejected
+}
+
+enum ReviewStatus {
+    PENDING,
+    IN_PROGRESS,
+    COMPLETED
+}

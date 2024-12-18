@@ -7,14 +7,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // ThriveProtocol imports
 import "./ThriveReview.sol";
-import "./ThriveReviewStructs.sol";
+import {ReviewConfiguration} from "./ThriveReviewStructs.sol";
 
 /**
  * @title ThriveReviewFactory
  * @dev Factory contract for creating ThriveReview contract instances.
  */
 contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
-
     // EVENTS
     event ReviewContractCreated(address reviewContract);
 
@@ -23,13 +22,16 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address owner) public {        
+    function initialize(address owner) public {
         __Ownable_init(owner);
         __UUPSUpgradeable_init();
     }
 
-    // should this be restricted ?
-    function createReviewContract(ReviewConfiguration memory reviewConfiguration) public returns (address) {
+    function createReviewContract(
+        ReviewConfiguration memory reviewConfiguration
+    ) public payable onlyOwner returns (address) {
+        
+        uint256 amountToDistributeToReviewers = msg.value;
 
         // send work unit for which the reviewing is being done
         ThriveReview review = new ThriveReview(reviewConfiguration, msg.sender);

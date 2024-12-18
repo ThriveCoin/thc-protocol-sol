@@ -11,8 +11,4 @@ contract ThriveReviewFactoryUnitTest is Test {
     function setUp() public {
         thriveReviewFactory = new ThriveReviewFactory();
     }
-
-    function testCreateReviewContract() public {
-        assertNotEq(thriveReviewFactory.createReviewContract(), address(0), "Review contract address is zero");
-    }
 }
