@@ -2,12 +2,15 @@
 pragma solidity ^0.8.24;
 
 import "./ThriveWorkerUnit.sol";
+import "./interface/IThriveWorkerUnitFactory.sol";
 
 /**
  * @title ThriveWorkerUnitFactory
  * @dev Factory contract for creating ThriveWorkerUnit instances.
  */
-contract ThriveWorkerUnitFactory {
+contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
+
+
     /**
      * @dev Emitted when a new ThriveWorkerUnit is created.
      * @param unitAddress The address of the newly created work unit contract.
@@ -16,16 +19,7 @@ contract ThriveWorkerUnitFactory {
 
     /**
      * @notice Creates a new ThriveWorkerUnit contract.
-     * @param _moderator Address of the moderator for the work unit.
-     * @param _rewardToken Address of the reward token (zero address for native token).
-     * @param _rewardAmount Reward amount per completion.
-     * @param _maxRewards Total reward pool for the work unit.
-     * @param _validationRewardAmount Reward amount for validation.
-     * @param _deadline Timestamp after which the work unit expires.
-     * @param _maxCompletionsPerUser Maximum completions allowed per user.
-     * @param _validators Array of addresses responsible for validation.
-     * @param _assignedContributor Address of the assigned contributor.
-     * @param _badgeQuery Address of the badge query contract.
+     * @dev Inherits documentation for arguments from IThriveWorkerUnitFactory.
      * @return Address of the newly created ThriveWorkerUnit contract.
      */
     function createThriveWorkerUnit(
@@ -51,6 +45,35 @@ contract ThriveWorkerUnitFactory {
             _validators,
             _assignedContributor,
             _badgeQuery
+        );
+
+        emit ThriveWorkerUnitCreated(address(unit));
+
+        return address(unit);
+    }
+
+
+    /**
+     * @notice Creates a new ThriveWorkerUnit contract.
+     * @dev Inherits documentation from IThriveWorkerUnitFactory.
+     * @inheritdoc IThriveWorkerUnitFactory
+     * @param workUnitArgs The arguments required to create a ThriveWorkerUnit.
+     * @return address The address of the newly created ThriveWorkerUnit.
+     */
+    function createThriveWorkerUnit(
+        WorkUnitArgs memory workUnitArgs // @dev Maybe add a restrict method to this call
+    ) external returns (address) {
+        ThriveWorkerUnit unit = new ThriveWorkerUnit(
+            workUnitArgs.moderator,
+            workUnitArgs.rewardToken,
+            workUnitArgs.rewardAmount,
+            workUnitArgs.maxRewards,
+            workUnitArgs.validationRewardAmount,
+            workUnitArgs.deadline,
+            workUnitArgs.maxCompletionsPerUser,
+            workUnitArgs.validators,
+            workUnitArgs.assignedContributor,
+            workUnitArgs.badgeQuery
         );
 
         emit ThriveWorkerUnitCreated(address(unit));

@@ -7,40 +7,97 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // ThriveProtocol imports
 import "./ThriveReview.sol";
-import {ReviewConfiguration} from "./ThriveReviewStructs.sol";
+import "./interface/IThriveReviewFactory.sol";
+import "../interface/IThriveWorkerUnitFactory.sol";
 
 /**
  * @title ThriveReviewFactory
  * @dev Factory contract for creating ThriveReview contract instances.
  */
-contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
-    // EVENTS
+contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable, IThriveReviewFactory {
+
+
+    /**
+     * STORAGE VARIABLES
+     */
+
+    // Mapping of review contract address to work unit address
+    mapping(address => address) public reviewToWorkUnit;
+
+    // Mapping of work unit address to review contract address
+    mapping(address => address) public workUnitToReview;
+
+    // Address of the ThriveWorkerUnitFactory contract
+    address public thriveWorkerUnitFactory;
+
+
+
+    // EVENTS ////////
     event ReviewContractCreated(address reviewContract);
 
-    // Constructor should NOT be used in UUPS standard
+
+
+
+    // Implementation contract should be disabled per UUPS standard
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address owner) public {
-        __Ownable_init(owner);
+
+
+    /**
+     * @notice Initializes the contract.
+     * @param owner_ Address of the owner of the contract.
+     * @param thriveWorkerUnitFactory_ Address of the ThriveWorkerUnitFactory contract.
+     */
+    function initialize(address owner_, address thriveWorkerUnitFactory_) external initializer {
+
+        // @dev add update function for this address
+        thriveWorkerUnitFactory = thriveWorkerUnitFactory_;
+
+        __Ownable_init(owner_);
         __UUPSUpgradeable_init();
     }
+    
 
-    function createReviewContract(
+    /**
+     * @notice Creates new WorkerUnit and ThriveReview contracts.
+     * @param workUnitArgs Struct containing args for properly initializing WorkUnit contract.
+     * @param reviewConfiguration Struct containing args for the review.
+     * @return Address of the newly created ThriveReview contract.
+     */
+    function createWorkUnitAndReviewContract(
+        IThriveWorkerUnitFactory.WorkUnitArgs memory workUnitArgs,
         ReviewConfiguration memory reviewConfiguration
-    ) public payable onlyOwner returns (address) {
-        
-        uint256 amountToDistributeToReviewers = msg.value;
+    ) external payable onlyOwner returns (address) {
 
-        // send work unit for which the reviewing is being done
-        ThriveReview review = new ThriveReview(reviewConfiguration, msg.sender);
+        // @dev connecting to existing infrastructure/contracts to create work units
+        address workUnitContractAddress = IThriveWorkerUnitFactory(thriveWorkerUnitFactory).createThriveWorkerUnit(workUnitArgs);
+
+        // Create a new review contract
+        ThriveReview review = new ThriveReview(reviewConfiguration, workUnitContractAddress, msg.sender);
+
+        // Map the review contract to the work unit
+        reviewToWorkUnit[address(review)] = workUnitContractAddress;
+
+        // Map the work unit to the review contract
+        workUnitToReview[workUnitContractAddress] = address(review);
+
+        uint256 ThriveAmountToDistributeToReviewers = msg.value;
+
+        (bool sucesss,) = address(review).call{value: ThriveAmountToDistributeToReviewers}("");
+        require(sucesss);
 
         emit ReviewContractCreated(address(review));
 
         return address(review);
     }
 
+
+    /**
+     * @notice Overriden function that enables upgrading the contract.
+     * @param newImplementation Address of the new implementation contract.
+     */
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}

@@ -5,31 +5,27 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // ThriveProtocol imports
-import {ReviewConfiguration} from  "./ThriveReviewStructs.sol";
+import "./interface/IThriveReviewFactory.sol";
+import "./interface/IThriveReview.sol";
 
 /**
  * @title ThriveReview
  * @dev Contract for managing reviews.
  */
-contract ThriveReview is Ownable {
+contract ThriveReview is Ownable, IThriveReviewFactory, IThriveReview {
 
-    // STORAGE VARIABLES
-    ReviewConfiguration public reviewConfiguration;
+    /**
+     * Storage variables
+     */
 
-    constructor(ReviewConfiguration memory reviewConfiguration_, address owner) Ownable(owner) {
+    // Review configuration - rules to follow when conducting a "review"
+    IThriveReviewFactory.ReviewConfiguration public reviewConfiguration;
+
+    // Address of the work unit contract
+    address public workUnitContractAddress;
+
+    constructor(ReviewConfiguration memory reviewConfiguration_, address workUnitContractAddress_, address owner_) Ownable(owner_) {
+        workUnitContractAddress = workUnitContractAddress_;
         reviewConfiguration = reviewConfiguration_;
-    }
-
-    function commitToReview() public {
-        // @dev implement
-    }
-
-    // @dev Any user can trigger the deletion of a pending review if the review window has expired without the review being completed.
-    function deletePendingReview() external {
-        // @dev implement
-    }
-
-    function submitReview() public {
-        // @dev implement
     }
 }
