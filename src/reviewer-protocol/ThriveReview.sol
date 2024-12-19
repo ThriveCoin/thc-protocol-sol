@@ -13,6 +13,8 @@ import "./interface/IThriveReview.sol";
  * @dev Contract for managing reviews.
  */
 contract ThriveReview is Ownable, IThriveReview {
+
+    
     /**
      * Storage variables
      */

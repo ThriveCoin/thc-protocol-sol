@@ -23,7 +23,7 @@ interface IThriveReview {
         ReviewStatus status;
     }
 
-        // Review content submiteed by a reviewer
+    // Review content submitted by a reviewer
     struct Review {
         // Reference to a submission
         uint256 submissionId; // @dev this is probably not a correct way to reference a submission

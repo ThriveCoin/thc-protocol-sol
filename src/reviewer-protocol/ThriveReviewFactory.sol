@@ -31,8 +31,15 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable, IThriveRevi
     address public thriveWorkerUnitFactory;
 
 
+    /**
+     * EVENTS
+     */
 
-    // EVENTS ////////
+
+    /**
+     * @notice Emitted when a new Review contract is created.
+     * @param reviewContract Address of the review contract.
+     */
     event ReviewContractCreated(address reviewContract);
 
 
