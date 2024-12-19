@@ -17,11 +17,17 @@ contract ThriveReview is Ownable, IThriveReview {
      * Storage variables
      */
 
-    // Review configuration - rules to follow when conducting a "review"
+    // Review configuration - configuration/rules of the work unit review process
     IThriveReviewFactory.ReviewConfiguration public reviewConfiguration;
 
     // Address of the work unit contract
     address public workUnitContractAddress;
+
+    // Counter of submissions made to the contract
+    uint256 public submissionCounter;
+
+    // Counter of reviews made to the contract
+    uint256 public reviewCounter;
 
     constructor(
         IThriveReviewFactory.ReviewConfiguration memory reviewConfiguration_,
@@ -33,20 +39,31 @@ contract ThriveReview is Ownable, IThriveReview {
     }
 
     // @inheritdoc IThriveReview
-    function createSubmission(Submission memory submission_) external {}
+    function createSubmission(
+        Submission memory submission_
+    ) external /* onlyUserWithSomeBadge */ {
+        // First make sure the submission is in accordance to the review configuration
+        // Then make sure submission is made by a proper entity
+        // Then make sure submission is not empty and follows some commong guidelines
+        // Then save submission accordingly
+    }
 
     // @inheritdoc IThriveReview
-    function removePendingReviews(uint256 reviewId) external {}
+    function createReview(Review memory review_) external {}
 
     // @inheritdoc IThriveReview
-    function removePendingReviewss(uint256[] calldata reviewIds) external {}
+    function deletePendingReviews(uint256[] calldata reviewIds_) external {
+        // Anyone can remove pending reviews that have passed some sort of time deadline
+    }
 
     // @inheritdoc IThriveReview
-    function submitReview(Review memory review_) external {}
+    function deletePendingReview(uint256 reviewId_) public {
+        // Anyone can remove pending review that have passed some sort of time deadline
+    }
 
     // @inheritdoc IThriveReview
-    function commitToReview(uint256 reviewId) external {}
-
-    // @inheritdoc IThriveReview
-    function deletePendingReview(uint256 reviewId) external {}
+    function commitToReview(uint256 reviewId_) external {
+        // User commits to do a review of a certain submission
+        // After a while anyone can delete his pending review if the does not complete it
+    }
 }

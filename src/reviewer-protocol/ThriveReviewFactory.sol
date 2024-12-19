@@ -71,11 +71,15 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable, IThriveRevi
         ReviewConfiguration memory reviewConfiguration
     ) external payable onlyOwner returns (address) {
 
+        require(msg.value == reviewConfiguration.reviewerReward, "ThriveReviewFactory: incorrect reward amount sent");
+
         // @dev connecting to existing infrastructure/contracts to create work units
         address workUnitContractAddress = IThriveWorkerUnitFactory(thriveWorkerUnitFactory).createThriveWorkerUnit(workUnitArgs);
 
         // Create a new review contract
         ThriveReview review = new ThriveReview(reviewConfiguration, workUnitContractAddress, msg.sender);
+
+        // Does WorkUnit contract need to know about ThriveReview contract address so they can restrict confirms to it?
 
         // Map the review contract to the work unit
         reviewToWorkUnit[address(review)] = workUnitContractAddress;
@@ -83,9 +87,8 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable, IThriveRevi
         // Map the work unit to the review contract
         workUnitToReview[workUnitContractAddress] = address(review);
 
-        uint256 ThriveAmountToDistributeToReviewers = msg.value;
-
-        (bool sucesss,) = address(review).call{value: ThriveAmountToDistributeToReviewers}("");
+        // Send this while invoking some function && do I need to add receive() {} to the ThriveReview contract?
+        (bool sucesss,) = address(review).call{value: reviewConfiguration.reviewerReward}("");
         require(sucesss);
 
         emit ReviewContractCreated(address(review));
@@ -96,6 +99,7 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable, IThriveRevi
 
     /**
      * @notice Overriden function that enables upgrading the contract.
+     * @dev Only the owner of the ThriveReviewFactory contract can upgrade it.
      * @param newImplementation Address of the new implementation contract.
      */
     function _authorizeUpgrade(

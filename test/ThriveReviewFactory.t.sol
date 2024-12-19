@@ -10,5 +10,9 @@ contract ThriveReviewFactoryUnitTest is Test {
 
     function setUp() public {
         thriveReviewFactory = new ThriveReviewFactory();
-    }
+    }            
 }
+
+
+/// How to best organize tests for this execution flow?
+/// Unit tests for each component in reviewers-protocol?

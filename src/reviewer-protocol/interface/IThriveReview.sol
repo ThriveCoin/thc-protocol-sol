@@ -9,18 +9,6 @@ import "./IThriveReviewFactory.sol";
  */
 interface IThriveReview {
 
-    // Review content submiteed by a reviewer
-    struct Review {
-        // Reference to a submission
-        uint256 submissionId; // @dev this is probably not a correct way to reference a submission
-        // The address of the reviewer
-        address reviewer;
-        // The review metadata
-        string reviewMetadata;
-        // The reviewers' decision
-        bool decision; // accepted or rejected
-    }
-
     // Submissions store details of the request for review of a completed work unit.
     struct Submission {
         // Reference to the work unit being submitted for review
@@ -35,6 +23,18 @@ interface IThriveReview {
         ReviewStatus status;
     }
 
+        // Review content submiteed by a reviewer
+    struct Review {
+        // Reference to a submission
+        uint256 submissionId; // @dev this is probably not a correct way to reference a submission
+        // The address of the reviewer
+        address reviewer;
+        // The review metadata
+        string reviewMetadata;
+        // The reviewers' decision
+        bool decision; // accepted or rejected
+    }
+
     // Status of a review
     enum ReviewStatus {
         PENDING,
@@ -42,19 +42,33 @@ interface IThriveReview {
         COMPLETED
     }
 
-    // Create a submission for review
-    function createSubmission(Submission memory) external;
+    /**
+     * @notice Creates a new submission.
+     * @param submission_ struct submitted for the work unit
+     */
+    function createSubmission(Submission memory submission_) external;
 
-    // Remove pending reviews after a certain deadline
-    function removePendingReviews(uint256) external;
+    /**
+     * @notice Submits a review of a certain submission.
+     * @param review_ Review struct submitted
+     */
+    function createReview(Review memory review_) external;
 
-    // Submit a review
-    function submitReview(Review memory) external;
+    /**
+     * @notice Removes pending reviews that have passed a certain time deadline.
+     * @param reviewIds_ Array of review IDs to remove
+     */
+    function deletePendingReviews(uint256[] calldata reviewIds_) external;
 
-    // User commits to do a review of a certain submission
-    function commitToReview(uint256) external;
+    /**
+     * @notice Deletes a pending review.
+     * @param reviewId_ The ID of the review to delete
+     */
+    function deletePendingReview(uint256 reviewId_) external;
 
-    // Any user can trigger the deletion of a pending review if the review window has expired without the review being completed.
-    function deletePendingReview(uint256) external;
-
+    /**
+     * @notice Commits to review a submission.
+     * @param submissionId_ The ID of the submission to review
+     */
+    function commitToReview(uint256 submissionId_) external;
 }
