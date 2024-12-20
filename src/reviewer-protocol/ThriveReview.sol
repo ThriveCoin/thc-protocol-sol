@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 // @OpenZeppelin imports
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // ThriveProtocol imports
 import "./interface/IThriveReviewFactory.sol";
@@ -12,15 +13,27 @@ import "./interface/IThriveReview.sol";
  * @title ThriveReview
  * @dev Contract for managing reviews.
  */
-contract ThriveReview is Ownable, IThriveReview {
+contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
+    /**
+     * Modifiers
+     */
+    modifier onlyThriveReviewFactory() {
+        require(
+            msg.sender == thriveReviewFactoryAddress,
+            "ThriveReview: caller is not the ThriveReviewFactory"
+        );
+        _;
+    }
 
-    
     /**
      * Storage variables
      */
 
     // Review configuration - configuration/rules of the work unit review process
     IThriveReviewFactory.ReviewConfiguration public reviewConfiguration;
+
+    // Address of the ThriveReviewFactory contract
+    address public thriveReviewFactoryAddress;
 
     // Address of the work unit contract
     address public workUnitContractAddress;
@@ -31,13 +44,26 @@ contract ThriveReview is Ownable, IThriveReview {
     // Counter of reviews made to the contract
     uint256 public reviewCounter;
 
-    constructor(
+    // @inheritdoc IThriveReview
+    function initialize(
         IThriveReviewFactory.ReviewConfiguration memory reviewConfiguration_,
         address workUnitContractAddress_,
+        address thriveReviewFactoryAddress_,
         address owner_
-    ) Ownable(owner_) {
+    ) external initializer {
+        // @dev Should this have an owner?
+
+        // Set the work unit contract address (optional: can be set later or not at all)
         workUnitContractAddress = workUnitContractAddress_;
+
+        // Set the review configuration object
         reviewConfiguration = reviewConfiguration_;
+
+        // Set the ThriveReviewFactory contract address
+        thriveReviewFactoryAddress = thriveReviewFactoryAddress_;
+
+        // Set the owner of the contract
+        __Ownable_init(owner_);
     }
 
     // @inheritdoc IThriveReview
@@ -68,4 +94,14 @@ contract ThriveReview is Ownable, IThriveReview {
         // User commits to do a review of a certain submission
         // After a while anyone can delete his pending review if the does not complete it
     }
+
+    // @inheritdoc IThriveReview
+    function hasWorkUnitContract() external view returns (bool) {
+        return workUnitContractAddress != address(0);
+    }
+
+    /**
+     * @notice MUST HAVE this function in order to receive THRIVE rewards for reviewers.
+     */
+    receive() external payable {}
 }

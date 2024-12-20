@@ -8,7 +8,6 @@ import "./IThriveReviewFactory.sol";
  * @dev Interface for ThriveReview contract.
  */
 interface IThriveReview {
-
     // Submissions store details of the request for review of a completed work unit.
     struct Submission {
         // Reference to the work unit being submitted for review
@@ -43,6 +42,19 @@ interface IThriveReview {
     }
 
     /**
+     * @notice Initializes a newly created ThriveReview contract.
+     * @param reviewConfiguration_ Struct describing how reviews will be handled.
+     * @param thriveReviewFactoryAddress_ Address of the ThriveReviewFactory contract.
+     * @param owner_ Address of the owner of the contract.
+     */
+    function initialize(
+        IThriveReviewFactory.ReviewConfiguration memory reviewConfiguration_,
+        address workUnitContractAddress_,
+        address thriveReviewFactoryAddress_,
+        address owner_
+    ) external;
+
+    /**
      * @notice Creates a new submission.
      * @param submission_ struct submitted for the work unit
      */
@@ -71,4 +83,10 @@ interface IThriveReview {
      * @param submissionId_ The ID of the submission to review
      */
     function commitToReview(uint256 submissionId_) external;
+
+    /**
+     * @notice Checks if this ThriveReview contract has a ThriveWorkUnit contract connected to it.
+     * @return True if the contract has a work unit contract, false otherwise.
+     */
+    function hasWorkUnitContract() external view returns (bool);
 }

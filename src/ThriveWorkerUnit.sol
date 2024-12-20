@@ -66,6 +66,19 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         _;
     }
 
+    /**
+     * @dev Modifier to check if the caller is the ThriveReviewFactory contract.
+     * This is - for now - only used to add a ThriveReviewContract as a validator.
+     */
+    modifier onlyThriveReviewFactory() {
+        require(
+            msg.sender == address(1234), // @dev this should be the address of the ThriveReviewFactory
+            "ThriveProtocol: caller is not the ThriveReviewFactory"
+        );
+        _;
+    }
+
+
     constructor(
         address _moderator,
         address _rewardToken,
@@ -193,6 +206,19 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         assignedContributor = _assignedContributor;
     }
 
+
+
+
+    /**
+     * Added as a safety module so that ThriveReviewContract can be added as a validator at a later point in time if needed
+     * Also, should this be allowed to be called only once?
+     * @param validator Address of the ThriveReviewContract to add as a validator.
+     */
+    function addValidator(address validator) external onlyThriveReviewFactory {
+        validators.add(validator);
+    }
+
+
     function addRequiredBadge(bytes32 badge) external onlyModerator {
         requiredBadges.add(badge);
     }
@@ -270,6 +296,15 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     function status() external view returns (string memory) {
         return block.timestamp <= deadline ? "active" : "expired";
+    }
+
+    /**
+     * @notice Checks if an address is a moderator.
+     * @param account Account address to check.
+     * @return True if the address is a moderator, false otherwise.
+     */
+    function isModerator(address account) external view returns (bool) {
+        return account == moderator;
     }
 
     receive() external payable {}
