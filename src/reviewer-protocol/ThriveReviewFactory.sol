@@ -9,8 +9,8 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 // ThriveProtocol imports
 import "./ThriveReview.sol";
 import "./interface/IThriveReviewFactory.sol";
-import "../interface/IThriveWorkerUnit.sol";
-import "../interface/IThriveWorkerUnitFactory.sol";
+import "../interface/IThriveWorkUnit.sol";
+import "../interface/IThriveWorkUnitFactory.sol";
 
 /**
  * @title ThriveReviewFactory
@@ -76,7 +76,7 @@ contract ThriveReviewFactory is
      * @return Address of the newly created ThriveReview contract.
      */
     function createWorkUnitAndReviewContract(
-        IThriveWorkerUnitFactory.WorkUnitArgs memory workUnitArgs,
+        IThriveWorkUnitFactory.WorkUnitArgs memory workUnitArgs,
         ReviewConfiguration memory reviewConfiguration
     ) external payable returns (address) {
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
@@ -101,7 +101,7 @@ contract ThriveReviewFactory is
         workUnitArgs.validators[0] = thriveReviewContractAddress;
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
-        address workUnitContractAddress = IThriveWorkerUnitFactory(thriveWorkerUnitFactory).createThriveWorkerUnit(workUnitArgs);
+        address workUnitContractAddress = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs);
 
         // Create a new ThriveReview contract by cloning existing implementation.
         Clones.cloneDeterministic(thriveReviewContractImplementation,
@@ -139,6 +139,7 @@ contract ThriveReviewFactory is
         ReviewConfiguration memory reviewConfiguration,
         address workUnitContractAddress
     ) external payable returns (address) {
+
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
         require(msg.value >= reviewConfiguration.reviewerReward,"ThriveReviewFactory: incorrect reward amount sent");
 
@@ -170,15 +171,15 @@ contract ThriveReviewFactory is
 
             // Only moderator of the ThriveWorkUnit contract can add a ThriveReview contract as a validator.
             require(
-                IThriveWorkerUnit(workUnitContractAddress).isModerator(msg.sender),
+                IThriveWorkUnit(workUnitContractAddress).isModerator(msg.sender),
                 "ThriveReviewFactory: caller is not a moderator"
             );
 
-            // Add the ThriveReview contract address to the list of validators on the work unit contract
-            // ...
+            // Add the ThriveReview contract address to the list of validators on the work unit contract - should this only be allowed to be done once? 
+            IThriveWorkUnit(workUnitContractAddress).addValidator(thriveReviewContractAddress);
         }
 
-        // ADD EVENTS LATER ON (CROSS-CHECK WITH INTEGRATIONS)
+        // ADD EVENTS LATER ON (CROSS-CHECK WITH INTEGRATIONS - frontend, backend)
 
         return thriveReviewContractAddress;
     }

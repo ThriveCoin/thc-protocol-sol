@@ -2,13 +2,13 @@
 pragma solidity ^0.8.24;
 
 import "./ThriveWorkerUnit.sol";
-import "./interface/IThriveWorkerUnitFactory.sol";
+import "./interface/IThriveWorkUnitFactory.sol";
 
 /**
  * @title ThriveWorkerUnitFactory
  * @dev Factory contract for creating ThriveWorkerUnit instances.
  */
-contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
+contract ThriveWorkerUnitFactory is IThriveWorkUnitFactory {
 
 
     /**
@@ -53,14 +53,8 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
     }
 
 
-    /**
-     * @notice Creates a new ThriveWorkerUnit contract.
-     * @dev Inherits documentation from IThriveWorkerUnitFactory.
-     * @inheritdoc IThriveWorkerUnitFactory
-     * @param workUnitArgs The arguments required to create a ThriveWorkerUnit.
-     * @return address The address of the newly created ThriveWorkerUnit.
-     */
-    function createThriveWorkerUnit(
+    // @inheritdoc IThriveWorkUnitFactory
+    function createThriveWorkUnit(
         WorkUnitArgs memory workUnitArgs // @dev Maybe add a restrict method to this call
     ) external returns (address) {
         ThriveWorkerUnit unit = new ThriveWorkerUnit(
