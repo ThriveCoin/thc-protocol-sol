@@ -14,10 +14,11 @@ import "./interface/IThriveReview.sol";
  * @dev Contract for managing reviews.
  */
 contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
+
     /**
      * Modifiers
      */
-    modifier onlyThriveReviewFactory() {
+    modifier onlyThriveReviewFactory() { // @dev This may not be needed
         require(
             msg.sender == thriveReviewFactoryAddress,
             "ThriveReview: caller is not the ThriveReviewFactory"
@@ -50,14 +51,13 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         address workUnitContractAddress_,
         address thriveReviewFactoryAddress_,
         address owner_
-    ) external initializer {
-        // @dev Should this have an owner?
-
-        // Set the work unit contract address (optional: can be set later or not at all)
-        workUnitContractAddress = workUnitContractAddress_;
+    ) external initializer {    // @dev Should this have an owner?
 
         // Set the review configuration object
         reviewConfiguration = reviewConfiguration_;
+
+        // Set the work unit contract address (optional: can be set later or not at all)
+        workUnitContractAddress = workUnitContractAddress_;
 
         // Set the ThriveReviewFactory contract address
         thriveReviewFactoryAddress = thriveReviewFactoryAddress_;
@@ -96,7 +96,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     }
 
     // @inheritdoc IThriveReview
-    function hasWorkUnitContract() external view returns (bool) {
+    function hasWorkUnitContract() public view returns (bool) {
         return workUnitContractAddress != address(0);
     }
 

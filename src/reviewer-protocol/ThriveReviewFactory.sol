@@ -79,6 +79,7 @@ contract ThriveReviewFactory is
         IThriveWorkUnitFactory.WorkUnitArgs memory workUnitArgs,
         ReviewConfiguration memory reviewConfiguration
     ) external payable returns (address) {
+
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
         require(
             msg.value >= reviewConfiguration.reviewerReward,
@@ -171,7 +172,7 @@ contract ThriveReviewFactory is
 
             // Only moderator of the ThriveWorkUnit contract can add a ThriveReview contract as a validator.
             require(
-                IThriveWorkUnit(workUnitContractAddress).isModerator(msg.sender),
+                IThriveWorkUnit(workUnitContractAddress).isModerator(msg.sender), // @dev can we do this, is the moderator address an EOA?
                 "ThriveReviewFactory: caller is not a moderator"
             );
 
