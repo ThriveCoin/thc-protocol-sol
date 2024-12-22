@@ -31,6 +31,9 @@ contract ThriveReviewFactory is
     // Address of the ThriveReview contract implementation
     address public thriveReviewContractImplementation;
 
+    // Address of the BadgeQuery contract
+    address public badgeQueryContractAddress;
+
 
     /**
      * EVENTS
@@ -55,7 +58,8 @@ contract ThriveReviewFactory is
     function initialize(
         address owner_,
         address thriveWorkerUnitFactory_,
-        address thriveReviewContractImplementation_
+        address thriveReviewContractImplementation_,
+        address badgeQueryContractAddress_
     ) external initializer {
         // @dev add update function for this address?
         thriveWorkerUnitFactory = thriveWorkerUnitFactory_;
@@ -63,6 +67,10 @@ contract ThriveReviewFactory is
         // Save the implementation address for the ThriveReview contract
         thriveReviewContractImplementation = thriveReviewContractImplementation_;
 
+        // Save the address of the BadgeQuery contract
+        badgeQueryContractAddress = badgeQueryContractAddress_;
+
+        // Initialize the contract with the provided owner
         __Ownable_init(owner_);
         __UUPSUpgradeable_init();
     }
@@ -80,7 +88,7 @@ contract ThriveReviewFactory is
 
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
         require(
-            msg.value >= reviewConfiguration.reviewerReward,
+            msg.value >= reviewConfiguration.totalReviewerReward,
             "ThriveReviewFactory: incorrect reward amount sent"
         );
 
@@ -98,11 +106,12 @@ contract ThriveReviewFactory is
             reviewConfiguration,
             workUnitContractAddress,
             address(this),
+            badgeQueryContractAddress,
             msg.sender
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.reviewerReward}("");
+        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
         require(sucesss);
 
         // ADD EVENTS LATER ON
@@ -121,7 +130,7 @@ contract ThriveReviewFactory is
     ) external payable returns (address) {
 
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
-        require(msg.value >= reviewConfiguration.reviewerReward,"ThriveReviewFactory: incorrect reward amount sent");
+        require(msg.value >= reviewConfiguration.totalReviewerReward,"ThriveReviewFactory: incorrect reward amount sent");
 
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
@@ -131,11 +140,12 @@ contract ThriveReviewFactory is
             reviewConfiguration,
             workUnitContractAddress,
             address(this),
+            badgeQueryContractAddress,
             msg.sender
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.reviewerReward}("");
+        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
         require(sucesss);
 
         // This `if` clause is for the case when the ThriveWorkUnit contract was made beforehand

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 // ThriveProtocol imports
 import "./interface/IThriveReviewFactory.sol";
 import "./interface/IThriveReview.sol";
+import "../IBadgeQuery.sol";
 
 /**
  * @title ThriveReview
@@ -18,11 +19,16 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     /**
      * Modifiers
      */
-    modifier onlyThriveReviewFactory() { // @dev This may not be needed
-        require(
-            msg.sender == thriveReviewFactoryAddress,
-            "ThriveReview: caller is not the ThriveReviewFactory"
-        );
+
+    /**
+     * @dev Modifier that checks if the user has the required badges.
+     * @param badges Array of badges that the user must have.
+     */
+    modifier onlyUserWithBadges(bytes32[] memory badges) {
+        for (uint256 i = 0; i < badges.length; i++) {
+            // Require that user has the required badge
+            require(IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i]), "User does not have required badges");
+        }
         _;
     }
 
@@ -39,6 +45,9 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     // Address of the work unit contract
     address public workUnitContractAddress;
 
+    // Address of the BadgeQuery contract
+    address public badgeQueryContractAddress;
+
     // Counter of submissions made to the contract
     uint256 public submissionCounter;
 
@@ -50,6 +59,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         IThriveReviewFactory.ReviewConfiguration memory reviewConfiguration_,
         address workUnitContractAddress_,
         address thriveReviewFactoryAddress_,
+        address badgeQueryContractAddress_,
         address owner_
     ) external initializer {    // @dev Should this have an owner?
 
@@ -62,6 +72,9 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         // Set the ThriveReviewFactory contract address
         thriveReviewFactoryAddress = thriveReviewFactoryAddress_;
 
+        // Set the BadgeQuery contract address
+        badgeQueryContractAddress = badgeQueryContractAddress_;
+
         // Set the owner of the contract
         __Ownable_init(owner_);
     }
@@ -69,7 +82,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function createSubmission(
         Submission memory submission_
-    ) external /* onlyUserWithSomeBadge */ {
+    ) external onlyUserWithBadges(submission_.reviewConfiguration.reviewerBadges) {
         // First make sure the submission is in accordance to the review configuration
         // Then make sure submission is made by a proper entity
         // Then make sure submission is not empty and follows some commong guidelines

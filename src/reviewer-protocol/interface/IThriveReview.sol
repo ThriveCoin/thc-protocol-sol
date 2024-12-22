@@ -52,13 +52,16 @@ interface IThriveReview {
     /**
      * @notice Initializes a newly created ThriveReview contract.
      * @param reviewConfiguration_ Struct describing how reviews will be handled.
+     * @param workUnitContractAddress_ Address of the ThriveWorkUnit contract.
      * @param thriveReviewFactoryAddress_ Address of the ThriveReviewFactory contract.
+     * @param badgeQueryContractAddress_ Address of the BadgeQuery contract.
      * @param owner_ Address of the owner of the contract.
      */
     function initialize(
         IThriveReviewFactory.ReviewConfiguration memory reviewConfiguration_,
         address workUnitContractAddress_,
         address thriveReviewFactoryAddress_,
+        address badgeQueryContractAddress_,
         address owner_
     ) external;
 

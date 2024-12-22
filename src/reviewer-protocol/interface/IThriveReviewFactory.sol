@@ -23,7 +23,7 @@ interface IThriveReviewFactory {
         // The time allowed for a reviewer to complete their review.
         uint64 reviewWindow;
         // An array of badges required for an EVM address to participate in the review.
-        address[] reviewerBadges;
+        bytes32[] reviewerBadges;
         // JSON object containing descriptive information for the review, such as review summary, reviewer instructions, and estimated time to complete the review.
         string reviewMetadata;
         // JSON object containing descriptive information for the submission, used by dApps to enhance the user experience during the submission process.
