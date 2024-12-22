@@ -53,7 +53,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         address owner_
     ) external initializer {    // @dev Should this have an owner?
 
-        // Set the review configuration object
+        // Set the ReviewConfiguration object
         reviewConfiguration = reviewConfiguration_;
 
         // Set the work unit contract address (optional: can be set later or not at all)
@@ -80,6 +80,12 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     function createReview(Review memory review_) external {}
 
     // @inheritdoc IThriveReview
+    function commitToReview(uint256 reviewId_) external {
+        // User commits to do a review of a certain submission
+        // After a while anyone can delete his pending review if the does not complete it
+    }
+
+    // @inheritdoc IThriveReview
     function deletePendingReviews(uint256[] calldata reviewIds_) external {
         // Anyone can remove pending reviews that have passed some sort of time deadline
     }
@@ -87,12 +93,6 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function deletePendingReview(uint256 reviewId_) public {
         // Anyone can remove pending review that have passed some sort of time deadline
-    }
-
-    // @inheritdoc IThriveReview
-    function commitToReview(uint256 reviewId_) external {
-        // User commits to do a review of a certain submission
-        // After a while anyone can delete his pending review if the does not complete it
     }
 
     // @inheritdoc IThriveReview

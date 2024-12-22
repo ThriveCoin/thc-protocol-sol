@@ -31,8 +31,6 @@ contract ThriveReviewFactory is
     // Address of the ThriveReview contract implementation
     address public thriveReviewContractImplementation;
 
-    // Mapping of the number of ThriveReview deployments per address
-    mapping(address => uint256) public numberOfThriveReviewDeployments;
 
     /**
      * EVENTS
@@ -86,36 +84,17 @@ contract ThriveReviewFactory is
             "ThriveReviewFactory: incorrect reward amount sent"
         );
 
-        // We can get the "future" address of the ThriveRevire contract by using the Clones library `predictDeterministicAddress` function
-        address thriveReviewContractAddress = Clones.predictDeterministicAddress(
-                thriveReviewContractImplementation,
-                keccak256(
-                    abi.encodePacked(
-                        address(this),
-                        msg.sender,
-                        numberOfThriveReviewDeployments[msg.sender]++
-                    )
-                )
-            );
+        // Create a new ThriveReview contract by cloning existing implementation.
+        address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
 
         // Add the ThriveReview contract address to the list of validators on the work unit contract
-        workUnitArgs.validators[0] = thriveReviewContractAddress;
+        workUnitArgs.validators[0] = thriveReviewContract;
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
         address workUnitContractAddress = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs);
 
-        // Create a new ThriveReview contract by cloning existing implementation.
-        Clones.cloneDeterministic(thriveReviewContractImplementation,
-            keccak256(
-                abi.encodePacked(
-                    address(this),
-                    msg.sender,
-                    numberOfThriveReviewDeployments[msg.sender]++
-                )
-            )
-        );
         // Initialize the newly created ThriveReview contract.
-        IThriveReview(thriveReviewContractAddress).initialize(
+        IThriveReview(thriveReviewContract).initialize(
             reviewConfiguration,
             workUnitContractAddress,
             address(this),
@@ -123,12 +102,12 @@ contract ThriveReviewFactory is
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool sucesss, ) = thriveReviewContractAddress.call{value: reviewConfiguration.reviewerReward}("");
+        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.reviewerReward}("");
         require(sucesss);
 
         // ADD EVENTS LATER ON
 
-        return thriveReviewContractAddress;
+        return thriveReviewContract;
     }
 
     /**
@@ -145,17 +124,10 @@ contract ThriveReviewFactory is
         require(msg.value >= reviewConfiguration.reviewerReward,"ThriveReviewFactory: incorrect reward amount sent");
 
         // Create a new ThriveReview contract by cloning existing implementation.
-        address thriveReviewContractAddress = Clones.cloneDeterministic(thriveReviewContractImplementation,
-            keccak256(
-                abi.encodePacked(
-                    address(this),
-                    msg.sender,
-                    numberOfThriveReviewDeployments[msg.sender]++
-                )
-            )
-        );
+        address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
+
         // Initialize the newly created ThriveReview contract.
-        IThriveReview(thriveReviewContractAddress).initialize(
+        IThriveReview(thriveReviewContract).initialize(
             reviewConfiguration,
             workUnitContractAddress,
             address(this),
@@ -163,7 +135,7 @@ contract ThriveReviewFactory is
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool sucesss, ) = thriveReviewContractAddress.call{value: reviewConfiguration.reviewerReward}("");
+        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.reviewerReward}("");
         require(sucesss);
 
         // This `if` clause is for the case when the ThriveWorkUnit contract was made beforehand
@@ -177,12 +149,12 @@ contract ThriveReviewFactory is
             );
 
             // Add the ThriveReview contract address to the list of validators on the work unit contract - should this only be allowed to be done once? 
-            IThriveWorkUnit(workUnitContractAddress).addValidator(thriveReviewContractAddress);
+            IThriveWorkUnit(workUnitContractAddress).addValidator(thriveReviewContract);
         }
 
         // ADD EVENTS LATER ON (CROSS-CHECK WITH INTEGRATIONS - frontend, backend)
 
-        return thriveReviewContractAddress;
+        return thriveReviewContract;
     }
 
     /**

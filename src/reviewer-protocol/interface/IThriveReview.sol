@@ -8,11 +8,12 @@ import "./IThriveReviewFactory.sol";
  * @dev Interface for ThriveReview contract.
  */
 interface IThriveReview {
-    // Submissions store details of the request for review of a completed work unit.
+
+    // @dev Add desc on this
     struct Submission {
         // Reference to the work unit being submitted for review
-        address workUnit;
-        // Reference to the review configuration used to evaluate the submission
+        address workUnit; // @dev could be IWorkUnit
+        // Reference to the review configuration used to evaluate the submission - @dev Is this needed?
         IThriveReviewFactory.ReviewConfiguration reviewConfiguration;
         // The EVM address of the contributor submitting the work unit for review
         address contributor;
@@ -22,23 +23,30 @@ interface IThriveReview {
         ReviewStatus status;
     }
 
-    // Review content submitted by a reviewer
+    
+    // Reviews store details of each review conducted on a submission.
     struct Review {
         // Reference to a submission
-        uint256 submissionId; // @dev this is probably not a correct way to reference a submission
+        uint256 submissionId;
         // The address of the reviewer
         address reviewer;
-        // The review metadata
+        // The ThriveReview metadata
         string reviewMetadata;
-        // The reviewers' decision
-        bool decision; // accepted or rejected
+        // The reviewers' decision on a particular submission
+        ReviewDecision decision;
     }
 
-    // Status of a review
+    // Status of a ThriveReview
     enum ReviewStatus {
         PENDING,
-        IN_PROGRESS,
-        COMPLETED
+        ACCEPTED,
+        REJECTED
+    }
+
+    // Review decision on a particular submission
+    enum ReviewDecision {
+        ACCEPTED,
+        REJECTED
     }
 
     /**
