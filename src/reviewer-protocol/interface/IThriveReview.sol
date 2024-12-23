@@ -11,8 +11,6 @@ interface IThriveReview {
 
     // @dev Add desc on this
     struct Submission {
-        // Reference to the work unit being submitted for review
-        address workUnit; // @dev could be IWorkUnit
         // The EVM address of the contributor submitting the work unit for review
         address contributor;
         // JSON object that contains the information shown to reviewers during the review process

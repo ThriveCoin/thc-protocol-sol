@@ -33,6 +33,15 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     }
 
     /**
+     * @dev Modifier that checks if the submission exists.
+     * @param submissionId_ ID of the submission.
+     */
+    modifier submissionExists(uint256 submissionId_) {
+        require(submissions[submissionId_].contributor != address(0), "Submission does not exist");
+        _;
+    }
+
+    /**
      * Storage variables
      */
 
@@ -133,6 +142,9 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         // Change the status of the submission to "PENDING"
         submissions[submissionId].status = ReviewStatus.PENDING;
 
+        // Save the contributor's address to the _msgSender
+        submissions[submissionId].contributor = _msgSender();
+
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
 
@@ -162,7 +174,10 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function createReview(
         Review memory review_
-    ) external onlyUserWithBadges(reviewConfiguration.reviewerBadges) {
+    ) external 
+        onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
+        submissionExists(review_.submissionId)
+    {
 
         // Fetch the review ID and increment the counter
         uint256 reviewId = reviewCounter++;
@@ -173,7 +188,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         // Save the review ID to the user's reviews
         userReviews[_msgSender()].push(reviewId);
 
-        // Save the review ID to the submission's reviews
+        // Save the review ID to the submission's reviews - @dev make sure submission exists
         submissionReviews[review_.submissionId].push(reviewId);
 
         // Emit event - fill data later
