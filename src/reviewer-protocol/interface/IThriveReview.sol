@@ -13,13 +13,11 @@ interface IThriveReview {
     struct Submission {
         // Reference to the work unit being submitted for review
         address workUnit; // @dev could be IWorkUnit
-        // Reference to the review configuration used to evaluate the submission - @dev Is this needed?
-        IThriveReviewFactory.ReviewConfiguration reviewConfiguration;
         // The EVM address of the contributor submitting the work unit for review
         address contributor;
         // JSON object that contains the information shown to reviewers during the review process
         string submissionMetadata;
-        // The current status of the submission
+        // The status of the submission
         ReviewStatus status;
     }
 
@@ -69,7 +67,15 @@ interface IThriveReview {
      * @notice Creates a new submission.
      * @param submission_ struct submitted for the work unit
      */
-    function createSubmission(Submission memory submission_) external;
+    function createSubmission(Submission calldata submission_) external;
+
+    /**
+     * @notice Edits an existing submission.
+     * @param editedSubmission_ struct submitted for the work unit.
+     * @param submissionId_ struct submitted for the work unit.
+     */
+    function updateSubmission(Submission calldata editedSubmission_, uint256 submissionId_) external;
+
 
     /**
      * @notice Submits a review of a certain submission.
