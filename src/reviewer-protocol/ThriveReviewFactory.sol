@@ -96,7 +96,8 @@ contract ThriveReviewFactory is
         address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
 
         // Add the ThriveReview contract address to the list of validators on the work unit contract
-        workUnitArgs.validators[0] = thriveReviewContract;
+        uint256 workUnitValidatorsLength = workUnitArgs.validators.length;
+        workUnitArgs.validators[workUnitValidatorsLength] = thriveReviewContract;
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
         address workUnitContractAddress = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs);
