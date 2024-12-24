@@ -5,6 +5,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // ThriveProtocol imports
 import "./ThriveReview.sol";
@@ -55,6 +56,8 @@ contract ThriveReviewFactory is
      * -> that opens up complexity because we would need to have _NUM_OF_SUBMISSIONS double linked lists
      * to keep track of the pending reviews.
      * 
+     * Is there a limit on how much time a user can submit a submission? From specs, only confirmations are limited.
+     * 
      * restrictions (max submissions per user, max commits to review, bla bla), timestamp deadlines for everything
      * 
      * - tests, tests, tests
@@ -102,12 +105,6 @@ contract ThriveReviewFactory is
         ReviewConfiguration memory reviewConfiguration
     ) external payable returns (address) {
 
-        // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
-        require(
-            msg.value >= reviewConfiguration.totalReviewerReward,
-            "ThriveReviewFactory: incorrect reward amount sent"
-        );
-
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
 
@@ -128,8 +125,18 @@ contract ThriveReviewFactory is
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
-        require(sucesss);
+        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
+        require(success);
+
+        if (workUnitArgs.rewardToken == address(0)) {
+            // Transfer native token funds allocated for accepted submissions to ThriveWorkUnit contract
+            (bool success_2, ) = workUnitContractAddress.call{value: workUnitArgs.maxRewards}("");
+            require(success_2);
+        } else {
+            // Transfer funds allocated for accepted submissions to ThriveWorkUnit contract
+            bool success_3 = IERC20(workUnitArgs.rewardToken).transferFrom(_msgSender(), workUnitContractAddress, workUnitArgs.maxRewards);
+            require(success_3);
+        }
 
         // ADD EVENTS LATER ON
 
@@ -162,8 +169,8 @@ contract ThriveReviewFactory is
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool sucesss, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
-        require(sucesss);
+        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
+        require(success);
 
         // This `if` clause is for the case when the ThriveWorkUnit contract was made beforehand
         // and the moderator wants the new `ThriveReview` contract to be a validator on it.
