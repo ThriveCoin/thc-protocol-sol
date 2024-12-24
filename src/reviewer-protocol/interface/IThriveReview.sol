@@ -17,6 +17,12 @@ interface IThriveReview {
         string submissionMetadata;
         // The status of the submission
         SubmissionStatus status;
+        // The number of reviews that have been conducted on the submission
+        uint256 reviewCount;
+        // The number of reviews that have been accepted
+        uint256 acceptedReviewsCount;
+        // The number of reviews that have been rejected
+        uint256 rejectedReviewsCount;
     }
 
     

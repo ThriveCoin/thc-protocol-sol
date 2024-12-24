@@ -104,6 +104,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     event ReviewCreated(uint256 reviewId);
 
 
+
+    // SCALER FOR CALCULATING RATIO OF ACCEPTED/REJECTED REVIEWS
+    uint256 SCALER = 10_000;
+
+
+
+
     // @inheritdoc IThriveReview
     function initialize(
         IThriveReviewFactory.ReviewConfiguration memory reviewConfiguration_,
@@ -155,6 +162,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
 
+        
+
+        /// MAKE SURE TO HANDLE REVIEW COUNT PROPERLY - DO NOT LET USER INTERFERE WITH IT
+        submissions[submissionId].reviewCount = 0;
+        submissions[submissionId].acceptedReviewsCount = 0;
+        submissions[submissionId].rejectedReviewsCount = 0;
+
         // Emit event - fill data later
         emit SubmissionCreated(submissionId);
     }
@@ -175,10 +189,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
         // Save the edited submission to the `submissions` mapping
-        submissions[submissionId_] = editedSubmission_;
-
-        // Change the status of the submission to "PENDING"
-        submissions[submissionId_].status = SubmissionStatus.PENDING;
+        submissions[submissionId_].submissionMetadata = editedSubmission_.submissionMetadata;
 
         // Emit event - fill data later
         emit SubmissionUpdated(submissionId_);
@@ -208,6 +219,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Change the status of the review to `COMMITED`
         review.status = ReviewStatus.COMMITED;
+
+        // emit event
+        // fill data later
+        // emit CommitedToReview(reviewId);
     }
 
 
@@ -231,6 +246,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(review.submissionId == review_.submissionId, "User is not creating a review for the same submission they commited to");
         // Check that the deadline hasn't passed
         require(block.timestamp <= review.deadline, "Review deadline has passed");
+        // Require that the review decision is either "ACCEPTED" or "REJECTED"
+        require(review_.decision == ReviewDecision.ACCEPTED || review_.decision == ReviewDecision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
 
 
 
@@ -241,10 +258,29 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         userReviews[_msgSender()].push(reviewId_);
 
         // Save the review ID to the submission's reviews
-        submissionReviews[review_.submissionId].push(reviewId_);
+        submissionReviews[review_.submissionId].push(reviewId_); // @dev is there a better/optimal way to not store this in an array
 
         // Change the status of the review to `DONE`
         reviews[reviewId_].status = ReviewStatus.DONE;
+
+
+
+        // HANDLE SUBMISSION OBJECT
+
+        // Fetch the submission from storage
+        Submission storage submission = submissions[review_.submissionId];
+
+        // Update the review count on submission
+        submission.reviewCount++;
+
+        // Update the accepted/rejected review count on submission
+        if (review_.decision == ReviewDecision.ACCEPTED) {
+            submission.acceptedReviewsCount++;
+        } else if (review_.decision == ReviewDecision.REJECTED) {
+            submission.rejectedReviewsCount++;
+        } else {
+            revert("Review decision must be either 'ACCEPTED' or 'REJECTED'");
+        }
 
         // reach a decision at the end of each review
         // check if the threshold passed and reach a decision? Ask Rilind
@@ -270,8 +306,43 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
     // @inheritdoc IThriveReview
-    function _reachDecisionOnSubmission(uint256 submissionId_) internal {}
-    // this is where we reach decisions on submissions, based on review configs
+    // this function can be called every time there is a review or NOT? Ask Rilind
+    function reachDecisionOnSubmission(uint256 submissionId_) external 
+        submissionExists(submissionId_)
+    {
+        _reachDecisionOnSubmission(submissionId_);
+    }
+
+    // @inheritdoc IThriveReview
+    function _reachDecisionOnSubmission(uint256 submissionId_) internal {
+        
+        // Fetch the submission from storage and copy to memory
+        Submission storage submission = submissions[submissionId_];
+
+        // Require that the submission is in the "PENDING" status
+        require(submission.status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
+
+        // Check if the submission has enough reviews to reach a decision
+        if (submission.reviewCount >= reviewConfiguration.minimumReviews) {
+
+            // Calculate the ratio of accepted reviews
+            uint256 acceptedReviews = submission.acceptedReviewsCount;
+            uint256 acceptedRatio = (acceptedReviews * SCALER) / submission.reviewCount;
+
+            // Calculate the ratio of accepted/rejected reviews
+            uint256 rejectedReviews = submission.rejectedReviewsCount;
+            uint256 rejectedRatio = (rejectedReviews * SCALER) / submission.reviewCount;
+
+            // Check if the ratio is above the agreement threshold
+            if (acceptedRatio >= reviewConfiguration.agreementThreshold) {
+                submission.status = SubmissionStatus.ACCEPTED;
+            } else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
+                submission.status = SubmissionStatus.REJECTED;
+            } else {
+                // WHAT TO DO IN THIS CASE ??; Ask Rilind
+            }
+        }
+    }
 
 
     // @inheritdoc IThriveReview
