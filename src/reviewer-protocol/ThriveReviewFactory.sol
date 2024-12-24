@@ -55,7 +55,7 @@ contract ThriveReviewFactory is
      * -> that opens up complexity because we would need to have _NUM_OF_SUBMISSIONS double linked lists
      * to keep track of the pending reviews.
      * 
-     * restrictions (max submits, thresholds, bla bla), timestamp deadlines for everything
+     * restrictions (max submissions per user, max commits to review, bla bla), timestamp deadlines for everything
      * 
      * - tests, tests, tests
      */

@@ -87,7 +87,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     mapping(uint256 => Review) public reviews;
 
     // Mapping of reviews made to a single submission
-    mapping(uint256 => uint256[]) public submissionReviews;
+    mapping(uint256 => uint256[]) public submissionReviews; // @dev maybe not needed storage structure
 
 
     /**
