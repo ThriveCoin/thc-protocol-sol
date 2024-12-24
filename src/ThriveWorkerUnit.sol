@@ -141,7 +141,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         IERC20(rewardToken).safeTransferFrom(
             msg.sender,
             address(this),
-            rewardAmount * maxRewards
+            rewardAmount * maxRewards // @dev this should be maxRewards -> multiplication does not make sense? Ask Lorent
         );
         ready = true;
 

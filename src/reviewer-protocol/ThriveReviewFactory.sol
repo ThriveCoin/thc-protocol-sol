@@ -128,16 +128,6 @@ contract ThriveReviewFactory is
         (bool success, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
         require(success);
 
-        if (workUnitArgs.rewardToken == address(0)) {
-            // Transfer native token funds allocated for accepted submissions to ThriveWorkUnit contract
-            (bool success_2, ) = workUnitContractAddress.call{value: workUnitArgs.maxRewards}("");
-            require(success_2);
-        } else {
-            // Transfer funds allocated for accepted submissions to ThriveWorkUnit contract
-            bool success_3 = IERC20(workUnitArgs.rewardToken).transferFrom(_msgSender(), workUnitContractAddress, workUnitArgs.maxRewards);
-            require(success_3);
-        }
-
         // ADD EVENTS LATER ON
 
         return thriveReviewContract;
