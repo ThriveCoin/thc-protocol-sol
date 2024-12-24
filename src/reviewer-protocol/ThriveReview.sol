@@ -301,15 +301,19 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function deletePendingReview(uint256 reviewId_) public {
 
-        // make sure the deadline has passed before deleting
-        // write this only after writing the double linked list library
+        // Require that the review is in the "COMMITED" status
+        require(reviews[reviewId_].status == ReviewStatus.COMMITED, "Review is not in 'COMMITED' status");
+        // Require that the reviews' deadline has passed
+        require(block.timestamp > reviews[reviewId_].deadline, "Review deadline has not passed");
 
-    }
 
-    /**
-     * Function for retrieving the funds for reviewers that havent been paid out. 
-     */
-    
+        // Delete the review from `reviews` mapping
+        delete reviews[reviewId_];
+
+        // emit event - fill data later
+        // emit PendingReviewDeleted(reviewId_);
+
+    }    
 
     // @inheritdoc IThriveReview
     // this function can be called every time there is a review or NOT? Ask Rilind

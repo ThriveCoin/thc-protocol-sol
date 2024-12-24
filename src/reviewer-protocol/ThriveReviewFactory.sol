@@ -51,7 +51,10 @@ contract ThriveReviewFactory is
      * 
      * big areas to still cover:
      * money flow for submitters and reviewers - when do they get paid?
-     * double linked list
+     * double linked list - I think this solution can be discarded because we have to track pending reviews PER submission
+     * -> that opens up complexity because we would need to have _NUM_OF_SUBMISSIONS double linked lists
+     * to keep track of the pending reviews.
+     * 
      * restrictions (max submits, thresholds, bla bla), timestamp deadlines for everything
      * 
      * - tests, tests, tests
