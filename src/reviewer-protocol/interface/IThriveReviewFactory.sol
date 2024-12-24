@@ -25,7 +25,10 @@ interface IThriveReviewFactory {
         // The maximum number of reviews that can be conducted for a submission.
         uint64 maximumReviews;
 
-        // The time allowed for a reviewer to complete their review.
+        // The time until contributor is allowed to submit their work unit submission.
+        uint64 submissionDeadline;
+
+        // The time allowed for a reviewer to complete their review after commiting to it.
         uint64 reviewCommitmentDeadline;
 
         // An array of badges required for an EVM address to submit submissions.

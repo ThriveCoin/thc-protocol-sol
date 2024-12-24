@@ -143,8 +143,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         Submission calldata submission_
     ) external onlyUserWithBadges(reviewConfiguration.submitterBadges) {
 
-        // Require that the work unit is still active
-        require(IThriveWorkUnit(workUnitContractAddress).isActive() == true, "Work unit is not active");
+        // Require deadline for submissions has not passed
+        require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed"); // @dev still up for debate - do submissions have their own dadline?
 
 
         // Fetch the submission ID and increment the counter
@@ -183,9 +183,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(hasUserSubmitted(_msgSender(), submissionId_), "User has not submitted this submission");
         // Require that the submission is in the "PENDING" status
         require(submissions[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in PENDING status");
-        // Require that the work unit is still active
-        require(IThriveWorkUnit(workUnitContractAddress).isActive() == true, "Work unit is not active");
-
+        // Require deadline for submissions has not passed
+        require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed"); // @dev still up for debate - do submissions have their own dadline?
 
 
         // Save the edited submission to the `submissions` mapping
@@ -229,7 +228,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function createReview(
         Review calldata review_,
-        uint256 reviewId_ // make sure user owns this reviewId_ hes commited to
+        uint256 reviewId_
     ) external 
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
         submissionExists(review_.submissionId)
@@ -285,6 +284,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // reach a decision at the end of each review
         // check if the threshold passed and reach a decision? Ask Rilind
 
+        // DOes the reviewer get paid here right away ??? Ask Rilind
+
         // Emit event - fill data later
         emit ReviewCreated(reviewId_);
 
@@ -304,6 +305,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // write this only after writing the double linked list library
 
     }
+
+    /**
+     * Function for retrieving the funds for reviewers that havent been paid out. 
+     */
+    
 
     // @inheritdoc IThriveReview
     // this function can be called every time there is a review or NOT? Ask Rilind
@@ -336,10 +342,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Check if the ratio is above the agreement threshold
             if (acceptedRatio >= reviewConfiguration.agreementThreshold) {
                 submission.status = SubmissionStatus.ACCEPTED;
+
+                // does he get paid here automatically
+                // IThriveWorkUnit(workUnitContractAddress).confirm();
+
             } else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
                 submission.status = SubmissionStatus.REJECTED;
             } else {
-                // WHAT TO DO IN THIS CASE ??; Ask Rilind
+                // what to do here when neither threshold is reached ??; Ask Rilind
             }
         }
     }

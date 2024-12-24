@@ -49,16 +49,11 @@ contract ThriveReviewFactory is
     /**
      * what needs to work
      * 
-     * money payout flow - work unit creator sends total funds, each review gets total/max amount of reviews  (I guess?)
-     * are they paid fixed amount or relative to total amount of funds?
+     * big areas to still cover:
+     * money flow for submitters and reviewers - when do they get paid?
+     * double linked list
+     * restrictions (max submits, thresholds, bla bla), timestamp deadlines for everything
      * 
-     * 
-     * commit to review - user commits to do a review of a specific submission
-     * when does a reviewer get paid ? - when a threshold been passed - 
-     * BUT BUT BUT - do we automatically pay when threshold is passed or can it still be triggered later on
-     * edge case, they commit to review, deadline pass but they still in pending state, can they still review?
-     * 
-     * - double linked list library
      * - tests, tests, tests
      */
 
