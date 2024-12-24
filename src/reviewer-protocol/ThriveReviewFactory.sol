@@ -45,6 +45,24 @@ contract ThriveReviewFactory is
      */
     event ReviewContractCreated(address reviewContract);
 
+
+    /**
+     * what needs to work
+     * 
+     * money payout flow - work unit creator sends total funds, each review gets total/max amount of reviews  (I guess?)
+     * are they paid fixed amount or relative to total amount of funds?
+     * 
+     * 
+     * commit to review - user commits to do a review of a specific submission
+     * when does a reviewer get paid ? - when a threshold been passed - 
+     * BUT BUT BUT - do we automatically pay when threshold is passed or can it still be triggered later on
+     * edge case, they commit to review, deadline pass but they still in pending state, can they still review?
+     * 
+     * - double linked list library
+     * - tests, tests, tests
+     */
+
+
     // Implementation contract should be disabled per UUPS standard
     constructor() {
         _disableInitializers();

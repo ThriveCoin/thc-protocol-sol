@@ -299,6 +299,14 @@ contract ThriveWorkerUnit is ReentrancyGuard {
     }
 
     /**
+     * @notice Checks if the work unit is still active - if the deadline has passed or not.
+     * @return True if the work unit is active, false otherwise.
+     */
+    function isActive() external view returns (bool) {
+        return block.timestamp <= deadline;
+    }
+
+    /**
      * @notice Checks if an address is a moderator.
      * @param account Account address to check.
      * @return True if the address is a moderator, false otherwise.

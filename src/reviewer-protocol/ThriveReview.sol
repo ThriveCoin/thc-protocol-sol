@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // ThriveProtocol imports
+import "../interface/IThriveWorkUnit.sol";
 import "./interface/IThriveReviewFactory.sol";
 import "./interface/IThriveReview.sol";
 import "../IBadgeQuery.sol";
@@ -14,7 +15,7 @@ import "../IBadgeQuery.sol";
  * @title ThriveReview
  * @dev Contract for managing reviews.
  */
-contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
+contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     /**
      * Modifiers
@@ -40,6 +41,8 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         require(submissions[submissionId_].contributor != address(0), "Submission does not exist");
         _;
     }
+
+
 
     /**
      * Storage variables
@@ -108,7 +111,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         address thriveReviewFactoryAddress_,
         address badgeQueryContractAddress_,
         address owner_
-    ) external initializer {    // @dev Should this have an owner?
+    ) external initializer {
 
         // Set the ReviewConfiguration object
         reviewConfiguration = reviewConfiguration_;
@@ -130,8 +133,12 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
 
     // @inheritdoc IThriveReview
     function createSubmission(
-        Submission memory submission_
-    ) external onlyUserWithBadges(reviewConfiguration.reviewerBadges) {
+        Submission calldata submission_
+    ) external onlyUserWithBadges(reviewConfiguration.submitterBadges) {
+
+        // Require that the work unit is still active
+        require(IThriveWorkUnit(workUnitContractAddress).isActive() == true, "Work unit is not active");
+
 
         // Fetch the submission ID and increment the counter
         uint256 submissionId = submissionCounter++;
@@ -140,9 +147,9 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
         submissions[submissionId] = submission_;
 
         // Change the status of the submission to "PENDING"
-        submissions[submissionId].status = ReviewStatus.PENDING;
+        submissions[submissionId].status = SubmissionStatus.PENDING;
 
-        // Save the contributor's address to the _msgSender
+        // Save the contributor's address to be the msg.sender
         submissions[submissionId].contributor = _msgSender();
 
         // Save the submission ID to the user's submissions
@@ -154,50 +161,97 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
 
 
     function updateSubmission (
-        Submission memory editedSubmission_,
+        Submission calldata editedSubmission_,
         uint256 submissionId_
-    ) external onlyUserWithBadges(reviewConfiguration.reviewerBadges) {
+    ) external onlyUserWithBadges(reviewConfiguration.submitterBadges) {
 
         // Require user to have submitted the submission
-        require(userSubmitted(_msgSender(), submissionId_), "User has not submitted this submission");
+        require(hasUserSubmitted(_msgSender(), submissionId_), "User has not submitted this submission");
+        // Require that the submission is in the "PENDING" status
+        require(submissions[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in PENDING status");
+        // Require that the work unit is still active
+        require(IThriveWorkUnit(workUnitContractAddress).isActive() == true, "Work unit is not active");
+
+
 
         // Save the edited submission to the `submissions` mapping
         submissions[submissionId_] = editedSubmission_;
 
         // Change the status of the submission to "PENDING"
-        submissions[submissionId_].status = ReviewStatus.PENDING;
+        submissions[submissionId_].status = SubmissionStatus.PENDING;
 
         // Emit event - fill data later
         emit SubmissionUpdated(submissionId_);
     }
 
+
     // @inheritdoc IThriveReview
-    function createReview(
-        Review memory review_
-    ) external 
+    function commitToReview(uint256 submissionId_) external 
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
-        submissionExists(review_.submissionId)
+        submissionExists(submissionId_)
     {
 
         // Fetch the review ID and increment the counter
         uint256 reviewId = reviewCounter++;
 
         // Save the review to the `reviews` mapping
-        reviews[reviewId] = review_;
+        Review storage review = reviews[reviewId];
 
-        // Save the review ID to the user's reviews
-        userReviews[_msgSender()].push(reviewId);
+        // Save the submission ID to the review
+        review.submissionId = submissionId_;
 
-        // Save the review ID to the submission's reviews - @dev make sure submission exists
-        submissionReviews[review_.submissionId].push(reviewId);
+        // Save the reviewers address in storage for later authentication
+        review.reviewer = _msgSender();
 
-        // Emit event - fill data later
-        emit ReviewCreated(reviewId);
+        // Set the deadline for the review
+        review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentDeadline;
 
+        // Change the status of the review to `COMMITED`
+        review.status = ReviewStatus.COMMITED;
     }
 
+
     // @inheritdoc IThriveReview
-    function commitToReview(uint256 reviewId_) external {
+    function createReview(
+        Review calldata review_,
+        uint256 reviewId_ // make sure user owns this reviewId_ hes commited to
+    ) external 
+        onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
+        submissionExists(review_.submissionId)
+    {
+
+        // Fetch the review from storage and copy to memory
+        Review memory review = reviews[reviewId_];
+
+        // Require user to be the committer of the review
+        require(reviews[reviewId_].reviewer == _msgSender(), "User is not the committer of this review");
+        // Require user to have commited to the review
+        require(review.status == ReviewStatus.COMMITED, "User has not commited to this review");
+        // Require user to create a review with the same submission ID they commited to
+        require(review.submissionId == review_.submissionId, "User is not creating a review for the same submission they commited to");
+        // Check that the deadline hasn't passed
+        require(block.timestamp <= review.deadline, "Review deadline has passed");
+
+
+
+        // Save the review to the `reviews` mapping
+        reviews[reviewId_] = review_; // here he can change the .reviewer but maybe thats not a big deal ?
+
+        // Save the review ID to the user's reviews
+        userReviews[_msgSender()].push(reviewId_);
+
+        // Save the review ID to the submission's reviews
+        submissionReviews[review_.submissionId].push(reviewId_);
+
+        // Change the status of the review to `DONE`
+        reviews[reviewId_].status = ReviewStatus.DONE;
+
+        // reach a decision at the end of each review
+        // check if the threshold passed and reach a decision? Ask Rilind
+
+        // Emit event - fill data later
+        emit ReviewCreated(reviewId_);
+
     }
 
     // @inheritdoc IThriveReview
@@ -209,7 +263,16 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
 
     // @inheritdoc IThriveReview
     function deletePendingReview(uint256 reviewId_) public {
+
+        // make sure the deadline has passed before deleting
+        // write this only after writing the double linked list library
+
     }
+
+    // @inheritdoc IThriveReview
+    function _reachDecisionOnSubmission(uint256 submissionId_) internal {}
+    // this is where we reach decisions on submissions, based on review configs
+
 
     // @inheritdoc IThriveReview
     function hasWorkUnitContract() public view returns (bool) {
@@ -217,7 +280,7 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
     }
 
     // @inheritdoc IThriveReview
-    function userSubmitted(address user, uint256 submissionId_) public view returns (bool) {
+    function hasUserSubmitted(address user, uint256 submissionId_) public view returns (bool) {
 
         uint256[] memory userSubmissionIds = userSubmissions[user];
         
@@ -229,6 +292,10 @@ contract ThriveReview is Initializable, OwnableUpgradeable, IThriveReview {
 
         return false;
     }
+
+    // @inheritdoc IThriveReview
+    function retrieveFunds() external onlyOwner {}
+
 
     /**
      * @notice MUST HAVE this function in order to receive THRIVE rewards for reviewers.

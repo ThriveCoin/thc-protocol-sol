@@ -16,7 +16,7 @@ interface IThriveReview {
         // JSON object that contains the information shown to reviewers during the review process
         string submissionMetadata;
         // The status of the submission
-        ReviewStatus status;
+        SubmissionStatus status;
     }
 
     
@@ -28,19 +28,33 @@ interface IThriveReview {
         address reviewer;
         // The ThriveReview metadata
         string reviewMetadata;
+        // Deadline for a committed review to be completed
+        uint256 deadline;
         // The reviewers' decision on a particular submission
         ReviewDecision decision;
+        // The status of the review
+        ReviewStatus status;
     }
 
-    // Status of a ThriveReview
-    enum ReviewStatus {
+    // Status of a ThriveReview submission
+    enum SubmissionStatus {
+        NONE,
         PENDING,
         ACCEPTED,
         REJECTED
     }
 
+    // Status of a review object for a submission
+    enum ReviewStatus {
+        NONE,
+        COMMITED,
+        EXPIRED, // When there needs to be room made for other commits
+        DONE
+    }
+
     // Review decision on a particular submission
     enum ReviewDecision {
+        NONE,
         ACCEPTED,
         REJECTED
     }
@@ -60,48 +74,4 @@ interface IThriveReview {
         address badgeQueryContractAddress_,
         address owner_
     ) external;
-
-    /**
-     * @notice Creates a new submission.
-     * @param submission_ struct submitted for the work unit
-     */
-    function createSubmission(Submission calldata submission_) external;
-
-    /**
-     * @notice Edits an existing submission.
-     * @param editedSubmission_ struct submitted for the work unit.
-     * @param submissionId_ struct submitted for the work unit.
-     */
-    function updateSubmission(Submission calldata editedSubmission_, uint256 submissionId_) external;
-
-
-    /**
-     * @notice Submits a review of a certain submission.
-     * @param review_ Review struct submitted
-     */
-    function createReview(Review memory review_) external;
-
-    /**
-     * @notice Removes pending reviews that have passed a certain time deadline.
-     * @param reviewIds_ Array of review IDs to remove
-     */
-    function deletePendingReviews(uint256[] calldata reviewIds_) external;
-
-    /**
-     * @notice Deletes a pending review.
-     * @param reviewId_ The ID of the review to delete
-     */
-    function deletePendingReview(uint256 reviewId_) external;
-
-    /**
-     * @notice Commits to review a submission.
-     * @param submissionId_ The ID of the submission to review
-     */
-    function commitToReview(uint256 submissionId_) external;
-
-    /**
-     * @notice Checks if this ThriveReview contract has a ThriveWorkUnit contract connected to it.
-     * @return True if the contract has a work unit contract, false otherwise.
-     */
-    function hasWorkUnitContract() external view returns (bool);
 }

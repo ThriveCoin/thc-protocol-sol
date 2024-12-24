@@ -9,7 +9,6 @@ interface IThriveReviewFactory {
 
     // @dev Add desc on this
     struct ReviewConfiguration {
-
         // Reference to the ThriveWorkUnit on the Thrive Protocol for which the configuration is being created.
         address workUnit; // Can also use IWorkUnit interface
         // The amount of THRIVE paid to reviewers for completing an accurate review.
@@ -21,8 +20,10 @@ interface IThriveReviewFactory {
         // The maximum number of reviews that can be conducted for a submission.
         uint64 maximumReviews;
         // The time allowed for a reviewer to complete their review.
-        uint64 reviewWindow;
-        // An array of badges required for an EVM address to participate in the review.
+        uint64 reviewCommitmentDeadline;
+        // An array of badges required for an EVM address to submit submissions.
+        bytes32[] submitterBadges;
+        // An array of badges required for an EVM address to review submissions.
         bytes32[] reviewerBadges;
         // JSON object containing descriptive information for the review, such as review summary, reviewer instructions, and estimated time to complete the review.
         string reviewMetadata;
