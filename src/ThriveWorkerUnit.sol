@@ -114,21 +114,22 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     function initialize() external payable onlyModerator {
         require(!ready, "ThriveProtocol: already initialized");
-        uint256 totalRequiredValue = maxRewards * validationRewardAmount;
+        uint256 maxRewardsCounter = maxRewards / rewardAmount;
+        uint256 totalRequiredValue = maxRewards +
+            (maxRewardsCounter * validationRewardAmount);
         require(
             msg.value >= totalRequiredValue,
             "ThriveProtocol: insufficient value for validators and contributors"
         );
         require(
-            IERC20(rewardToken).balanceOf(msg.sender) >=
-                rewardAmount * maxRewards,
+            IERC20(rewardToken).balanceOf(msg.sender) >= maxRewards,
             "ThriveProtocol: insufficient value for contributors"
         );
 
         IERC20(rewardToken).safeTransferFrom(
             msg.sender,
             address(this),
-            rewardAmount * maxRewards
+            maxRewards
         );
         ready = true;
 
