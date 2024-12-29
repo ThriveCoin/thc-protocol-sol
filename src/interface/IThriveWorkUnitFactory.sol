@@ -37,5 +37,7 @@ interface IThriveWorkUnitFactory {
      * @notice Creates a new ThriveWorkUnit contract.
      * @param workUnitArgs Struct containing args for the work unit.
      */
-    function createThriveWorkUnit(WorkUnitArgs memory workUnitArgs) external returns (address);
+    function createThriveWorkUnit(WorkUnitArgs memory workUnitArgs)
+        external
+        returns (address);
 }

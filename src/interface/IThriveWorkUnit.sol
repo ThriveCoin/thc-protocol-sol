@@ -23,5 +23,4 @@ interface IThriveWorkUnit {
      * @return True if the work unit is active, false otherwise.
      */
     function isActive() external view returns (bool);
-
 }

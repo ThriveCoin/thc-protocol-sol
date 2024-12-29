@@ -9,8 +9,6 @@ import "./interface/IThriveWorkUnitFactory.sol";
  * @dev Factory contract for creating ThriveWorkerUnit instances.
  */
 contract ThriveWorkerUnitFactory is IThriveWorkUnitFactory {
-
-
     /**
      * @dev Emitted when a new ThriveWorkerUnit is created.
      * @param unitAddress The address of the newly created work unit contract.
@@ -51,7 +49,6 @@ contract ThriveWorkerUnitFactory is IThriveWorkUnitFactory {
 
         return address(unit);
     }
-
 
     // @inheritdoc IThriveWorkUnitFactory
     function createThriveWorkUnit(

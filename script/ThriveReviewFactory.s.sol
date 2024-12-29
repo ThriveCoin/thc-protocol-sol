@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 
-
 // TO-BE-DONE
 contract ThriveReviewFactoryScript is Script {
     function run() external {

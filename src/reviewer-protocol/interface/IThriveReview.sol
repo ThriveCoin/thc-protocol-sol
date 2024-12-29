@@ -25,7 +25,7 @@ interface IThriveReview {
         // The status of the submission
         SubmissionStatus status;
     }
-    
+
     // Reviews store details of each review conducted on a submission.
     struct Review {
         // Review id in contract
