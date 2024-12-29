@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+
 // @OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 
 // ThriveProtocol imports
 import "./ThriveReview.sol";
@@ -13,15 +15,18 @@ import "./interface/IThriveReviewFactory.sol";
 import "../interface/IThriveWorkUnit.sol";
 import "../interface/IThriveWorkUnitFactory.sol";
 
+
 /**
  * @title ThriveReviewFactory
- * @dev Factory contract for creating ThriveReview contract instances.
+ * @dev Factory contract for creating ThriveReview and/or ThriveWorkUnit contract instances.
  */
 contract ThriveReviewFactory is
     OwnableUpgradeable,
     UUPSUpgradeable,
     IThriveReviewFactory
 {
+
+
     /**
      * STORAGE VARIABLES
      */
@@ -47,22 +52,6 @@ contract ThriveReviewFactory is
     event ReviewContractCreated(address reviewContract);
 
 
-    /**
-     * what needs to work
-     * 
-     * big areas to still cover:
-     * money flow for submitters and reviewers - when do they get paid?
-     * double linked list - I think this solution can be discarded because we have to track pending reviews PER submission
-     * -> that opens up complexity because we would need to have _NUM_OF_SUBMISSIONS double linked lists
-     * to keep track of the pending reviews.
-     * 
-     * Is there a limit on how much time a user can submit a submission? From specs, only confirmations are limited.
-     * 
-     * restrictions (max submissions per user, max commits to review, bla bla), timestamp deadlines for everything
-     * 
-     * - tests, tests, tests
-     */
-
 
     // Implementation contract should be disabled per UUPS standard
     constructor() {
@@ -70,16 +59,19 @@ contract ThriveReviewFactory is
     }
 
     /**
-     * @notice Initializes the contract.
-     * @param owner_ Address of the owner of the contract.
+     * @notice Initializes the contract with the provided addresses.
      * @param thriveWorkerUnitFactory_ Address of the ThriveWorkerUnitFactory contract.
+     * @param thriveReviewContractImplementation_ Address of the ThriveReview contract implementation.
+     * @param badgeQueryContractAddress_ Address of the BadgeQuery contract.
+     * @param owner_ Owner address of this contract.
      */
     function initialize(
-        address owner_,
         address thriveWorkerUnitFactory_,
         address thriveReviewContractImplementation_,
-        address badgeQueryContractAddress_
+        address badgeQueryContractAddress_,
+        address owner_
     ) external initializer {
+
         // @dev add update function for this address?
         thriveWorkerUnitFactory = thriveWorkerUnitFactory_;
 
@@ -92,91 +84,132 @@ contract ThriveReviewFactory is
         // Initialize the contract with the provided owner
         __Ownable_init(owner_);
         __UUPSUpgradeable_init();
+
+
+        /// EVENTS
+        //////////////
     }
+
+
 
     /**
      * @notice Creates new WorkerUnit and ThriveReview contracts.
-     * @param workUnitArgs Struct containing args for properly initializing WorkUnit contract.
-     * @param reviewConfiguration Struct containing args for the review.
+     * @param workUnitArgs_ Struct containing args for properly initializing WorkUnit contract.
+     * @param reviewConfiguration_ Struct containing args for the reviewing process.
      * @return Address of the newly created ThriveReview contract.
      */
     function createWorkUnitAndReviewContract(
-        IThriveWorkUnitFactory.WorkUnitArgs memory workUnitArgs,
-        ReviewConfiguration memory reviewConfiguration
+        IThriveWorkUnitFactory.WorkUnitArgs memory workUnitArgs_,
+        ReviewConfiguration memory reviewConfiguration_
     ) external payable returns (address) {
+
+        // Require enough funds are sent to payout the reward for reviewers
+        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: incorrect reward amount sent");
+
+
+        // Require reviewersRewardTotalAllocation amount is enough to cover all reviewers potentially
+        require(
+            reviewConfiguration_.reviewerRewardsTotalAllocation >=
+                reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
+            "ThriveReviewFactory: incorrect reward amount"
+        );
+
 
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
 
-        // Add the ThriveReview contract address to the list of validators on the work unit contract
-        uint256 workUnitValidatorsLength = workUnitArgs.validators.length;
-        workUnitArgs.validators[workUnitValidatorsLength] = thriveReviewContract;
+
+        // ThriveReview contract should be the ONLY validator on the ThriveWorkUnit contract
+        workUnitArgs_.validators = new address[](1);
+        workUnitArgs_.validators[0] = thriveReviewContract;
+
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
-        address workUnitContractAddress = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs);
+        address workUnitContractAddress = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs_);
+
 
         // Initialize the newly created ThriveReview contract.
         IThriveReview(thriveReviewContract).initialize(
-            reviewConfiguration,
+            reviewConfiguration_,
             workUnitContractAddress,
             address(this),
             badgeQueryContractAddress,
-            msg.sender
+            _msgSender()
         );
 
+
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
+        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration_.reviewerRewardsTotalAllocation}("");
         require(success);
 
-        // ADD EVENTS LATER ON
+
+
+        // ADD EVENTS LATER
+        ///////////////////
 
         return thriveReviewContract;
     }
 
     /**
-     *
-     * @param reviewConfiguration TODO.
-     * @param workUnitContractAddress Address of the work unit contract.
+     * @notice Creates a new ThriveReview contract
+     * Optional: This function can be used to connect an existing ThriveWorkUnit to a ThriveReview contract.
+     * @param reviewConfiguration_ Struct containing args for the reviewing process.
+     * @param workUnitContractAddress_ Address of the work unit contract: Zero address if NO ThriveWorkUnit is deployed.
      */
     function createReviewContract(
-        ReviewConfiguration memory reviewConfiguration,
-        address workUnitContractAddress
+        ReviewConfiguration memory reviewConfiguration_,
+        address workUnitContractAddress_
     ) external payable returns (address) {
 
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
-        require(msg.value >= reviewConfiguration.totalReviewerReward,"ThriveReviewFactory: incorrect reward amount sent");
+        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: incorrect reward amount sent");
+
+
+        // Require reviewersRewardTotalAllocation amount is enough to cover potentially all reviewers
+        require(
+            reviewConfiguration_.reviewerRewardsTotalAllocation >=
+                reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
+            "ThriveReviewFactory: incorrect reward amount"
+        );
+
 
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
 
+
         // Initialize the newly created ThriveReview contract.
         IThriveReview(thriveReviewContract).initialize(
-            reviewConfiguration,
-            workUnitContractAddress,
+            reviewConfiguration_,
+            workUnitContractAddress_,
             address(this),
             badgeQueryContractAddress,
-            msg.sender
+            _msgSender()
         );
 
+
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration.totalReviewerReward}("");
+        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration_.reviewerRewardsTotalAllocation}("");
         require(success);
 
+
         // This `if` clause is for the case when the ThriveWorkUnit contract was made beforehand
-        // and the moderator wants the new `ThriveReview` contract to be a validator on it.
-        if (workUnitContractAddress != address(0)) {
+        // and the moderator wants the new `ThriveReview` contract to be a validator/judge on it.
+        if (workUnitContractAddress_ != address(0)) {
 
             // Only moderator of the ThriveWorkUnit contract can add a ThriveReview contract as a validator.
             require(
-                IThriveWorkUnit(workUnitContractAddress).isModerator(msg.sender), // @dev can we do this, is the moderator address an EOA?
+                IThriveWorkUnit(workUnitContractAddress_).isModerator(_msgSender()), // @dev Is the moderator address an EOA?
                 "ThriveReviewFactory: caller is not a moderator"
             );
 
-            // Add the ThriveReview contract address to the list of validators on the work unit contract - should this only be allowed to be done once? 
-            IThriveWorkUnit(workUnitContractAddress).addValidator(thriveReviewContract);
+            // Add the ThriveReview contract address to the list of validators on the ThriveWorkUnit contract
+            // @dev Should this only be allowed to be done once ? 
+            IThriveWorkUnit(workUnitContractAddress_).addValidator(thriveReviewContract);
         }
 
-        // ADD EVENTS LATER ON (CROSS-CHECK WITH INTEGRATIONS - frontend, backend)
+
+        // ADD EVENTS LATER ON
+        ///////////////////////
 
         return thriveReviewContract;
     }

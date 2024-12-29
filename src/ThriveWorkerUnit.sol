@@ -125,6 +125,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         badgeQuery = IBadgeQuery(_badgeQuery);
     }
 
+    // @dev Needs futher discussion on token payment/distributions
     function initialize() external payable onlyModerator {
         require(!ready, "ThriveProtocol: already initialized");
         uint256 totalRequiredValue = maxRewards * validationRewardAmount;
@@ -141,7 +142,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         IERC20(rewardToken).safeTransferFrom(
             msg.sender,
             address(this),
-            rewardAmount * maxRewards // @dev this should be maxRewards -> multiplication does not make sense? Ask Lorent
+            rewardAmount * maxRewards
         );
         ready = true;
 

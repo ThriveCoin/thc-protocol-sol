@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+
 // @OpenZeppelin imports
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 
 // ThriveProtocol imports
 import "../interface/IThriveWorkUnit.sol";
@@ -11,11 +13,14 @@ import "./interface/IThriveReviewFactory.sol";
 import "./interface/IThriveReview.sol";
 import "../IBadgeQuery.sol";
 
+
 /**
  * @title ThriveReview
  * @dev Contract for managing reviews.
  */
 contract ThriveReview is OwnableUpgradeable, IThriveReview {
+
+
 
     /**
      * Modifiers
@@ -27,25 +32,28 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
     modifier onlyUserWithBadges(bytes32[] memory badges) {
         for (uint256 i = 0; i < badges.length; i++) {
+
             // Require that user has the required badge
-            require(IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i]), "User does not have required badges");
+            require(IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i]), "User does not have required badge");
         }
         _;
     }
 
     /**
-     * @dev Modifier that checks if the submission exists.
+     * @dev Modifier that checks if the submission is in "PENDING" status.
      * @param submissionId_ ID of the submission.
      */
-    modifier submissionExists(uint256 submissionId_) {
-        require(submissions[submissionId_].contributor != address(0), "Submission does not exist");
+    modifier submissionPending(uint256 submissionId_) {
+        require(submissions[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
         _;
     }
 
 
 
     /**
-     * Storage variables
+     * Storage variables 
+     * 
+     * @dev Check later what storage variables are not actually needed.
      */
 
     // Review configuration - configuration/rules of the work unit review process
@@ -67,6 +75,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     uint256 public reviewCounter;
 
 
+
     ////// USER VARIABLES //////
 
     // SUBMISSIONS
@@ -80,14 +89,31 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     // REVIEWS
 
-    // Mapping of user addresses to their review IDs
-    mapping(address => uint256[]) public userReviews;
+    // Mapping of user addresses to their submission reviews: userAddress => submissionId => reviewId
+    mapping(address => mapping(uint256 => uint256)) public userSubmissionReview;
 
     // Mapping of review IDs to the Review object
     mapping(uint256 => Review) public reviews;
 
-    // Mapping of reviews made to a single submission
-    mapping(uint256 => uint256[]) public submissionReviews; // @dev maybe not needed storage structure
+    // Mapping of user addresses to their review IDs
+    mapping(address => uint256[]) public userReviews;
+
+    // Mapping of counters for commited reviews per submission: submissionId => Number of commited reviews
+    mapping(uint256 => uint256) public committedReviewsPerSubmissionCounter;
+
+    // Mapping of counters for reviews per submission: SubmissionId => Number of reviews
+    mapping(uint256 => uint256) public reviewsPerSubmissionCounter;
+
+    // Mapping that checks if a user has commited to review a specific submission: userAddress => submissionId => bool
+    mapping(address => mapping(uint256 => bool)) public userCommitedToReview;
+
+    // Mapping of reviews per submission: submissionId => reviewId[]
+    mapping(uint256 => uint256[]) public submissionReviews; // @dev maybe this mapping is not needed at all
+
+    // Mapping of user addresses to their submission reviews: userAddress => submissionId => true/false
+    mapping(address => mapping(uint256 => bool)) public  userClaimedRewardForReview;
+
+
 
 
     /**
@@ -105,9 +131,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // SCALER FOR CALCULATING RATIO OF ACCEPTED/REJECTED REVIEWS
-    uint256 SCALER = 10_000;
-
+    // Scaler value for calculating ratios accepted/rejected reviews
+    uint256 constant SCALER = 10_000;
 
 
 
@@ -120,10 +145,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         address owner_
     ) external initializer {
 
-        // Set the ReviewConfiguration object
+        // Set the ReviewConfiguration object/struct
         reviewConfiguration = reviewConfiguration_;
 
-        // Set the work unit contract address (optional: can be set later or not at all)
+        // Set the work unit contract address (optional)
         workUnitContractAddress = workUnitContractAddress_;
 
         // Set the ThriveReviewFactory contract address
@@ -134,6 +159,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Set the owner of the contract
         __Ownable_init(owner_);
+
+
+        /// EVENT
+        ////////////////
     }
 
 
@@ -143,15 +172,25 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         Submission calldata submission_
     ) external onlyUserWithBadges(reviewConfiguration.submitterBadges) {
 
+        // Require that the maximum amount of submissions has not been reached
+        require(submissionCounter < reviewConfiguration.maximumSubmissions, "Maximum amount of submissions has been reached");
+
         // Require deadline for submissions has not passed
-        require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed"); // @dev still up for debate - do submissions have their own dadline?
+        require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
+        
+        // Require that the user has not reached the maximum number of submissions
+        require(userSubmissions[_msgSender()].length < reviewConfiguration.maximumSubmissionsPerUser, "User has reached the maximum number of submissions");
+        
+        // Require that the user does not have a `PENDING` submission
+        require(!userHasPendingSubmission(_msgSender()), "User has a pending submission");
+
 
 
         // Fetch the submission ID and increment the counter
         uint256 submissionId = submissionCounter++;
 
         // Save the submission to the `submissions` mapping
-        submissions[submissionId] = submission_;
+        submissions[submissionId].submissionMetadata = submission_.submissionMetadata;
 
         // Change the status of the submission to "PENDING"
         submissions[submissionId].status = SubmissionStatus.PENDING;
@@ -162,29 +201,29 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
 
-        
 
-        /// MAKE SURE TO HANDLE REVIEW COUNT PROPERLY - DO NOT LET USER INTERFERE WITH IT
-        submissions[submissionId].reviewCount = 0;
-        submissions[submissionId].acceptedReviewsCount = 0;
-        submissions[submissionId].rejectedReviewsCount = 0;
 
         // Emit event - fill data later
         emit SubmissionCreated(submissionId);
     }
 
 
+    // @dev Should this function be implemented?
+    // Problem is that the user can change the submissionMetadata while the review is ongoing
     function updateSubmission (
         Submission calldata editedSubmission_,
         uint256 submissionId_
-    ) external onlyUserWithBadges(reviewConfiguration.submitterBadges) {
+    ) external 
+        onlyUserWithBadges(reviewConfiguration.submitterBadges) 
+        submissionPending(submissionId_)
+    {
 
         // Require user to have submitted the submission
-        require(hasUserSubmitted(_msgSender(), submissionId_), "User has not submitted this submission");
-        // Require that the submission is in the "PENDING" status
-        require(submissions[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in PENDING status");
+        require(submissions[submissionId_].contributor == _msgSender(), "User has not submitted this submission");
+        
         // Require deadline for submissions has not passed
-        require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed"); // @dev still up for debate - do submissions have their own dadline?
+        require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
+
 
 
         // Save the edited submission to the `submissions` mapping
@@ -198,8 +237,16 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function commitToReview(uint256 submissionId_) external 
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
-        submissionExists(submissionId_)
+        submissionPending(submissionId_)
     {
+
+        // Require that the user has not already commited to review the submission
+        require(!userCommitedToReview[_msgSender()][submissionId_], "User has already commited to review this submission");
+
+        // Require that maximum amount of commits to review has not been reached
+        require(committedReviewsPerSubmissionCounter[submissionId_] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
+
+
 
         // Fetch the review ID and increment the counter
         uint256 reviewId = reviewCounter++;
@@ -208,10 +255,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         Review storage review = reviews[reviewId];
 
         // Save the submission ID to the review
+        review.id = reviewId;
+
+        // Save the submission ID to the review
         review.submissionId = submissionId_;
 
         // Save the reviewers address in storage for later authentication
         review.reviewer = _msgSender();
+
+        // @dev Should we make sure the reviewer is not the same user as the contributor?
 
         // Set the deadline for the review
         review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentDeadline;
@@ -219,9 +271,17 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Change the status of the review to `COMMITED`
         review.status = ReviewStatus.COMMITED;
 
-        // emit event
-        // fill data later
-        // emit CommitedToReview(reviewId);
+
+
+        // Make sure the user can't commit to review the same submission again
+        userCommitedToReview[_msgSender()][submissionId_] = true;
+
+        // Increment the counter of committed reviews
+        committedReviewsPerSubmissionCounter[submissionId_]++;
+
+
+        ///// EVENT
+        //////////////
     }
 
 
@@ -231,36 +291,61 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         uint256 reviewId_
     ) external 
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
-        submissionExists(review_.submissionId)
+        submissionPending(review_.submissionId)
     {
 
-        // Fetch the review from storage and copy to memory
-        Review memory review = reviews[reviewId_];
+        // Fetch the commited review from storage and copy to memory
+        Review memory commitedReview = reviews[reviewId_];
 
-        // Require user to be the committer of the review
-        require(reviews[reviewId_].reviewer == _msgSender(), "User is not the committer of this review");
+        // Require the ids to match
+        require(commitedReview.id == reviewId_, "Review ID does not match the commited review ID");
+
+        // Require that maximum amount reviews per submission has not been reached
+        require(reviewsPerSubmissionCounter[review_.submissionId] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
+
+        // Require user to be the committer to the review
+        require(commitedReview.reviewer == _msgSender(), "User is not the committer of this review");
+        
         // Require user to have commited to the review
-        require(review.status == ReviewStatus.COMMITED, "User has not commited to this review");
-        // Require user to create a review with the same submission ID they commited to
-        require(review.submissionId == review_.submissionId, "User is not creating a review for the same submission they commited to");
+        require(commitedReview.status == ReviewStatus.COMMITED, "User has not commited to this review");
+                
         // Check that the deadline hasn't passed
-        require(block.timestamp <= review.deadline, "Review deadline has passed");
+        require(block.timestamp <= commitedReview.deadline, "Review deadline has passed");
+        
         // Require that the review decision is either "ACCEPTED" or "REJECTED"
-        require(review_.decision == ReviewDecision.ACCEPTED || review_.decision == ReviewDecision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
+        require(review_.decision == Decision.ACCEPTED || review_.decision == Decision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
 
 
 
         // Save the review to the `reviews` mapping
-        reviews[reviewId_] = review_; // here he can change the .reviewer but maybe thats not a big deal ?
+        reviews[reviewId_].reviewMetadata = review_.reviewMetadata;
+
+        // Save the reviewers' decision on the submission
+        reviews[reviewId_].decision = review_.decision;
+
+        // Save the review ID to the user's review
+        userSubmissionReview[_msgSender()][commitedReview.submissionId] = reviewId_;
 
         // Save the review ID to the user's reviews
-        userReviews[_msgSender()].push(reviewId_);
-
-        // Save the review ID to the submission's reviews
-        submissionReviews[review_.submissionId].push(reviewId_); // @dev is there a better/optimal way to not store this in an array
+        userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
 
         // Change the status of the review to `DONE`
         reviews[reviewId_].status = ReviewStatus.DONE;
+
+        // Increment the counter of reviews
+        reviewsPerSubmissionCounter[commitedReview.submissionId]++;
+
+
+        // @dev 
+        // Should we decrement the counter of committed reviews here to open up space for other commits?
+        // Doesn't make a lot of sense, but it "speeds up" the process of reviewing.
+        // This would make reviewing a "who's faster" contests, which is maybe not good.
+        //
+        // committedReviewsPerSubmissionCounter[review_.submissionId]--;
+
+
+        // Save reviews of a submission
+        submissionReviews[review_.submissionId].push(reviewId_); // @dev maybe this mapping is not needed at all
 
 
 
@@ -273,20 +358,24 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         submission.reviewCount++;
 
         // Update the accepted/rejected review count on submission
-        if (review_.decision == ReviewDecision.ACCEPTED) {
+        if (review_.decision == Decision.ACCEPTED) {
             submission.acceptedReviewsCount++;
-        } else if (review_.decision == ReviewDecision.REJECTED) {
-            submission.rejectedReviewsCount++;
         } else {
-            revert("Review decision must be either 'ACCEPTED' or 'REJECTED'");
+            submission.rejectedReviewsCount++;
         }
 
-        // reach a decision at the end of each review
-        // check if the threshold passed and reach a decision? Ask Rilind
 
-        // DOes the reviewer get paid here right away ??? Ask Rilind
+        // Does the decision get made here or in a separate function? -> _reachDecisionOnSubmission
+        // Maybe even here because - if a submission has enough reviews to reach a decision, 
+        // reviews can be made opportunistically just to get the payout without really reviewing. 
+        // @dev OPTIONAL
+        _reachDecisionOnSubmission(review_.submissionId);
 
-        // Emit event - fill data later
+
+        ////// EVENT
+        ////////////////
+
+
         emit ReviewCreated(reviewId_);
 
     }
@@ -298,30 +387,41 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         }
     }
 
+
     // @inheritdoc IThriveReview
     function deletePendingReview(uint256 reviewId_) public {
 
         // Require that the review is in the "COMMITED" status
         require(reviews[reviewId_].status == ReviewStatus.COMMITED, "Review is not in 'COMMITED' status");
+        
         // Require that the reviews' deadline has passed
         require(block.timestamp > reviews[reviewId_].deadline, "Review deadline has not passed");
 
+        // Fetch the review data
+        uint256 submissionId = reviews[reviewId_].submissionId;
+        address reviewer = reviews[reviewId_].reviewer;
+
+        // User un-committed from review
+        userCommitedToReview[reviewer][submissionId] = false;
+
+        // Decrement the counter of committed reviews
+        committedReviewsPerSubmissionCounter[submissionId]--;
 
         // Delete the review from `reviews` mapping
         delete reviews[reviewId_];
 
-        // emit event - fill data later
-        // emit PendingReviewDeleted(reviewId_);
+
+        ////// EVENT
 
     }    
 
     // @inheritdoc IThriveReview
-    // this function can be called every time there is a review or NOT? Ask Rilind
     function reachDecisionOnSubmission(uint256 submissionId_) external 
-        submissionExists(submissionId_)
+        submissionPending(submissionId_)
     {
         _reachDecisionOnSubmission(submissionId_);
     }
+
 
     // @inheritdoc IThriveReview
     function _reachDecisionOnSubmission(uint256 submissionId_) internal {
@@ -329,8 +429,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the submission from storage and copy to memory
         Submission storage submission = submissions[submissionId_];
 
-        // Require that the submission is in the "PENDING" status
-        require(submission.status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
+        // We can put this "if statement" below as a require if this function is not called automatically on createReview function.
 
         // Check if the submission has enough reviews to reach a decision
         if (submission.reviewCount >= reviewConfiguration.minimumReviews) {
@@ -339,24 +438,121 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             uint256 acceptedReviews = submission.acceptedReviewsCount;
             uint256 acceptedRatio = (acceptedReviews * SCALER) / submission.reviewCount;
 
-            // Calculate the ratio of accepted/rejected reviews
+            // Calculate the ratio of rejected reviews
             uint256 rejectedReviews = submission.rejectedReviewsCount;
             uint256 rejectedRatio = (rejectedReviews * SCALER) / submission.reviewCount;
 
             // Check if the ratio is above the agreement threshold
             if (acceptedRatio >= reviewConfiguration.agreementThreshold) {
-                submission.status = SubmissionStatus.ACCEPTED;
 
-                // does he get paid here automatically
+                // Confirm the submission is no longer PENDING
+                submission.status = SubmissionStatus.FINALIZED;
+
+                // Submission is ACCEPTED
+                submission.decision = Decision.ACCEPTED;
+
+                // Confirm the work unit was accepted
                 // IThriveWorkUnit(workUnitContractAddress).confirm();
 
-            } else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
-                submission.status = SubmissionStatus.REJECTED;
-            } else {
-                // what to do here when neither threshold is reached ??; Ask Rilind
+            } // Check if the ratio is above the agreement threshold
+            else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
+
+                // Confirm the submission is no longer PENDING
+                submission.status = SubmissionStatus.FINALIZED;
+
+                // Submission is REJECTED
+                submission.decision = Decision.REJECTED;
+                
             }
         }
+
+
+        /////// EVENT
+        //////////////
     }
+
+
+    // @inheritdoc IThriveReview
+    function reachDecisionOnSubmissionAsBadge(uint256 submissionId_, Decision decision_) external 
+        onlyUserWithBadges(reviewConfiguration.judgeBadges) 
+        submissionPending(submissionId_)
+    {
+                
+        // User with badge can only make a final decision when the submission has NOT reached the agreement threshold on either ACCEPTED or REJECTED.
+        require(submissions[submissionId_].reviewCount == reviewConfiguration.maximumReviewsPerSubmission, "Submission does not have max reviews");
+
+        // Require the decision is either "ACCEPTED" or "REJECTED"
+        require(decision_ == Decision.ACCEPTED || decision_ == Decision.REJECTED, "Decision must be either 'ACCEPTED' or 'REJECTED");
+
+
+        // Fetch the submission from storage
+        Submission storage submission = submissions[submissionId_];
+
+        // Confirm the submission is no longer PENDING
+        submission.status = SubmissionStatus.FINALIZED;
+
+        // Submission is ACCEPTED or REJECTED
+        submission.decision = decision_;
+
+        if (decision_ == Decision.ACCEPTED) {
+            // Confirm the work unit was accepted
+            // IThriveWorkUnit(workUnitContractAddress).confirm();
+        }
+
+
+        ////////
+        //////// EVENT
+    }
+
+
+    // @inheritdoc IThriveReview
+    function claimReviewerRewards(uint256[] calldata submissionIds_) external {
+        for (uint256 i = 0; i < submissionIds_.length; i++) {
+            claimReviewerReward(submissionIds_[i]);
+        }
+    }
+
+
+    // @inheritdoc IThriveReview
+    function claimReviewerReward(uint256 submissionId_) public {
+
+        // Require that the payments are unlocked for reviewers
+        require(submissions[submissionId_].status == SubmissionStatus.FINALIZED, "Payments are not unlocked for reviewers");
+
+        // Require that the user has not already claimed reward for this submission
+        require(!userClaimedRewardForReview[_msgSender()][submissionId_], "User has already claimed reward for this submission");
+
+        // Fetch the decision on this submission from storage
+        Submission memory submission = submissions[submissionId_];
+
+        // Fetch the _msgSender's review for this submission
+        Review memory review = reviews[userSubmissionReview[_msgSender()][submissionId_]];
+
+        // Require that the user made the judgement that is the same as the final decision
+        if(submission.decision == review.decision) {
+
+            // Update variable to show that the user has claimed the reward
+            userClaimedRewardForReview[_msgSender()][submissionId_] = true;
+
+            // Pay the reviewer
+            (bool success, ) = _msgSender().call{value: reviewConfiguration.reviewerReward}("");
+            require(success);
+        }
+
+
+        ///// EVENTS
+        //////////////
+    }
+
+
+    ////////  Ask Rilind what view functions should be implemented
+    //////////////// 
+    //////////////// 
+    //////////////// 
+    //////////////// 
+    ////////////////
+
+
 
 
     // @inheritdoc IThriveReview
@@ -364,13 +560,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         return workUnitContractAddress != address(0);
     }
 
+
     // @inheritdoc IThriveReview
-    function hasUserSubmitted(address user, uint256 submissionId_) public view returns (bool) {
+    function userHasPendingSubmission(address user) public view returns (bool) {
 
         uint256[] memory userSubmissionIds = userSubmissions[user];
         
         for (uint256 i = 0; i < userSubmissionIds.length; i++) {
-            if (userSubmissionIds[i] == submissionId_) {
+            Submission memory submission = submissions[userSubmissionIds[i]];
+            if (submission.status == SubmissionStatus.PENDING) {
                 return true;
             }
         }
@@ -378,8 +576,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         return false;
     }
 
+
     // @inheritdoc IThriveReview
-    function retrieveFunds() external onlyOwner {}
+    function retrieveFunds() external onlyOwner {
+        // @dev
+        // This should be time-restricted so that the owner can't just take the funds whenever they want.
+        // require(block.timestamp > unlockTime, "Funds are locked");
+        (bool success, ) = _msgSender().call{value: address(this).balance}("");
+        require(success);
+    }
 
 
     /**

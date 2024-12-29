@@ -13,29 +13,42 @@ interface IThriveReviewFactory {
         // Reference to the ThriveWorkUnit on the Thrive Protocol for which the configuration is being created.
         address workUnit; // Can also use IWorkUnit interface
 
-        // The amount of THRIVE paid to reviewers for completing an accurate review.
-        uint256 totalReviewerReward;
+        // The amount of THRIVE allocated for reviewers.
+        uint256 reviewerRewardsTotalAllocation;
 
-        // The percentage of agreement required to make a final decision. Percentage is represented as a number between 0 and 10_000.
-        uint64 agreementThreshold;
+        // The amount of THRIVE paid to reviewers for completing an accurate review.
+        uint32 reviewerReward;
+
+        // The percentage of agreement required to make a final decision. 
+        // Percentage is represented as a number between 0 and 10_000.
+        uint32 agreementThreshold;
+
+        // Maximum amount of submissions one user can submit.
+        uint32 maximumSubmissionsPerUser;
 
         // The minimum number of reviews needed to make a decision.
-        uint64 minimumReviews;
+        uint32 minimumReviews;
+
+        // The maximum amount of submissions allowed for a work unit.
+        uint32 maximumSubmissions;
 
         // The maximum number of reviews that can be conducted for a submission.
-        uint64 maximumReviews;
+        uint32 maximumReviewsPerSubmission;
 
         // The time until contributor is allowed to submit their work unit submission.
-        uint64 submissionDeadline;
+        uint32 submissionDeadline;
 
         // The time allowed for a reviewer to complete their review after commiting to it.
-        uint64 reviewCommitmentDeadline;
+        uint32 reviewCommitmentDeadline;
 
-        // An array of badges required for an EVM address to submit submissions.
+        // An array of badges required for a user to contribute submissions.
         bytes32[] submitterBadges;
 
-        // An array of badges required for an EVM address to review submissions.
+        // An array of badges required for a user to review submissions.
         bytes32[] reviewerBadges;
+
+        // An array of badges required for a user to be able to make a decision on a submission under certain terms.
+        bytes32[] judgeBadges;
 
         // JSON object containing descriptive information for the review, such as review summary, reviewer instructions, and estimated time to complete the review.
         string reviewMetadata;
