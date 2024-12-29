@@ -13,19 +13,18 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
     function setUp() public {
         // Set up before each test
 
-        // how to deploy uups in foundry ?
         thriveReviewFactory = new ThriveReviewFactory();
     }
 
-    function testSuccess_createWorkUnitAndReview() public { // Big q - how to name test cases ?
+    function test_create_ReviewContractAndWorkUnit() public {
             // Test creating a ThriveWorkUnit and ThriveReview contract
     }
 
-    function testSuccess_createReviewContractForExistingWorkUnit() public {
+    function test_create_ReviewContractWithExistingWorkUnit() public {
         // Test creating a ThriveWorkUnit and ThriveReview contract
     }
 
-    function testSuccess_createOnlyReviewContract() public {
+    function test_create_OnlyReviewContract() public {
         // Test creating a ThriveWorkUnit and ThriveReview contract
     }
 }
