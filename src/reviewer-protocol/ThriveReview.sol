@@ -3,15 +3,13 @@ pragma solidity ^0.8.24;
 
 
 // @OpenZeppelin imports
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // ThriveProtocol imports
-import "../interface/IThriveWorkUnit.sol";
-import "./interface/IThriveReviewFactory.sol";
-import "./interface/IThriveReview.sol";
-import "../IBadgeQuery.sol";
+import {IThriveWorkUnit} from "../interface/IThriveWorkUnit.sol";
+import {IThriveReviewFactory} from "./interface/IThriveReviewFactory.sol";
+import {IThriveReview} from "./interface/IThriveReview.sol";
+import {IBadgeQuery} from "../IBadgeQuery.sol";
 
 
 /**

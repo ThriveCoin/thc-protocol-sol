@@ -3,17 +3,17 @@ pragma solidity ^0.8.24;
 
 
 // @OpenZeppelin imports
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 // ThriveProtocol imports
-import "./ThriveReview.sol";
-import "./interface/IThriveReviewFactory.sol";
-import "../interface/IThriveWorkUnit.sol";
-import "../interface/IThriveWorkUnitFactory.sol";
+import {IThriveReview} from "./interface/IThriveReview.sol";
+import {IThriveReviewFactory} from "./interface/IThriveReviewFactory.sol";
+import {IThriveWorkUnit} from "../interface/IThriveWorkUnit.sol";
+import {IThriveWorkUnitFactory} from "../interface/IThriveWorkUnitFactory.sol";
 
 
 /**
