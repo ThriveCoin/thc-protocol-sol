@@ -23,4 +23,10 @@ interface IThriveWorkUnit {
      * @return True if the work unit is active, false otherwise.
      */
     function isActive() external view returns (bool);
+
+    /**
+     * @notice Fetches all validators from ThriveWorkUnit contract.
+     * @return Array of validator addresses.
+     */
+    function getValidators() external view returns (address[] memory);
 }

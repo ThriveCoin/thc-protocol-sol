@@ -30,7 +30,7 @@ contract ThriveWorkerUnitTest is Test {
             2, // Max completions per user
             validators, // Validators
             address(0),
-            badgeQuery // Badge query address
+            badgeQuery
         );
 
         mockToken.transfer(address(thriveWorkerUnit), 1_000 ether);
@@ -65,7 +65,7 @@ contract ThriveWorkerUnitTest is Test {
             2,
             validators,
             address(0x123), // assginedContributor
-            address(0) // badgeQuery
+            address(0)
         );
 
         vm.expectRevert("ThriveProtocol: invalid reward amount!");

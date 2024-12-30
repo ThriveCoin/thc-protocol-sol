@@ -52,12 +52,6 @@ contract ThriveReviewFactory is
     event ReviewContractCreated(address reviewContract);
 
 
-
-    // Implementation contract should be disabled per UUPS standard
-    constructor() {
-        _disableInitializers();
-    }
-
     /**
      * @notice Initializes the contract with the provided addresses.
      * @param thriveWorkerUnitFactory_ Address of the ThriveWorkerUnitFactory contract.
@@ -100,18 +94,18 @@ contract ThriveReviewFactory is
      */
     function createWorkUnitAndReviewContract(
         IThriveWorkUnitFactory.WorkUnitArgs memory workUnitArgs_,
-        ReviewConfiguration memory reviewConfiguration_
-    ) external payable returns (address) {
+        IThriveReview.ReviewConfiguration memory reviewConfiguration_
+    ) external payable returns (address, address) {
 
         // Require enough funds are sent to payout the reward for reviewers
-        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: incorrect reward amount sent");
+        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: small reward amount sent");
 
 
         // Require reviewersRewardTotalAllocation amount is enough to cover all reviewers potentially
         require(
             reviewConfiguration_.reviewerRewardsTotalAllocation >=
                 reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
-            "ThriveReviewFactory: incorrect reward amount"
+            "ThriveReviewFactory: small reward amount"
         );
 
 
@@ -125,13 +119,14 @@ contract ThriveReviewFactory is
 
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
-        address workUnitContractAddress = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs_);
+        address workUnitContract = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs_);
 
+        // Save work unit contract address in review configuration argumentation
+        reviewConfiguration_.workUnit = workUnitContract;
 
         // Initialize the newly created ThriveReview contract.
         IThriveReview(thriveReviewContract).initialize(
             reviewConfiguration_,
-            workUnitContractAddress,
             address(this),
             badgeQueryContractAddress,
             _msgSender()
@@ -147,29 +142,27 @@ contract ThriveReviewFactory is
         // ADD EVENTS LATER
         ///////////////////
 
-        return thriveReviewContract;
+        return (thriveReviewContract, workUnitContract);
     }
 
     /**
      * @notice Creates a new ThriveReview contract
      * Optional: This function can be used to connect an existing ThriveWorkUnit to a ThriveReview contract.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
-     * @param workUnitContractAddress_ Address of the work unit contract: Zero address if NO ThriveWorkUnit is deployed.
      */
     function createReviewContract(
-        ReviewConfiguration memory reviewConfiguration_,
-        address workUnitContractAddress_
+        IThriveReview.ReviewConfiguration memory reviewConfiguration_
     ) external payable returns (address) {
 
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
-        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: incorrect reward amount sent");
+        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: small reward amount sent");
 
 
         // Require reviewersRewardTotalAllocation amount is enough to cover potentially all reviewers
         require(
             reviewConfiguration_.reviewerRewardsTotalAllocation >=
                 reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
-            "ThriveReviewFactory: incorrect reward amount"
+            "ThriveReviewFactory: small reward amount"
         );
 
 
@@ -180,7 +173,6 @@ contract ThriveReviewFactory is
         // Initialize the newly created ThriveReview contract.
         IThriveReview(thriveReviewContract).initialize(
             reviewConfiguration_,
-            workUnitContractAddress_,
             address(this),
             badgeQueryContractAddress,
             _msgSender()
@@ -194,17 +186,17 @@ contract ThriveReviewFactory is
 
         // This `if` clause is for the case when the ThriveWorkUnit contract was made beforehand
         // and the moderator wants the new `ThriveReview` contract to be a validator/judge on it.
-        if (workUnitContractAddress_ != address(0)) {
+        if (reviewConfiguration_.workUnit != address(0)) {
 
             // Only moderator of the ThriveWorkUnit contract can add a ThriveReview contract as a validator.
             require(
-                IThriveWorkUnit(workUnitContractAddress_).isModerator(_msgSender()), // @dev Is the moderator address an EOA?
+                IThriveWorkUnit(reviewConfiguration_.workUnit).isModerator(_msgSender()),
                 "ThriveReviewFactory: caller is not a moderator"
             );
 
             // Add the ThriveReview contract address to the list of validators on the ThriveWorkUnit contract
             // @dev Should this only be allowed to be done once ? 
-            IThriveWorkUnit(workUnitContractAddress_).addValidator(thriveReviewContract);
+            IThriveWorkUnit(reviewConfiguration_.workUnit).addValidator(thriveReviewContract);
         }
 
 

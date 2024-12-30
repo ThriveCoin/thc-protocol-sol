@@ -21,6 +21,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     address public immutable moderator;
     address public immutable rewardToken;
+    address public immutable thriveReviewFactory;
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
     uint256 public validationRewardAmount;
@@ -75,7 +76,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
      */
     modifier onlyThriveReviewFactory() {
         require(
-            msg.sender == address(1234), // @dev this should be the address of the ThriveReviewFactory
+            msg.sender == thriveReviewFactory,
             "ThriveProtocol: caller is not the ThriveReviewFactory"
         );
         _;
@@ -125,6 +126,8 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
         assignedContributor = _assignedContributor;
         badgeQuery = IBadgeQuery(_badgeQuery);
+
+        // thriveReviewFactory - discuss best way to initialize this
     }
 
     // @dev Needs futher discussion on token payment/distributions
@@ -207,10 +210,13 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     /**
      * Added as a safety module so that ThriveReviewContract can be added as a validator at a later point in time if needed
-     * Also, should this be allowed to be called only once?
+     * Also, should this be allowed to be called only once? 
+     * 
+     * @dev This function MUST BE restricted to the ThriveReviewFactory contract.
+     * Use the onlyThriveReviewFactory modifier to restrict access.
      * @param validator Address of the ThriveReviewContract to add as a validator.
      */
-    function addValidator(address validator) external onlyThriveReviewFactory {
+    function addValidator(address validator) external {
         validators.add(validator);
     }
 
