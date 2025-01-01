@@ -527,6 +527,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the submission from storage
         Submission storage submission = submissions[review.submissionId];
 
+        // Require for the submission to be finalized
+        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
+
         // Require that the user made the judgement that is the same as the final decision
         if(submission.decision == review.decision) {
 
