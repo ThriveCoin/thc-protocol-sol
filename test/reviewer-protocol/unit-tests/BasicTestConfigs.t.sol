@@ -64,6 +64,8 @@ abstract contract BasicTestConfigs is Test {
             status: IThriveReview.SubmissionStatus.PENDING
         });
 
+        // Some data is intentionally wrongly filled because only some fields are written on-chain
+        // and we want to prevent users from manipulating this data
         review = IThriveReview.Review({
             id: 1,
             submissionId: 1,

@@ -380,7 +380,110 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
     }
 
-    // deletePendingReviews and deletePendingReview function tests
+    function test23_success_DeletePendingReviews() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Commit to another review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Commit to another review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        uint256 committedReviewsPerSubmissionCounter = thriveReview.committedReviewsPerSubmissionCounter(0);
+        assertEq(committedReviewsPerSubmissionCounter, 3, "Committed reviews per submission counter is not set correctly");
+
+        bool userCommitedToReview = thriveReview.userCommitedToReview(address(this), 0);
+        assertEq(userCommitedToReview, true, "User has not commited to review");
+
+        vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
+
+        // Delete pending reviews
+        uint256[] memory reviewIds = new uint256[](3);
+        reviewIds[0] = 0;
+        reviewIds[1] = 1;
+        reviewIds[2] = 2;
+        thriveReview.deletePendingReviews(reviewIds);
+
+        // Get the review
+        (, , , , , , IThriveReview.ReviewStatus status) = thriveReview.reviews(0);
+
+        // Assert review is deleted
+        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.NONE), "Review status is not set correctly");
+
+        // Get the review
+        (, , , , , , status) = thriveReview.reviews(1);
+
+        // Assert review is deleted
+        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.NONE), "Review status is not set correctly");
+
+        // Get the review
+        (, , , , , , status) = thriveReview.reviews(2);
+
+        // Assert review is deleted
+        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.NONE), "Review status is not set correctly");
+
+        committedReviewsPerSubmissionCounter = thriveReview.committedReviewsPerSubmissionCounter(0);
+        assertEq(committedReviewsPerSubmissionCounter, 0, "Committed reviews per submission counter is not set correctly");
+
+        userCommitedToReview = thriveReview.userCommitedToReview(address(this), 0);
+        assertEq(userCommitedToReview, false, "Storage updated incorrectly");
+
+    }
+
+    function test24_fail_ToDeleteNonCommittedReview() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Commit to another review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create review by address(0x1)
+        thriveReview.createReview(review, 0);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
+
+        // Delete pending reviews
+        uint256[] memory reviewIds = new uint256[](2);
+        reviewIds[0] = 0;
+        reviewIds[1] = 1;
+
+        vm.expectRevert("Review is not in 'COMMITED' status");
+        thriveReview.deletePendingReviews(reviewIds);
+    }
+
+    function test25_fail_ToDeleteNonExpiredCommittedReview() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Commit to another review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Delete pending reviews
+        uint256[] memory reviewIds = new uint256[](2);
+        reviewIds[0] = 0;
+        reviewIds[1] = 1;
+
+        vm.expectRevert("Review deadline has not passed");
+        thriveReview.deletePendingReviews(reviewIds);
+    }
 
     // reachDecisionOnSubmission and reachDecisionOnSubmissionAsBadge
 
