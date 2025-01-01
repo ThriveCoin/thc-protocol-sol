@@ -391,10 +391,12 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Commit to another review
         vm.prank(address(0x1));
         thriveReview.commitToReview(0);
+        vm.stopPrank();
 
         // Commit to another review
         vm.prank(address(0x2));
         thriveReview.commitToReview(0);
+        vm.stopPrank();
 
         uint256 committedReviewsPerSubmissionCounter = thriveReview.committedReviewsPerSubmissionCounter(0);
         assertEq(committedReviewsPerSubmissionCounter, 3, "Committed reviews per submission counter is not set correctly");
@@ -448,7 +450,6 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Commit to another review
         vm.prank(address(0x1));
         thriveReview.commitToReview(0);
-
         // Create review by address(0x1)
         thriveReview.createReview(review, 0);
         vm.stopPrank();
@@ -475,6 +476,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Commit to another review
         vm.prank(address(0x1));
         thriveReview.commitToReview(0);
+        vm.stopPrank();
 
         // Delete pending reviews
         uint256[] memory reviewIds = new uint256[](2);
@@ -485,10 +487,32 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.deletePendingReviews(reviewIds);
     }
 
+
+
     // reachDecisionOnSubmission and reachDecisionOnSubmissionAsBadge
 
     // claimReviewerRewards and claimReviewerReward
 
-    // retrieveFunds (onlyOwner)
+
+
+    function testxx_success_RetrieveFundsAsOwner() public {
+        uint256 balanceBefore = address(this).balance;
+
+        thriveReview.retrieveFunds();
+
+        uint256 balanceAfter = address(this).balance;
+
+        assertEq(balanceAfter, balanceBefore + 10 ether, "Owner should be able to retrieve funds");
+    }
+
+    function testxx_fail_ToRetrieveFundsAsNonOwner() public {
+
+        vm.prank(randomUser);
+        vm.expectRevert();
+        thriveReview.retrieveFunds();
+        vm.stopPrank();
+    }
+
+    receive() external payable {}
 
 }

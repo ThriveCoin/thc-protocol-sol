@@ -584,7 +584,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // @dev
         // This should be time-restricted so that the owner can't just take the funds whenever they want.
         // require(block.timestamp > unlockTime, "Funds are locked");
-        (bool success, ) = _msgSender().call{value: address(this).balance}("");
+        (bool success, ) = payable(_msgSender()).call{value: address(this).balance}("");
         require(success);
     }
 
