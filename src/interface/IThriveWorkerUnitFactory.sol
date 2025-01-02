@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 /**
- * @title IThriveWorkUnitFactory
- * @dev Interface for the ThriveWorkUnitFactory contract.
+ * @title IThriveWorkerUnitFactory
+ * @dev Interface for the ThriveWorkerUnitFactory contract.
  */
-interface IThriveWorkUnitFactory {
+interface IThriveWorkerUnitFactory {
     /**
      * @notice Creates a new ThriveWorkUnit contract.
      * @param moderator Address of the moderator for the work unit.

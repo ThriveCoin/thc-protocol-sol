@@ -74,7 +74,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         address thriveReviewContract = thriveReviewFactory.createReviewContract{value: 10 ether}(reviewConfiguration);
 
         // Ensure ThriveReview contract is validator on ThriveWorkUnit contract
-        address[] memory validators = IThriveWorkUnit(thriveWorkUnitContract).getValidators();
+        address[] memory validators = IThriveWorkerUnit(thriveWorkUnitContract).getValidators();
 
         assertEq(validators.length, 3, "There should be 1 validator");
 

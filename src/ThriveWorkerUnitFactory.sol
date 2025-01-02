@@ -2,13 +2,13 @@
 pragma solidity ^0.8.24;
 
 import "./ThriveWorkerUnit.sol";
-import "./interface/IThriveWorkUnitFactory.sol";
+import "./interface/IThriveWorkerUnitFactory.sol";
 
 /**
  * @title ThriveWorkerUnitFactory
  * @dev Factory contract for creating ThriveWorkerUnit instances.
  */
-contract ThriveWorkerUnitFactory is IThriveWorkUnitFactory {
+contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
     /**
      * @dev Emitted when a new ThriveWorkerUnit is created.
      * @param unitAddress The address of the newly created work unit contract.

@@ -2,10 +2,16 @@
 pragma solidity ^0.8.24;
 
 /**
- * @title IThriveWorkUnit
- * @dev Interface for ThriveWorkUnit contract.
+ * @title IThriveWorkerUnit
+ * @dev Interface for ThriveWorkerUnit contract.
  */
-interface IThriveWorkUnit {
+interface IThriveWorkerUnit {
+
+    /**
+     * @notice Initializes the ThriveWorkerUnit contract.
+     */
+    function initialize() external payable;
+
     /**
      * @notice Checks if address is a moderator on the WorkerUnit contract.
      * @param address_ Address to check.
@@ -29,4 +35,14 @@ interface IThriveWorkUnit {
      * @return Array of validator addresses.
      */
     function getValidators() external view returns (address[] memory);
+
+    /**
+     * @notice Confirms a submission from ThriveReview contract is eligible for payout on ThriveWorkerUnit.
+     */
+    function confirm(address, string memory) external;
+
+    /**
+     * @notice Add a required badge to ThriveWorkerUnit contract.
+     */
+    function addRequiredBadge(bytes32 badge) external;
 }

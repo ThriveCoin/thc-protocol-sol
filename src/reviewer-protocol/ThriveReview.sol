@@ -6,7 +6,7 @@ pragma solidity ^0.8.24;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // ThriveProtocol imports
-import {IThriveWorkUnit} from "../interface/IThriveWorkUnit.sol";
+import {IThriveWorkerUnit} from "../interface/IThriveWorkerUnit.sol";
 import {IThriveReviewFactory} from "./interface/IThriveReviewFactory.sol";
 import {IThriveReview} from "./interface/IThriveReview.sol";
 import {IBadgeQuery} from "../IBadgeQuery.sol";
@@ -368,7 +368,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Maybe even here because - if a submission has enough reviews to reach a decision, 
         // reviews can be made opportunistically just to get the payout without really reviewing. 
         // @dev OPTIONAL
-        _reachDecisionOnSubmission(review_.submissionId);
+        _reachDecisionOnSubmission(commitedReview.submissionId);
 
 
         ////// EVENT
@@ -451,7 +451,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 submission.decision = Decision.ACCEPTED;
 
                 // Confirm the work unit was accepted
-                // IThriveWorkUnit(workUnitContractAddress).confirm();
+                IThriveWorkerUnit(workUnitContractAddress).confirm(submission.contributor, submission.submissionMetadata);
 
             } // Check if the ratio is above the agreement threshold
             else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
@@ -494,8 +494,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         submission.decision = decision_;
 
         if (decision_ == Decision.ACCEPTED) {
+
             // Confirm the work unit was accepted
-            // IThriveWorkUnit(workUnitContractAddress).confirm();
+            IThriveWorkerUnit(workUnitContractAddress).confirm(submission.contributor, submission.submissionMetadata);
         }
 
 

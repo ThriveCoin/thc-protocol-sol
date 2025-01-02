@@ -3,12 +3,12 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 
-import "../../../src/interface/IThriveWorkUnitFactory.sol";
+import "../../../src/interface/IThriveWorkerUnitFactory.sol";
 import "../../../src/reviewer-protocol/interface/IThriveReviewFactory.sol";
 import "../../../src/reviewer-protocol/interface/IThriveReview.sol";
 
 abstract contract BasicTestConfigs is Test {
-    IThriveWorkUnitFactory.WorkUnitArgs workUnitArgs;
+    IThriveWorkerUnitFactory.WorkUnitArgs workUnitArgs;
     IThriveReview.ReviewConfiguration reviewConfiguration;
     IThriveReview.Submission submission;
     IThriveReview.Review review;
@@ -23,7 +23,7 @@ abstract contract BasicTestConfigs is Test {
         validators.push(address(0x1));
         validators.push(address(0x2));
 
-        workUnitArgs = IThriveWorkUnitFactory.WorkUnitArgs({
+        workUnitArgs = IThriveWorkerUnitFactory.WorkUnitArgs({
             moderator: address(this),
             rewardToken: address(0),
             rewardAmount: 10,
@@ -40,11 +40,11 @@ abstract contract BasicTestConfigs is Test {
             workUnit: address(0),
             reviewerRewardsTotalAllocation: 10 ether,
             reviewerReward: 400_000_000_000_000_000, // 0.4 THRIVE
-            agreementThreshold: 9_000, // 90%
+            agreementThreshold: 5_000, // 50%
             maximumSubmissionsPerUser: 2,
             minimumReviews: 3,
             maximumSubmissions: 5,
-            maximumReviewsPerSubmission: 3,
+            maximumReviewsPerSubmission: 4,
             submissionDeadline: uint32(block.timestamp) + 10 days,
             reviewCommitmentDeadline: 1 days,
             submitterBadges: new bytes32[](0),

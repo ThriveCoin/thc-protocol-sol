@@ -12,8 +12,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // ThriveProtocol imports
 import {IThriveReview} from "./interface/IThriveReview.sol";
 import {IThriveReviewFactory} from "./interface/IThriveReviewFactory.sol";
-import {IThriveWorkUnit} from "../interface/IThriveWorkUnit.sol";
-import {IThriveWorkUnitFactory} from "../interface/IThriveWorkUnitFactory.sol";
+import {IThriveWorkerUnit} from "../interface/IThriveWorkerUnit.sol";
+import {IThriveWorkerUnitFactory} from "../interface/IThriveWorkerUnitFactory.sol";
 
 
 /**
@@ -93,7 +93,7 @@ contract ThriveReviewFactory is
      * @return Address of the newly created ThriveReview contract.
      */
     function createWorkUnitAndReviewContract(
-        IThriveWorkUnitFactory.WorkUnitArgs memory workUnitArgs_,
+        IThriveWorkerUnitFactory.WorkUnitArgs memory workUnitArgs_,
         IThriveReview.ReviewConfiguration memory reviewConfiguration_
     ) external payable returns (address, address) {
 
@@ -119,7 +119,7 @@ contract ThriveReviewFactory is
 
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
-        address workUnitContract = IThriveWorkUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs_);
+        address workUnitContract = IThriveWorkerUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs_);
 
         // Save work unit contract address in review configuration argumentation
         reviewConfiguration_.workUnit = workUnitContract;
@@ -190,13 +190,13 @@ contract ThriveReviewFactory is
 
             // Only moderator of the ThriveWorkUnit contract can add a ThriveReview contract as a validator.
             require(
-                IThriveWorkUnit(reviewConfiguration_.workUnit).isModerator(_msgSender()),
+                IThriveWorkerUnit(reviewConfiguration_.workUnit).isModerator(_msgSender()),
                 "ThriveReviewFactory: caller is not a moderator"
             );
 
             // Add the ThriveReview contract address to the list of validators on the ThriveWorkUnit contract
             // @dev Should this only be allowed to be done once ? 
-            IThriveWorkUnit(reviewConfiguration_.workUnit).addValidator(thriveReviewContract);
+            IThriveWorkerUnit(reviewConfiguration_.workUnit).addValidator(thriveReviewContract);
         }
 
 
