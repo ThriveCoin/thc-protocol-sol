@@ -103,7 +103,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     function test02_success_ReviewContractInitializedCorrectly() public view {
         // Assert storage variables are initialized properly
         assertEq(
-            thriveReview.workUnitContractAddress(),
+            address(thriveReview.workerUnit()),
             thriveWorkerUnitAddress,
             "WorkUnit address is not set correctly"
         );
