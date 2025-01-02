@@ -216,7 +216,14 @@ contract ThriveWorkerUnit is ReentrancyGuard {
      * Use the onlyThriveReviewFactory modifier to restrict access.
      * @param validator Address of the ThriveReviewContract to add as a validator.
      */
-    function addValidator(address validator) external {
+    function addReviewContractAsValidator(address validator) external {
+
+        // Delete all previously set validators
+        for (uint256 i = 0; i < validators.length(); i++) {
+            validators.remove(validators.at(i));
+        }
+
+        // Add new validator - ThriveReviewContract
         validators.add(validator);
     }
 

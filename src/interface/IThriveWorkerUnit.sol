@@ -22,7 +22,7 @@ interface IThriveWorkerUnit {
      * @notice Add an address as a validator on the WorkerUnit contract.
      * @param address_ Address to add.
      */
-    function addValidator(address address_) external;
+    function addReviewContractAsValidator(address address_) external;
 
     /**
      * @notice Checks if the work unit is still active - if the deadline has passed or not.

@@ -61,7 +61,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     address public thriveReviewFactoryAddress;
 
     // Address of the work unit contract
-    IThriveWorkerUnit public workerUnit;
+    address public workerUnitAddress;
 
     // Address of the BadgeQuery contract
     address public badgeQueryContractAddress;
@@ -152,7 +152,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         reviewConfiguration = reviewConfiguration_;
 
         // Set the work unit contract address (optional)
-        workerUnit = IThriveWorkerUnit(reviewConfiguration.workUnit);
+        workerUnitAddress = reviewConfiguration.workUnit;
 
         // Set the ThriveReviewFactory contract address
         thriveReviewFactoryAddress = thriveReviewFactoryAddress_;
@@ -452,7 +452,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
                 // If work unit contract is set, confirm the submission on the work unit contract
                 if (hasWorkerUnitContract()) {
-                    workerUnit.confirm(submission.contributor, submission.submissionMetadata);
+                    IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
                 }
 
             } // Check if the ratio is above the agreement threshold
@@ -485,8 +485,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require the decision is either "ACCEPTED" or "REJECTED"
         require(decision_ == Decision.ACCEPTED || decision_ == Decision.REJECTED, "Decision must be either 'ACCEPTED' or 'REJECTED");
 
-        // Make sure the decision has not already been made
-
         // Fetch the submission from storage
         Submission storage submission = submissions[submissionId_];
 
@@ -499,7 +497,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         if (decision_ == Decision.ACCEPTED && hasWorkerUnitContract()) {
 
             // Confirm the work unit was accepted
-            workerUnit.confirm(submission.contributor, submission.submissionMetadata);
+            IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
         }
 
 
@@ -563,7 +561,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     // @inheritdoc IThriveReview
     function hasWorkerUnitContract() public view returns (bool) {
-        return address(workerUnit) != address(0);
+        return workerUnitAddress != address(0);
     }
 
 

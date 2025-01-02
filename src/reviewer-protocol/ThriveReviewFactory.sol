@@ -195,8 +195,7 @@ contract ThriveReviewFactory is
             );
 
             // Add the ThriveReview contract address to the list of validators on the ThriveWorkUnit contract
-            // @dev Should this only be allowed to be done once ? 
-            IThriveWorkerUnit(reviewConfiguration_.workUnit).addValidator(thriveReviewContract);
+            IThriveWorkerUnit(reviewConfiguration_.workUnit).addReviewContractAsValidator(thriveReviewContract);
         }
 
 
