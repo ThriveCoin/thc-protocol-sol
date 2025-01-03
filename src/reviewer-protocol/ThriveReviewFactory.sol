@@ -40,6 +40,9 @@ contract ThriveReviewFactory is
     // Address of the BadgeQuery contract
     address public badgeQueryContractAddress;
 
+    // Mapping of ThriveReview to WorkerUnit contract addresses
+    mapping(address => address) public workerUnitToReviewContract;
+
 
     /**
      * EVENTS
@@ -121,6 +124,9 @@ contract ThriveReviewFactory is
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
         address workUnitContract = IThriveWorkerUnitFactory(thriveWorkerUnitFactory).createThriveWorkUnit(workUnitArgs_);
 
+        // Save to mapping
+        workerUnitToReviewContract[workUnitContract] = thriveReviewContract;
+
         // Save work unit contract address in review configuration argumentation
         reviewConfiguration_.workUnit = workUnitContract;
 
@@ -193,6 +199,15 @@ contract ThriveReviewFactory is
                 IThriveWorkerUnit(reviewConfiguration_.workUnit).isModerator(_msgSender()),
                 "ThriveReviewFactory: caller is not a moderator"
             );
+
+            // Require the worker unit to not have a ThriveReview as validator already
+            require(
+                workerUnitToReviewContract[reviewConfiguration_.workUnit] == address(0),
+                "ThriveReviewFactory: ThriveReview contract already a validator"
+            );
+
+            // Save the ThriveWorkUnit contract address in the mapping
+            workerUnitToReviewContract[reviewConfiguration_.workUnit] = thriveReviewContract;
 
             // Add the ThriveReview contract address to the list of validators on the ThriveWorkUnit contract
             IThriveWorkerUnit(reviewConfiguration_.workUnit).addReviewContractAsValidator(thriveReviewContract);
