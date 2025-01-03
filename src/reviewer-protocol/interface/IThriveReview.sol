@@ -25,6 +25,7 @@ interface IThriveReview {
         // The minimum number of reviews needed to make a decision.
         uint32 minimumReviews;
         // The maximum amount of submissions allowed for a work unit.
+        // This variable should most likely be derived from maxSubmissionsPerUser * users participating in the work unit.
         uint32 maximumSubmissions;
         // The maximum number of reviews that can be conducted for a submission.
         uint32 maximumReviewsPerSubmission;
