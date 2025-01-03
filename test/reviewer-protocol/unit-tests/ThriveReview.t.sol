@@ -163,8 +163,54 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createSubmission(submission);
     }
 
+    function test05_fail_UserCanNotHaveMoreThanOneAcceptedSubmission() public {
 
-    function test05_fail_UserCanNotHaveMoreThanMaximumSubmissionsPerUser() public {
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        /**
+         * JUDGE ON FIRST SUBMISSION - ACCEPT IT
+         */
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review, 0);
+
+
+        vm.prank(address(0x1));
+        // Commit to a review
+        thriveReview.commitToReview(0);
+
+        vm.prank(address(0x1));
+        // Create a review
+        thriveReview.createReview(review, 1);
+
+
+        vm.prank(address(0x2));
+        // Commit to a review
+        thriveReview.commitToReview(0);
+
+        vm.prank(address(0x2));
+        // Create a review
+        thriveReview.createReview(review, 2);
+
+
+        // Check that the submission is finalized
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.submissions(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly"); 
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        // Create a submission
+        vm.expectRevert("User already has an accepted submission");
+        thriveReview.createSubmission(submission);
+
+    }
+
+
+    function test06_fail_UserCanNotHaveMoreThanMaximumSubmissionsPerUser() public {
+
         // Create a submission
         thriveReview.createSubmission(submission);
 
@@ -175,6 +221,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Commit to review
         thriveReview.commitToReview(0);
 
+        review.decision = IThriveReview.Decision.REJECTED;
         // Create a review
         thriveReview.createReview(review, 0);
 
@@ -246,7 +293,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test06_fail_UserCanNotSubmitWhenThereIsMaximumSubmissions() public {
+    function test07_fail_UserCanNotSubmitWhenThereIsMaximumSubmissions() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -275,7 +322,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test07_fail_UserCanNotSubmitAfterDeadline() public {
+    function test08_fail_UserCanNotSubmitAfterDeadline() public {
         vm.warp(reviewConfiguration.submissionDeadline + 1);
 
         vm.expectRevert("Submission deadline has passed");
@@ -283,7 +330,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
     
 
-    function test08_success_SubmissionIsCorrectlyStored() public {
+    function test09_success_SubmissionIsCorrectlyStored() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -310,7 +357,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test09_success_SubmissionIsUpdated() public {
+    function test10_success_SubmissionIsUpdated() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -336,7 +383,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test10_fail_ToUpdateSubmissionAfterDeadline() public {
+    function test11_fail_ToUpdateSubmissionAfterDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -348,7 +395,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test11_fail_ToUpdateSubmissionMadeByAnotherUser() public {
+    function test12_fail_ToUpdateSubmissionMadeByAnotherUser() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -360,7 +407,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test12_fail_ToUpdateSubmissionThatIsNotPending() public {
+    function test13_fail_ToUpdateSubmissionThatIsNotPending() public {
         
         // Create submission
         thriveReview.createSubmission(submission);
@@ -403,7 +450,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test13_success_UserCommitsToReview() public {
+    function test14_success_UserCommitsToReview() public {
         // Create a submission
         thriveReview.createSubmission(submission);
 
@@ -428,7 +475,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test14_fail_ToCommitReviewToTheSameSubmissionTwice() public {
+    function test15_fail_ToCommitReviewToTheSameSubmissionTwice() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -440,7 +487,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
     }
 
-    function test15_fail_ToCommitReviewAfterMaximumReviewsPerSubmissionReached() public {
+    function test16_fail_ToCommitReviewAfterMaximumReviewsPerSubmissionReached() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -466,7 +513,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test16_fail_ToCommitReviewToSubmissionThatIsNotPending() public {
+    function test17_fail_ToCommitReviewToSubmissionThatIsNotPending() public {
 
         // Create submission
         thriveReview.createSubmission(submission);
@@ -509,7 +556,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test17_fail_ToCreateReviewThatWasNotCommited() public {
+    function test18_fail_ToCreateReviewThatWasNotCommited() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -519,7 +566,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test18_fail_ToCreateReviewForSubmissionThatIsNotPending() public {
+    function test19_fail_ToCreateReviewForSubmissionThatIsNotPending() public {
         
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -567,7 +614,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test19_fail_ToCreateReviewByNonCommittingUser() public {
+    function test20_fail_ToCreateReviewByNonCommittingUser() public {
         
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -585,7 +632,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test20_fail_ToCreateReviewAfterDeadline() public {
+    function test21_fail_ToCreateReviewAfterDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -600,7 +647,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test21_fail_ToCreateReviewWithWrongDecision() public {
+    function test22_fail_ToCreateReviewWithWrongDecision() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -615,7 +662,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test22_success_CreateReviewAfterCommittingToIt() public {
+    function test23_success_CreateReviewAfterCommittingToIt() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -655,7 +702,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test23_success_DeletePendingReviews() public {
+    function test24_success_DeletePendingReviews() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -713,7 +760,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test24_fail_ToDeleteNonCommittedReview() public {
+    function test25_fail_ToDeleteNonCommittedReview() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -740,7 +787,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test25_fail_ToDeleteNonExpiredCommittedReview() public {
+    function test26_fail_ToDeleteNonExpiredCommittedReview() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -763,7 +810,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
     
 
-    function test26_success_ClaimReviewerRewardForCorrectJudgement() public {
+    function test27_success_ClaimReviewerRewardForCorrectJudgement() public {
         
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -816,7 +863,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test27_fail_ToClaimReviewerRewardForIncorrectJudgement() public {
+    function test28_fail_ToClaimReviewerRewardForIncorrectJudgement() public {
         
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -862,7 +909,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test28_fail_ToClaimReviewerRewardTwice() public {
+    function test29_fail_ToClaimReviewerRewardTwice() public {
                 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -919,7 +966,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test29_fail_ToClaimReviewerRewardForOtherUser() public {
+    function test30_fail_ToClaimReviewerRewardForOtherUser() public {
         
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -959,7 +1006,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test30_fail_ToClaimReviewerRewardForNonFinalizedSubmissions() public {
+    function test31_fail_ToClaimReviewerRewardForNonFinalizedSubmissions() public {
         
         // Create a submission
         thriveReview.createSubmission(submission);

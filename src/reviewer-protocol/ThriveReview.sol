@@ -178,6 +178,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require that the user does not have a `PENDING` submission
         require(!userHasPendingSubmission(_msgSender()), "User has a pending submission");
 
+        // Require that the user does not have an already `ACCEPTED` submission
+        require(!userHasAcceptedSubmission(_msgSender()), "User already has an accepted submission");
+
         // Require that the user has not reached the maximum number of submissions
         require(userSubmissions[_msgSender()].length < reviewConfiguration.maximumSubmissionsPerUser, "User has reached the maximum number of submissions");
         
@@ -573,6 +576,21 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         for (uint256 i = 0; i < userSubmissionIds.length; i++) {
             Submission memory submission = submissions[userSubmissionIds[i]];
             if (submission.status == SubmissionStatus.PENDING) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // @inheritdoc IThriveReview
+    function userHasAcceptedSubmission(address user) public view returns (bool) {
+
+        uint256[] memory userSubmissionIds = userSubmissions[user];
+        
+        for (uint256 i = 0; i < userSubmissionIds.length; i++) {
+            Submission memory submission = submissions[userSubmissionIds[i]];
+            if (submission.decision == Decision.ACCEPTED) {
                 return true;
             }
         }
