@@ -1097,10 +1097,9 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.retrieveFunds();
     }
 
+
     // reachDecisionOnSubmission and reachDecisionOnSubmissionAsBadge
     // These tests will be written depending on if if we call _reachDecisionOnSubmission during createReview()
-
-    // claimReviewerRewards and claimReviewerReward
 
 
     receive() external payable {}

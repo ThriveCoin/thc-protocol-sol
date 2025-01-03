@@ -45,4 +45,9 @@ interface IThriveWorkerUnit {
      * @notice Add a required badge to ThriveWorkerUnit contract.
      */
     function addRequiredBadge(bytes32 badge) external;
+
+    /**
+     * @notice Set the review factory address on ThriveWorkerUnit contract.
+     */
+    function setThriveReviewFactoryAddress(address) external;
 }

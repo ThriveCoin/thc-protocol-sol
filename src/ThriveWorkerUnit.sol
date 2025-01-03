@@ -21,7 +21,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     address public immutable moderator;
     address public immutable rewardToken;
-    address public immutable thriveReviewFactory;
+    address public thriveReviewFactory;
     uint256 public immutable rewardAmount;
     uint256 public immutable maxRewards;
     uint256 public validationRewardAmount;
@@ -126,8 +126,6 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
         assignedContributor = _assignedContributor;
         badgeQuery = IBadgeQuery(_badgeQuery);
-
-        // thriveReviewFactory - discuss best way to initialize this
     }
 
     // @dev Needs futher discussion on token payment/distributions
@@ -209,22 +207,31 @@ contract ThriveWorkerUnit is ReentrancyGuard {
     }
 
     /**
-     * Added as a safety module so that ThriveReviewContract can be added as a validator at a later point in time if needed
-     * Also, should this be allowed to be called only once? 
-     * 
-     * @dev This function MUST BE restricted to the ThriveReviewFactory contract.
-     * Use the onlyThriveReviewFactory modifier to restrict access.
+     * @notice Added as a safety module so that ThriveReviewContract can be added as a validator at a later point in time if needed
      * @param validator Address of the ThriveReviewContract to add as a validator.
      */
-    function addReviewContractAsValidator(address validator) external {
+    function addReviewContractAsValidator(address validator) external onlyThriveReviewFactory {
 
         // Delete all previously set validators
-        for (uint256 i = 0; i < validators.length(); i++) {
-            validators.remove(validators.at(i));
+        address[] memory validatorValues = validators.values();
+        for (uint256 i = 0; i < validatorValues.length; i++) {
+            validators.remove(validatorValues[i]);
         }
 
         // Add new validator - ThriveReviewContract
         validators.add(validator);
+    }
+
+    /**
+     * @notice This function MUST BE used before adding review contract as validator with `addReviewContractAsValidator`.
+     * @param thriveReviewFactory_ Address of the ThriveReviewFactory contract.
+     */
+    function setThriveReviewFactoryAddress(address thriveReviewFactory_) external onlyModerator {
+        require(
+            thriveReviewFactory_ != address(0),
+            "ThriveProtocol: ThriveReviewFactory address already set"
+        );
+        thriveReviewFactory = thriveReviewFactory_;
     }
 
     function addRequiredBadge(bytes32 badge) external onlyModerator {
