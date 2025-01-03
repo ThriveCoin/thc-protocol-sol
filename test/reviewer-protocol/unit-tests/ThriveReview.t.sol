@@ -1022,6 +1022,63 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.claimReviewerReward(0);
     }
 
+    function test32_success_CreateReviewContractWithoutAWorkUnit() public {
+
+        // Deploy ThriveReview with no work unit
+        address thriveReviewAddressWoWorkUnit = thriveReviewFactory.createReviewContract{value: 10 ether}(
+            reviewConfiguration
+        );
+
+        ThriveReview thriveReviewWithoutWorkUnit = ThriveReview(payable(thriveReviewAddressWoWorkUnit));
+
+        // Assert storage variables are initialized properly
+        assertEq(
+            address(thriveReviewWithoutWorkUnit.workerUnitAddress()),
+            address(0),
+            "WorkUnit address is not set correctly"
+        );
+    }
+
+    function test33_success_ReviewContractShouldNotRevertWhenFinalizingSubmissionWithoutWorkUnit() public {
+        
+        // Deploy ThriveReview with no work unit
+        address thriveReviewAddressWoWorkUnit = thriveReviewFactory.createReviewContract{value: 10 ether}(
+            reviewConfiguration
+        );
+
+        ThriveReview thriveReviewWithoutWorkUnit = ThriveReview(payable(thriveReviewAddressWoWorkUnit));
+
+        // Create a submission
+        thriveReviewWithoutWorkUnit.createSubmission(submission);
+
+        // Commit to review
+        thriveReviewWithoutWorkUnit.commitToReview(0);
+
+        // Create a review
+        thriveReviewWithoutWorkUnit.createReview(review, 0);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReviewWithoutWorkUnit.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReviewWithoutWorkUnit.createReview(review, 1);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReviewWithoutWorkUnit.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReviewWithoutWorkUnit.createReview(review, 2);
+
+
+        // Check that the submission is finalized
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReviewWithoutWorkUnit.submissions(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+    }
+
 
     function testxx_success_RetrieveFundsAsOwner() public {
         uint256 balanceBefore = address(this).balance;
