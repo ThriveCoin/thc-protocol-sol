@@ -134,9 +134,9 @@ contract ThriveWorkerUnitTest is Test {
 
         mockToken.approve(address(uninitializedWorkerUnit), 1_000 ether);
 
-        // case: insufficient value for validators and contributors
+        // case: insufficient value for validators
         vm.expectRevert(
-            "ThriveProtocol: insufficient value for validators and contributors"
+            "ThriveProtocol: insufficient value for validators"
         );
         uninitializedWorkerUnit.initialize{value: 1 ether}();
     }
