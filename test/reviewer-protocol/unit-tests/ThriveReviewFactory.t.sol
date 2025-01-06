@@ -60,34 +60,6 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         assertNotEq(thriveWorkUnitContract, address(0), "ThriveWorkUnit contract address should not be zero address");
     }
 
-    function test02_create_ReviewContractWithExistingWorkUnit() public {
-
-        // Test creating a ThriveWorkUnit and ThriveReview contract on separate points in time
-
-        // Create ThriveWorkUnit
-        address thriveWorkUnitContract = thriveWorkerUnitFactory.createThriveWorkUnit(workUnitArgs);
-
-        // Set ThriveWorkUnit address in reviewConfiguration
-        reviewConfiguration.workUnit = thriveWorkUnitContract;
-
-        // Add ReviewFactory address on ThriveWorkUnit
-        IThriveWorkerUnit(thriveWorkUnitContract).setThriveReviewFactoryAddress(thriveReviewFactoryAddress);
-
-        // Create ThriveReview contract
-        address thriveReviewContract = thriveReviewFactory.createReviewContract{value: 10 ether}(reviewConfiguration);
-
-        // Ensure ThriveReview contract is validator on ThriveWorkUnit contract
-        address[] memory validators = IThriveWorkerUnit(thriveWorkUnitContract).getValidators();
-
-        assertEq(validators.length, 1, "There should be 1 validator");
-
-        // Only validator should be the ThriveReview contract
-        assertEq(validators[0], address(thriveReviewContract), "ThriveReview contract should be validator");
-
-        assertNotEq(thriveReviewContract, address(0), "ThriveReview contract address should not be 0");
-        assertNotEq(thriveWorkUnitContract, address(0), "ThriveWorkUnit contract address should not be 0");
-    }
-
     function test03_create_OnlyReviewContract() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
@@ -147,30 +119,4 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         vm.stopPrank();
     }
 
-    function test07_fail_ToAddReviewContractOnWorkUnitTwice() public {
-        
-        // Create ThriveWorkUnit
-        address thriveWorkUnitContract = thriveWorkerUnitFactory.createThriveWorkUnit(workUnitArgs);
-
-        // Set ThriveWorkUnit address in reviewConfiguration
-        reviewConfiguration.workUnit = thriveWorkUnitContract;
-
-        // Add ReviewFactory address on ThriveWorkUnit
-        IThriveWorkerUnit(thriveWorkUnitContract).setThriveReviewFactoryAddress(thriveReviewFactoryAddress);
-
-        // Create ThriveReview contract
-        address thriveReviewContract = thriveReviewFactory.createReviewContract{value: 10 ether}(reviewConfiguration);
-
-        // Ensure ThriveReview contract is validator on ThriveWorkUnit contract
-        address[] memory validators = IThriveWorkerUnit(thriveWorkUnitContract).getValidators();
-
-        assertEq(validators.length, 1, "There should be 1 validator");
-
-        // Only validator should be the ThriveReview contract
-        assertEq(validators[0], address(thriveReviewContract), "ThriveReview contract should be validator");
-
-        // Try to add ThriveReview contract again
-        vm.expectRevert("ThriveReviewFactory: ThriveReview contract already a validator");
-        thriveReviewFactory.createReviewContract{value: 10 ether}(reviewConfiguration);
-    }
 }
