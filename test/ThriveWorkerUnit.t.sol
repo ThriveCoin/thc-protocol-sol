@@ -36,7 +36,7 @@ contract ThriveWorkerUnitTest is Test {
         mockToken.transfer(address(thriveWorkerUnit), 1_000 ether);
         mockToken.approve(address(thriveWorkerUnit), 1_000 ether);
 
-        thriveWorkerUnit.initialize{value: 100 ether}();
+        thriveWorkerUnit.initialize{value: 110 ether}();
     }
 
     function testConstructorRequirements() public {
@@ -114,9 +114,9 @@ contract ThriveWorkerUnitTest is Test {
         mockToken.approve(address(newWorkerUnit), 1_000 ether);
 
         // case: already initialized
-        newWorkerUnit.initialize{value: 100 ether}();
+        newWorkerUnit.initialize{value: 110 ether}();
         vm.expectRevert("ThriveProtocol: already initialized");
-        newWorkerUnit.initialize{value: 100 ether}();
+        newWorkerUnit.initialize{value: 110 ether}();
 
         // case: validation reward amount not set
         ThriveWorkerUnit uninitializedWorkerUnit = new ThriveWorkerUnit(
@@ -134,9 +134,9 @@ contract ThriveWorkerUnitTest is Test {
 
         mockToken.approve(address(uninitializedWorkerUnit), 1_000 ether);
 
-        // case: insufficient value for validators and contributors
+        // case: insufficient value for validators
         vm.expectRevert(
-            "ThriveProtocol: insufficient value for validators and contributors"
+            "ThriveProtocol: insufficient value for validators"
         );
         uninitializedWorkerUnit.initialize{value: 1 ether}();
     }
@@ -150,7 +150,7 @@ contract ThriveWorkerUnitTest is Test {
         assertEq(validatorList[0], validators[0]);
         assertEq(validatorList[1], validators[1]);
 
-        assertEq(address(thriveWorkerUnit).balance, 100 ether);
+        assertEq(address(thriveWorkerUnit).balance, 110 ether);
     }
 
     function testConfirmRequirements() public {
@@ -230,7 +230,7 @@ contract ThriveWorkerUnitTest is Test {
         );
         assertEq(
             mockToken.balanceOf(address(thriveWorkerUnit)),
-            2_000 ether - thriveWorkerUnit.rewardAmount()
+            1_100 ether - thriveWorkerUnit.rewardAmount()
         );
     }
 
