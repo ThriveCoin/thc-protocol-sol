@@ -136,7 +136,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
     }
 
     function confirm(
-        address contributor, 
+        address contributor,
         string memory inputValidationMetadata
     ) external onlyValidator onceReady nonReentrant {
         require(
