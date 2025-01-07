@@ -838,7 +838,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.deletePendingReviews(reviewIds);
     }
     
-
+    /*
     function test27_success_ClaimReviewerRewardForCorrectJudgement() public {
         
         // Create a submission
@@ -1061,6 +1061,74 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.expectRevert("Submission is not in 'FINALIZED' status");
         thriveReview.claimReviewerReward(0);
     }
+    */
+
+   function testxyz_success_CorrectReviewersArePaidOutOnSubmissionFinalization() public {
+        
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review, 0);
+
+
+        vm.prank(address(0x1));
+        // Commit to a review
+        thriveReview.commitToReview(0);
+
+        vm.prank(address(0x1));
+        // Create a review
+        thriveReview.createReview(review, 1);
+
+
+        uint256 balanceBeforeClaimingReward = address(this).balance;
+        uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
+        uint256 balanceAddress2BeforeClaimingReward = address(0x2).balance;
+        uint256 balanceAddress3BeforeClaimingReward = address(0x3).balance;
+
+
+        // Address 2 makes the wrong decision
+        review.decision = IThriveReview.Decision.REJECTED;
+        vm.prank(address(0x2));
+        // Commit to a review
+        thriveReview.commitToReview(0);
+
+        vm.prank(address(0x2));
+        // Create a review
+        thriveReview.createReview(review, 2);
+
+
+        // Address 3 makes the right decision
+        review.decision = IThriveReview.Decision.ACCEPTED;
+        vm.prank(address(0x3));
+        // Commit to a review
+        thriveReview.commitToReview(0);
+
+        vm.prank(address(0x3));
+        // Create a review
+        thriveReview.createReview(review, 3);
+
+        // Check that the submission is finalized
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.submissions(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        // Assert balance after rewards distribution and submission finalization
+        uint256 balanceAfterClaimingReward = address(this).balance;
+        uint256 balanceAddress1AfterClaimingReward = address(0x1).balance;
+        uint256 balanceAddress2AfterClaimingReward = address(0x2).balance;
+        uint256 balanceAddress3AfterClaimingReward = address(0x3).balance;
+
+
+        assertEq(balanceAfterClaimingReward, balanceBeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
+        assertEq(balanceAddress1AfterClaimingReward, balanceAddress1BeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
+        assertEq(balanceAddress2AfterClaimingReward, balanceAddress2BeforeClaimingReward, "Reviewer reward is not claimed correctly");
+        assertEq(balanceAddress3AfterClaimingReward, balanceAddress3BeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
+
+   }
+
 
     function test32_success_CreateReviewContractWithoutAWorkUnit() public {
 
@@ -1196,6 +1264,49 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
     }
+
+
+    function testxy_success_CorrectReviewersArePaidOutOnBadgeSubmissionFinalization() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review, 0);
+
+
+        // Change the users decision to REJECTED
+        review.decision = IThriveReview.Decision.REJECTED;
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReview.createReview(review, 1);
+
+        // Users balances before distributing reviewer rewards
+        uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
+        uint256 balanceAddress2BeforeClaimingReward = address(0x2).balance;
+
+        vm.warp(reviewConfiguration.reviewDeadline + 1);
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.REJECTED);
+
+        // Users balances after distributing reviewer rewards
+        uint256 balanceAddress1AfterClaimingReward = address(0x1).balance;
+        uint256 balanceAddress2AfterClaimingReward = address(0x2).balance;
+
+        // Make sure that the reviewer rewards are distributed correctly
+        assertEq(balanceAddress1AfterClaimingReward, balanceAddress1BeforeClaimingReward, "Reviewer reward is not claimed correctly");
+        assertEq(balanceAddress2AfterClaimingReward, balanceAddress2BeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
+
+    }
+
 
     function testxx_success_ReachDecisionOnSubmissionAsBadgeAfterReviewDeadline() public {
 

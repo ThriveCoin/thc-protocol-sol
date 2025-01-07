@@ -111,6 +111,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping of review IDs to the reward claimed status
     mapping(uint256 => bool) public rewardsClaimedForReview;
 
+    // Mapping of submission IDs to the reward claimed status
+    mapping(uint256 => bool) public reviewerRewardsPaidOutForSubmission;
+
 
 
 
@@ -464,6 +467,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                     IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
                 }
 
+                // Distribute payouts to reviewers
+                _payoutReviewersOnSubmission(submissionId_);
+
             } // Check if the ratio is above the agreement threshold
             else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
 
@@ -472,6 +478,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
                 // Submission is REJECTED
                 submission.decision = Decision.REJECTED;
+
+                // Distribute payouts to reviewers
+                _payoutReviewersOnSubmission(submissionId_);
                 
             }
         }
@@ -516,12 +525,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
         }
 
+        // Distribute payouts to reviewers
+        _payoutReviewersOnSubmission(submissionId_);
+
 
         ////////
         //////// EVENT
     }
 
-
+    /* Commented out because we will distribute rewards for reviewers when the submission is finalized automatically
     // @inheritdoc IThriveReview
     function claimReviewerRewards(uint256[] calldata reviewIds_) external {
         for (uint256 i = 0; i < reviewIds_.length; i++) {
@@ -562,6 +574,40 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         ///// EVENTS
         //////////////
+    }
+    */
+
+    // @inheritdoc IThriveReview
+    function _payoutReviewersOnSubmission(uint256 submissionId_) internal {
+        
+        // Fetch the submission from storage
+        Submission storage submission = submissions[submissionId_];
+
+        // Fetch the reviews of the submission
+        uint256[] memory reviewIds = submissionReviews[submissionId_];
+
+        // Loop through the reviews
+        for (uint256 i = 0; i < reviewIds.length; i++) {
+
+            // Fetch the review from storage
+            Review storage review = reviews[reviewIds[i]];
+
+            // Require that the rewards have not already been paid out for this submission
+            require(!reviewerRewardsPaidOutForSubmission[submissionId_], "Rewards have already been paid out");
+
+            // Require that the user made the judgement that is the same as the final decision
+            if (submission.decision == review.decision) {
+
+                // Pay the reviewer
+                (bool success, ) = review.reviewer.call{value: reviewConfiguration.reviewerReward}("");
+                require(success);
+            }
+        }
+
+        // Update variable to show that the reviewers have claimed the reward
+        reviewerRewardsPaidOutForSubmission[submissionId_] = true;
+
+        ///// EVENTS
     }
 
 
