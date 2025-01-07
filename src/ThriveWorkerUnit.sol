@@ -138,7 +138,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
     function confirm(
         address contributor, 
         string memory inputValidationMetadata
-        ) external onlyValidator onceReady nonReentrant {
+    ) external onlyValidator onceReady nonReentrant {
         require(
             block.timestamp <= deadline,
             "ThriveProtocol: work unit has expired"
@@ -211,8 +211,9 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         validationMetadata = _validationMetadata;
     }
 
-    function setMetadataVersion(string calldata _metadataVersion)
-        external onlyModerator {
+    function setMetadataVersion(
+        string calldata _metadataVersion
+    ) external onlyModerator {
         metadataVersion = _metadataVersion;
     }
 
@@ -252,7 +253,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
                 ""
             );
             require(
-                success, 
+                success,
                 "ThriveProtocol: Ether transfer to validator failed"
             );
             emit Withdrawn(address(0), remainingEther);
