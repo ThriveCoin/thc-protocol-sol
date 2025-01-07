@@ -25,12 +25,6 @@ interface IThriveWorkerUnit {
     function addReviewContractAsValidator(address address_) external;
 
     /**
-     * @notice Checks if the work unit is still active - if the deadline has passed or not.
-     * @return True if the work unit is active, false otherwise.
-     */
-    function isActive() external view returns (bool);
-
-    /**
      * @notice Fetches all validators from ThriveWorkUnit contract.
      * @return Array of validator addresses.
      */
