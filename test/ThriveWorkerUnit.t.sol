@@ -225,7 +225,7 @@ contract ThriveWorkerUnitTest is Test {
 
         assertEq(thriveWorkerUnit.completions(contributor), 1);
         assertEq(
-            mockToken.balanceOf(contributor), 
+            mockToken.balanceOf(contributor),
             thriveWorkerUnit.rewardAmount()
         );
         assertEq(
