@@ -112,7 +112,6 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         badgeQuery = IBadgeQuery(_badgeQuery);
     }
 
-    // @dev Needs futher discussion on token payment/distributions
     function initialize() external payable onlyModerator {
         require(!ready, "ThriveProtocol: already initialized");
         uint256 maxRewardsCounter = maxRewards / rewardAmount;
@@ -136,10 +135,12 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         emit Initialized();
     }
 
-    function confirm(address contributor, string memory inputValidationMetadata) external onlyValidator onceReady nonReentrant
-    {
+    function confirm(
+        address contributor, 
+        string memory inputValidationMetadata
+        ) external onlyValidator onceReady nonReentrant {
         require(
-            block.timestamp <= deadline, 
+            block.timestamp <= deadline,
             "ThriveProtocol: work unit has expired"
         );
         require(
@@ -163,7 +164,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         }
 
         require(
-            hasAtLeastOneBadge, 
+            hasAtLeastOneBadge,
             "ThriveProtocol: required badge is missing!"
         );
 
@@ -175,9 +176,9 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         require(success, "ThriveProtocol: Ether transfer to validator failed");
 
         emit ConfirmationAdded(
-            contributor, 
-            inputValidationMetadata, 
-            rewardAmount, 
+            contributor,
+            inputValidationMetadata,
+            rewardAmount,
             msg.sender
         );
     }
@@ -206,15 +207,12 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     function setValidationMetadata(
         string calldata _validationMetadata
-    )
-        external onlyModerator {
+    ) external onlyModerator {
         validationMetadata = _validationMetadata;
     }
 
     function setMetadataVersion(string calldata _metadataVersion)
-        external
-        onlyModerator
-    {
+        external onlyModerator {
         metadataVersion = _metadataVersion;
     }
 
@@ -250,7 +248,9 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
         uint256 remainingEther = address(this).balance;
         if (remainingEther > 0) {
-            (bool success, ) = payable(moderator).call{value: remainingEther}("");
+            (bool success, ) = payable(moderator).call{value: remainingEther}(
+                ""
+            );
             require(
                 success, 
                 "ThriveProtocol: Ether transfer to validator failed"
