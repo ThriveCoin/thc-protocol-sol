@@ -667,12 +667,19 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         return false;
     }
 
+    // @inheritdoc IThriveReview
+    function retrieveReservedFunds() external {
+
+        // This is payout for submittors who had their submissions ACCEPTED
+    }
 
     // @inheritdoc IThriveReview
     function retrieveFunds() external onlyOwner {
-        // @dev
-        // This should be time-restricted so that the owner can't just take the funds whenever they want.
-        // require(block.timestamp > unlockTime, "Funds are locked");
+
+        // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
+        require(block.timestamp > reviewConfiguration.submissionDeadline, "Submission deadline has not passed");
+
+
         (bool success, ) = payable(_msgSender()).call{value: address(this).balance}("");
         require(success);
     }

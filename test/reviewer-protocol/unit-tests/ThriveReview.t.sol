@@ -1205,6 +1205,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     function testxx_success_RetrieveFundsAsOwner() public {
         uint256 balanceBefore = address(this).balance;
 
+        vm.warp(reviewConfiguration.submissionDeadline + 1);
+
         thriveReview.retrieveFunds();
 
         uint256 balanceAfter = address(this).balance;

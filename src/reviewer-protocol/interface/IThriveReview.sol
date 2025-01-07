@@ -12,7 +12,7 @@ interface IThriveReview {
     // @dev Add desc on this
     struct ReviewConfiguration {
 
-        // Reference to the ThriveWorkUnit on the Thrive Protocol for which the configuration is being created.
+        // Reference to the ThriveWorkUnit on the Thrive Protocol which the configuration is being created for.
         address workUnit; // Can also use IWorkUnit interface
 
         // The amount of THRIVE allocated for reviewers.
