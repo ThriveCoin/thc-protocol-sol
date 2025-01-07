@@ -252,6 +252,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require that maximum amount of commits to review has not been reached
         require(committedReviewsPerSubmissionCounter[submissionId_] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
 
+        // Require that the deadline to review has not passed
+        require(block.timestamp <= reviewConfiguration.reviewDeadline, "Review deadline has passed");
+
+
 
         // Fetch the review ID and increment the counter
         uint256 reviewId = reviewCounter++;
@@ -315,10 +319,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // We can remove this if maxCommitedPerSubmission == maxReviewsPerSubmission
 
         // Check that the deadline hasn't passed
-        require(block.timestamp <= commitedReview.deadline, "Review deadline has passed");
+        require(block.timestamp <= commitedReview.deadline, "Review commitment deadline has passed");
         
         // Require that the review decision is either "ACCEPTED" or "REJECTED"
         require(review_.decision == Decision.ACCEPTED || review_.decision == Decision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
+        
+        // Require that the deadline to review has not passed
+        require(block.timestamp <= reviewConfiguration.reviewDeadline, "Review deadline has passed");
 
 
 
@@ -367,13 +374,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         }
 
 
-        // Does the decision get made here or in a separate function? -> _reachDecisionOnSubmission
-        // Maybe even here because - if a submission has enough reviews to reach a decision, 
-        // reviews can be made opportunistically just to get the payout without really reviewing. 
-        // @dev OPTIONAL
+        // Reacka decision on submission automatically IF conditions are met
         _reachDecisionOnSubmission(commitedReview.submissionId);
 
 
+        //
         ////// EVENT
         ////////////////
 
@@ -423,6 +428,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     {
         _reachDecisionOnSubmission(submissionId_);
     }
+
 
 
     // @inheritdoc IThriveReview
@@ -481,17 +487,24 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         onlyUserWithBadges(reviewConfiguration.judgeBadges) 
         submissionPending(submissionId_)
     {
-                
-        // User with badge can only make a final decision when the submission has NOT reached the agreement threshold on either ACCEPTED or REJECTED.
-        require(submissions[submissionId_].reviewCount == reviewConfiguration.maximumReviewsPerSubmission, "Submission does not have max reviews");
-
-        // Require the decision is either "ACCEPTED" or "REJECTED"
-        require(decision_ == Decision.ACCEPTED || decision_ == Decision.REJECTED, "Decision must be either 'ACCEPTED' or 'REJECTED");
 
         // Fetch the submission from storage
         Submission storage submission = submissions[submissionId_];
+                
+        // User with badge can only make a final decision when the submission has NOT reached the agreement threshold on either ACCEPTED or REJECTED with max reviews
+        // OR when the review deadline has passed and the submission has not reached a decision
+        // Allowing badge to make a final decision when the review deadline has passed may, at first, seem to give the badge too much power -
+        // but we also disallow reviewing after the deadline, so its not like the badge is front-running the reviewers/decision.
+        require(
+            submission.reviewCount >= reviewConfiguration.maximumReviewsPerSubmission || 
+            block.timestamp > reviewConfiguration.reviewDeadline,
+            "Submission has not reached requirements for a final decision as badge"
+        );
 
-        // Confirm the submission is no longer PENDING
+        // Require the decision is either "ACCEPTED" or "REJECTED"
+        require(decision_ == Decision.ACCEPTED || decision_ == Decision.REJECTED, "Decision must be either 'ACCEPTED' or 'REJECTED'");
+
+        // Confirm the submission is FINALIZED
         submission.status = SubmissionStatus.FINALIZED;
 
         // Submission is ACCEPTED or REJECTED

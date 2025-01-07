@@ -487,6 +487,17 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
     }
 
+    function test16x_fail_ToCommitReviewAfterReviewDeadline() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        vm.warp(block.timestamp + reviewConfiguration.reviewDeadline + 1);
+
+        vm.expectRevert("Review deadline has passed");
+        thriveReview.commitToReview(0);
+    }
+
     function test16_fail_ToCommitReviewAfterMaximumReviewsPerSubmissionReached() public {
 
         // Create a submission
@@ -632,7 +643,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test21_fail_ToCreateReviewAfterDeadline() public {
+    function test21_fail_ToCreateReviewAfterCommitmentDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission(submission);
@@ -641,6 +652,24 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
+
+        vm.expectRevert("Review commitment deadline has passed");
+        thriveReview.createReview(review, 0);
+    }
+
+    function test21x_fail_ToCreateReviewAfterReviewDeadline() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Go to right before the review deadline to commit
+        vm.warp(reviewConfiguration.reviewDeadline - 1);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Go to right after the review deadline to create review
+        vm.warp(reviewConfiguration.reviewDeadline + 1);
 
         vm.expectRevert("Review deadline has passed");
         thriveReview.createReview(review, 0);
@@ -892,6 +921,17 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         thriveReview.createReview(review, 2);
 
+        // Commit to a review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        review.decision = IThriveReview.Decision.REJECTED;
+        vm.prank(address(0x3));
+        thriveReview.createReview(review, 3);
+
+
+
         // Check that the submission is finalized
         (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.submissions(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
@@ -1097,9 +1137,192 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.retrieveFunds();
     }
 
+    function testxx_success_ReachDecisionOnSubmissionAsBadgeAfterMaxReviews() public {
 
-    // reachDecisionOnSubmission and reachDecisionOnSubmissionAsBadge
-    // These tests will be written depending on if if we call _reachDecisionOnSubmission during createReview()
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review, 0);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReview.createReview(review, 1);
+
+
+
+        // Make following reviews REJECTED
+        review.decision = IThriveReview.Decision.REJECTED;
+
+        // Commit to review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x3));
+        thriveReview.createReview(review, 2);
+
+        // Commit to review
+        vm.prank(address(0x4));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x4));
+        thriveReview.createReview(review, 3);
+
+
+        // Check that the submission is still pending because there is no consensus on decision
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.submissions(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.NONE), "Submission status is not set correctly");
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
+
+
+        // Finalize this submission as a judge badge
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
+
+
+        // Check that the submission is still pending because there is no consensus on decision
+        (, , , , , decision, submissionStatus) = thriveReview.submissions(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+    }
+
+    function testxx_success_ReachDecisionOnSubmissionAsBadgeAfterReviewDeadline() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review, 0);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReview.createReview(review, 1);
+
+        // Go to right after the review deadline
+        vm.warp(reviewConfiguration.reviewDeadline + 1);
+
+        // Finalize this submission as a judge badge
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
+
+        // Check that the submission is still pending because there is no consensus on decision
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.submissions(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+    }
+
+    function testxx_fail_ToReachDecisionOnSubmissionAsBadgeBeforeDeadlineWithoutMaxReviews() public {
+        
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review, 0);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReview.createReview(review, 1);
+
+        // Fail to finalize
+        vm.expectRevert("Submission has not reached requirements for a final decision as badge");
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
+    }
+
+    function testxx_fail_ToReachDecisionOnSubmissionAsBadgeWithNoProperDecision() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review, 0);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReview.createReview(review, 1);
+
+        // Go to right after the review deadline
+        vm.warp(reviewConfiguration.reviewDeadline + 1);
+
+        // Fail to finalize
+        vm.expectRevert("Decision must be either 'ACCEPTED' or 'REJECTED'");
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.NONE);
+
+    }
+
+    function testxx_fail_ToReachDecisionAsBadgeOnNonPendingSubmission() public {
+
+        // Create a submission
+        thriveReview.createSubmission(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review, 0);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        thriveReview.createReview(review, 1);
+
+        // Commit to review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x3));
+        thriveReview.createReview(review, 2);
+
+        // Check that the submission is still finalized
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.submissions(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        vm.expectRevert("Submission is not in 'PENDING' status");
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
+    }
 
 
     receive() external payable {}

@@ -29,7 +29,7 @@ abstract contract BasicTestConfigs is Test {
             rewardAmount: 10,
             maxRewards: 100 ether,
             validationRewardAmount: 1,
-            deadline: block.timestamp + 1 days,
+            deadline: 8 days,
             maxCompletionsPerUser: 2,
             validators: validators,
             assignedContributor: address(0),
@@ -40,13 +40,14 @@ abstract contract BasicTestConfigs is Test {
             workUnit: address(0),
             reviewerRewardsTotalAllocation: 10 ether,
             reviewerReward: 400_000_000_000_000_000, // 0.4 THRIVE
-            agreementThreshold: 5_000, // 50%
+            agreementThreshold: 7_000, // 50%
             maximumSubmissionsPerUser: 2,
             minimumReviews: 3,
             maximumSubmissions: 5,
             maximumReviewsPerSubmission: 4,
             submissionDeadline: uint32(block.timestamp) + 10 days,
             reviewCommitmentDeadline: 1 days,
+            reviewDeadline: 7 days,
             submitterBadges: new bytes32[](0),
             reviewerBadges: new bytes32[](0),
             judgeBadges: new bytes32[](0),
