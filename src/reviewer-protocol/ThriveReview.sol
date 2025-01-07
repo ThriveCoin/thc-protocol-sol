@@ -166,6 +166,16 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Set the owner of the contract
         __Ownable_init(owner_);
 
+        // Make sure there is enough funds on worker unit contract to pay submissions - if there IS a worker unit contract
+        if (reviewConfiguration.workUnit != address(0)) {
+            
+            uint256 maxSubmissions = reviewConfiguration.maximumSubmissions;
+            uint256 maxSubmissionsByFundsOnWorkerUnit = IThriveWorkerUnit(workerUnitAddress).maxRewards() / IThriveWorkerUnit(workerUnitAddress).rewardAmount();
+            
+            require(maxSubmissions <= maxSubmissionsByFundsOnWorkerUnit, "Not enough funds on worker unit contract to pay submissions");
+        }
+
+
 
         /// EVENT
         ////////////////

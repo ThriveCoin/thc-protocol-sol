@@ -124,6 +124,20 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
     }
 
+    function test02x_fail_ToInitializeIfThereIsNotEnoughFundsOnWorkerUnit() public {
+
+        // Allow more submissions than there is funds to be paid out on worker unit
+        reviewConfiguration.maximumSubmissions = 100;
+
+        // Expect to revert because of lack of funds on worker unit
+        vm.expectRevert();
+        (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
+            .createWorkUnitAndReviewContract{value: 10 ether}(
+            workUnitArgs, reviewConfiguration
+        );
+
+    }
+
 
     // This test can be uncommented and run with: --via-ir flag
     function test03_success_ReviewConfigurationCorrectlyInitialized()

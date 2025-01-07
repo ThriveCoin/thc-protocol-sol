@@ -50,4 +50,11 @@ interface IThriveWorkerUnit {
      * @notice Set the review factory address on ThriveWorkerUnit contract.
      */
     function setThriveReviewFactoryAddress(address) external;
+
+    // Max rewards on WorkerUnit
+    function maxRewards() external view returns (uint256);
+
+    // Reward amount on WorkerUnit
+    function rewardAmount() external view returns (uint256);
+
 }
