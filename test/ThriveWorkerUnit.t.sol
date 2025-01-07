@@ -225,7 +225,8 @@ contract ThriveWorkerUnitTest is Test {
 
         assertEq(thriveWorkerUnit.completions(contributor), 1);
         assertEq(
-            mockToken.balanceOf(contributor), thriveWorkerUnit.rewardAmount()
+            mockToken.balanceOf(contributor), 
+            thriveWorkerUnit.rewardAmount()
         );
         assertEq(
             mockToken.balanceOf(address(thriveWorkerUnit)),
@@ -397,8 +398,9 @@ contract ThriveWorkerUnitTest is Test {
     function testWithdrawRemaining() public {
         vm.warp(block.timestamp + 2 days);
 
-        uint256 contractERC20Balance =
-            mockToken.balanceOf(address(thriveWorkerUnit));
+        uint256 contractERC20Balance = mockToken.balanceOf(
+            address(thriveWorkerUnit)
+        );
         assertGt(contractERC20Balance, 0);
 
         thriveWorkerUnit.withdrawRemaining();
@@ -406,8 +408,9 @@ contract ThriveWorkerUnitTest is Test {
         uint256 moderatorERC20Balance = mockToken.balanceOf(moderator);
         assertNotEq(moderatorERC20Balance, contractERC20Balance);
 
-        uint256 remainingERC20Balance =
-            mockToken.balanceOf(address(thriveWorkerUnit));
+        uint256 remainingERC20Balance = mockToken.balanceOf(
+            address(thriveWorkerUnit)
+        );
         assertEq(remainingERC20Balance, 0);
 
         uint256 remainingEtherBalance = address(thriveWorkerUnit).balance;
