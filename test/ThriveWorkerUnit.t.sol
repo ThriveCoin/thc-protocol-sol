@@ -81,20 +81,6 @@ contract ThriveWorkerUnitTest is Test {
             address(0),
             badgeQuery
         );
-
-        vm.expectRevert("ThriveProtocol: invalid validation reward amount!");
-        new ThriveWorkerUnit(
-            moderator,
-            address(mockToken),
-            10,
-            100 ether,
-            0,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0),
-            badgeQuery
-        );
     }
 
     function testInitializeRequirements() public {

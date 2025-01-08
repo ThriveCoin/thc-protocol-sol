@@ -91,10 +91,6 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             "ThriveProtocol: deadline must be in the future"
         );
         require(_rewardAmount > 0, "ThriveProtocol: invalid reward amount!");
-        require(
-            _validationRewardAmount > 0,
-            "ThriveProtocol: invalid validation reward amount!"
-        );
 
         moderator = _moderator;
         rewardToken = _rewardToken;
