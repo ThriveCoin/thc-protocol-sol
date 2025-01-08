@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 
 import "../../../src/interface/IThriveWorkerUnitFactory.sol";
-import "../../../src/reviewer-protocol/interface/IThriveReviewFactory.sol";
 import "../../../src/reviewer-protocol/interface/IThriveReview.sol";
 
 abstract contract BasicTestConfigs is Test {

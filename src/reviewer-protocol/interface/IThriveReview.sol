@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IThriveReviewFactory} from "./IThriveReviewFactory.sol";
 
 /**
  * @title IThriveReview

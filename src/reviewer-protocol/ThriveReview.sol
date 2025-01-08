@@ -7,7 +7,6 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 
 // ThriveProtocol imports
 import {IThriveWorkerUnit} from "../interface/IThriveWorkerUnit.sol";
-import {IThriveReviewFactory} from "./interface/IThriveReviewFactory.sol";
 import {IThriveReview} from "./interface/IThriveReview.sol";
 import {IBadgeQuery} from "../IBadgeQuery.sol";
 
@@ -177,6 +176,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             require(maxSubmissions <= maxSubmissionsByFundsOnWorkerUnit, "Not enough funds on worker unit contract to pay submissions");
         }
 
+        // Calculate amount of funds needed to reserve for reviewers (potentially max reviewers on submission)
         submitterReserveFunds = reviewConfiguration.reviewerReward * reviewConfiguration.maximumReviewsPerSubmission;
 
 
@@ -333,7 +333,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(commitedReview.reviewer == _msgSender(), "User is not the committer of this review");
 
         // Require that maximum amount reviews per submission has not been reached
-        require(reviewsPerSubmissionCounter[review_.submissionId] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
+        require(reviewsPerSubmissionCounter[commitedReview.submissionId] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
         // We can remove this if maxCommitedPerSubmission == maxReviewsPerSubmission
 
         // Check that the deadline hasn't passed
@@ -353,11 +353,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the reviewers' decision on the submission
         reviews[reviewId_].decision = review_.decision;
 
-        // Save the review ID to the user's reviews
-        userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
-
         // Change the status of the review to `DONE`
         reviews[reviewId_].status = ReviewStatus.DONE;
+
+        // Save the review ID to the user's reviews
+        userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
 
         // Increment the counter of reviews
         reviewsPerSubmissionCounter[commitedReview.submissionId]++;
@@ -455,7 +455,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the submission from storage and copy to memory
         Submission storage submission = submissions[submissionId_];
 
-        // We can put this "if statement" below as a require if this function is not called automatically on createReview function.
 
         // Check if the submission has enough reviews to reach a decision
         if (submission.reviewCount >= reviewConfiguration.minimumReviews) {
@@ -710,13 +709,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     // @inheritdoc IThriveReview
-    // This functions terms only make sense if funds are paid out automatically to reviewers
     function retrieveFundsByOwner() external onlyOwner {
 
         // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
         require(block.timestamp > reviewConfiguration.submissionDeadline, "Submission deadline has not passed");
 
         // Require there are no pending submissions
+
+
 
         // Do not send entire balance but only what is left after payouts
         uint256 leftAfterPayouts = address(this).balance; // @dev calculate this

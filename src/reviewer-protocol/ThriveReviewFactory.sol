@@ -11,7 +11,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // ThriveProtocol imports
 import {IThriveReview} from "./interface/IThriveReview.sol";
-import {IThriveReviewFactory} from "./interface/IThriveReviewFactory.sol";
 import {IThriveWorkerUnit} from "../interface/IThriveWorkerUnit.sol";
 import {IThriveWorkerUnitFactory} from "../interface/IThriveWorkerUnitFactory.sol";
 
@@ -22,8 +21,7 @@ import {IThriveWorkerUnitFactory} from "../interface/IThriveWorkerUnitFactory.so
  */
 contract ThriveReviewFactory is
     OwnableUpgradeable,
-    UUPSUpgradeable,
-    IThriveReviewFactory
+    UUPSUpgradeable
 {
 
 
