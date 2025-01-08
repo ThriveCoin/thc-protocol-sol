@@ -598,6 +598,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the submission from storage
         Submission storage submission = submissions[submissionId_];
 
+        // Require for the submission to be finalized
+        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
+
+
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
 
@@ -623,7 +627,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         reviewerRewardsPaidOutForSubmission[submissionId_] = true;
 
         // Update the reserved funds for the submission
-        _updateAndPayoutSubmitterReservedFunds(submissionId_);
+        _payoutSubmitterReservedFunds(submissionId_);
 
 
 
@@ -641,7 +645,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     // @inheritdoc IThriveReview
-    function _updateAndPayoutSubmitterReservedFunds(uint256 submissionId_) internal {
+    function _payoutSubmitterReservedFunds(uint256 submissionId_) internal {
 
         // Fetch the submission from storage
         Submission storage submission = submissions[submissionId_];
@@ -657,7 +661,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Check if the decision is REJECTED
         } else if (submission.decision == Decision.REJECTED) {
 
-            // 
+            // Refund submitter funds that were reserved for reviewers when they are incorrect in their reviews
+            // and funds for reviews that were not made
             uint256 remainingAmountToPayout = reviewConfiguration.reviewerReward * submission.acceptedReviewsCount
                                                 + reviewConfiguration.maximumReviewsPerSubmission - submission.reviewCount;
 
