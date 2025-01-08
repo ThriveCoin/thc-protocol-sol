@@ -74,7 +74,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         mockToken.approve(address(thriveWorkerUnitAddress), 1_000 ether);
 
-        IThriveWorkerUnit(thriveWorkerUnitAddress).initialize{value: 10 ether}();
+        IThriveWorkerUnit(thriveWorkerUnitAddress).initialize();
 
 
         // Add required badge to ThriveWorkerUnit

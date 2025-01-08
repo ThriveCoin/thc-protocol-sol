@@ -29,7 +29,7 @@ abstract contract BasicTestConfigs is Test {
             rewardToken: address(0),
             rewardAmount: 10,
             maxRewards: 100 ether,
-            validationRewardAmount: 1,
+            validationRewardAmount: 0,
             deadline: 8 days,
             maxCompletionsPerUser: 2,
             validators: validators,
