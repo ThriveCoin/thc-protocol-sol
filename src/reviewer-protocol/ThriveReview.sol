@@ -72,6 +72,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Counter of reviews made to the contract
     uint256 public reviewCounter;
 
+    // Amount of THRIVE submitters must reserve for reviewers
+    uint256 public submitterReserveFunds;
+
 
 
     ////// USER VARIABLES //////
@@ -113,7 +116,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     // Mapping of submission IDs to the reward claimed status
     mapping(uint256 => bool) public reviewerRewardsPaidOutForSubmission;
-
 
 
 
@@ -175,6 +177,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             require(maxSubmissions <= maxSubmissionsByFundsOnWorkerUnit, "Not enough funds on worker unit contract to pay submissions");
         }
 
+        submitterReserveFunds = reviewConfiguration.reviewerReward * reviewConfiguration.maximumReviewsPerSubmission;
 
 
         /// EVENT
@@ -186,7 +189,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // @inheritdoc IThriveReview
     function createSubmission(
         Submission calldata submission_
-    ) external onlyUserWithBadges(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
+    ) payable external onlyUserWithBadges(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
 
         // Require that the user does not have a `PENDING` submission
         require(!userHasPendingSubmission(_msgSender()), "User has a pending submission");
@@ -202,6 +205,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Require deadline for submissions has not passed
         require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
+
+        // Require user enough funds to pay max number of reviewers
+        require(msg.value >= submitterReserveFunds, "Insufficient funds to pay reviewers");
 
 
 
@@ -219,7 +225,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
-
 
 
         // Emit event - fill data later
@@ -472,13 +477,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 // Submission is ACCEPTED
                 submission.decision = Decision.ACCEPTED;
 
+                // Distribute payouts to reviewers
+                _payoutReviewersOnSubmission(submissionId_);
+
                 // If work unit contract is set, confirm the submission on the work unit contract
                 if (hasWorkerUnitContract()) {
                     IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
                 }
-
-                // Distribute payouts to reviewers
-                _payoutReviewersOnSubmission(submissionId_);
 
             } // Check if the ratio is above the agreement threshold
             else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
@@ -522,6 +527,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Require the decision is either "ACCEPTED" or "REJECTED"
         require(decision_ == Decision.ACCEPTED || decision_ == Decision.REJECTED, "Decision must be either 'ACCEPTED' or 'REJECTED'");
+
 
         // Confirm the submission is FINALIZED
         submission.status = SubmissionStatus.FINALIZED;
@@ -617,6 +623,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Update variable to show that the reviewers have claimed the reward
         reviewerRewardsPaidOutForSubmission[submissionId_] = true;
 
+        // Update the reserved funds for the submission
+        _updateAndPayoutSubmitterReservedFunds(submissionId_);
+
+
+
         ///// EVENTS
     }
 
@@ -628,6 +639,36 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     //////////////// 
     ////////////////
 
+
+
+    // @inheritdoc IThriveReview
+    function _updateAndPayoutSubmitterReservedFunds(uint256 submissionId_) internal {
+
+        // Fetch the submission from storage
+        Submission storage submission = submissions[submissionId_];
+
+        // Check if the decision is ACCEPTED
+        if (submission.decision == Decision.ACCEPTED) {
+
+            // Pay the submitter
+            (bool success, ) = submission.contributor.call{value: submitterReserveFunds}("");
+            require(success);
+
+
+            // Check if the decision is REJECTED
+        } else if (submission.decision == Decision.REJECTED) {
+
+            // 
+            uint256 remainingAmountToPayout = reviewConfiguration.reviewerReward * submission.acceptedReviewsCount
+                                                + reviewConfiguration.maximumReviewsPerSubmission - submission.reviewCount;
+
+            // Pay the submitter
+            (bool success, ) = submission.contributor.call{value: remainingAmountToPayout}("");
+            require(success);
+
+        }
+
+    }
 
 
 
@@ -667,20 +708,19 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         return false;
     }
 
-    // @inheritdoc IThriveReview
-    function retrieveReservedFunds() external {
-
-        // This is payout for submittors who had their submissions ACCEPTED
-    }
 
     // @inheritdoc IThriveReview
-    function retrieveFunds() external onlyOwner {
+    // This functions terms only make sense if funds are paid out automatically to reviewers
+    function retrieveFundsByOwner() external onlyOwner {
 
         // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
         require(block.timestamp > reviewConfiguration.submissionDeadline, "Submission deadline has not passed");
 
+        // Require there are no pending submissions
 
-        (bool success, ) = payable(_msgSender()).call{value: address(this).balance}("");
+        // Do not send entire balance but only what is left after payouts
+        uint256 leftAfterPayouts = address(this).balance; // @dev calculate this
+        (bool success, ) = payable(_msgSender()).call{value: leftAfterPayouts}("");
         require(success);
     }
 

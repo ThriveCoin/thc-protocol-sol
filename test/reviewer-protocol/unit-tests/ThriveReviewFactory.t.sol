@@ -68,16 +68,16 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         assertNotEq(thriveReviewContract, address(0), "ThriveReview contract address should not be zero address");
     }
 
-    function test04_fail_ToCreateContractstWithInsufficientFunds() public {
+    function test04_fail_ToCreateContractsWithInsufficientFunds() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
         vm.expectRevert("ThriveReviewFactory: small reward amount sent");
-        thriveReviewFactory.createWorkUnitAndReviewContract{value: 9 ether}(
+        thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION - 1}(
             workUnitArgs, reviewConfiguration
         );
 
         vm.expectRevert("ThriveReviewFactory: small reward amount sent");
-        thriveReviewFactory.createReviewContract{value: 9 ether}(
+        thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION - 1}(
             reviewConfiguration
         );
 
@@ -86,20 +86,20 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
     function test05_ReviewFactoryShouldProceedFundsToReviewContract() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
-        (address thriveReviewContract, ) = thriveReviewFactory.createWorkUnitAndReviewContract{value: 10 ether}(
+        (address thriveReviewContract, ) = thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
             workUnitArgs, reviewConfiguration
         );
 
         // Ensure ThriveReview contract has received the funds
-        assertEq(address(thriveReviewContract).balance, 10 ether, "ThriveReview contract should have received the funds");
+        assertEq(address(thriveReviewContract).balance, REVIEW_CONTRACT_ALLOCATION, "ThriveReview contract should have received the funds");
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
-        address thriveReviewContract_2 = thriveReviewFactory.createReviewContract{value: 10 ether}(
+        address thriveReviewContract_2 = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
            reviewConfiguration
         );
 
         // Ensure ThriveReview contract has received the funds
-        assertEq(address(thriveReviewContract_2).balance, 10 ether, "ThriveReview contract should have received the funds");
+        assertEq(address(thriveReviewContract_2).balance, REVIEW_CONTRACT_ALLOCATION, "ThriveReview contract should have received the funds");
 
     }
 
