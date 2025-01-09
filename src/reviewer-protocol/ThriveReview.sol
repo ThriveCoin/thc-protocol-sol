@@ -545,7 +545,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
         }
 
-        
+
         ////////
         //////// EVENT
     }
@@ -652,6 +652,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the submission from storage
         Submission storage submission = submissions[submissionId_];
 
+        // Require for the submission to be finalized
+        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
+
+
         // Check if the decision is ACCEPTED
         if (submission.decision == Decision.ACCEPTED) {
 
@@ -663,7 +667,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Check if the decision is REJECTED
         } else if (submission.decision == Decision.REJECTED) {
 
-            // Refund submitter funds that were reserved for reviewers when they are incorrect in their reviews
+            // Refund submitter funds that were reserved for reviewers who were incorrect in their reviews
             // and funds for reviews that were not made
             uint256 remainingAmountToPayout = reviewConfiguration.reviewerReward * submission.acceptedReviewsCount
                                                 + reviewConfiguration.maximumReviewsPerSubmission - submission.reviewCount;
