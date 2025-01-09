@@ -534,16 +534,18 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Submission is ACCEPTED or REJECTED
         submission.decision = decision_;
 
+
+        // Distribute payouts to reviewers
+        _payoutReviewersOnSubmission(submissionId_);
+
+
         if (decision_ == Decision.ACCEPTED && hasWorkerUnitContract()) {
 
             // Confirm the work unit was accepted
             IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
         }
 
-        // Distribute payouts to reviewers
-        _payoutReviewersOnSubmission(submissionId_);
-
-
+        
         ////////
         //////// EVENT
     }
