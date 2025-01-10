@@ -135,7 +135,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // Scaler value for calculating ratios accepted/rejected reviews
+    // Scaler value for calculating ratios of accepted/rejected reviews
     uint256 constant SCALER = 10_000;
 
 
@@ -146,7 +146,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // @inheritdoc IThriveReview
+
+    /**
+     * @notice Initializes a newly created ThriveReview contract and calculates some internal logic.
+     * @param reviewConfiguration_ Struct describing how reviews will be handled.
+     * @param thriveReviewFactoryAddress_ Address of the ThriveReviewFactory contract.
+     * @param badgeQueryContractAddress_ Address of the BadgeQuery contract.
+     * @param owner_ Address of the creator of the work unit and ThriveReview contract.
+     */
     function initialize(
         ReviewConfiguration memory reviewConfiguration_,
         address thriveReviewFactoryAddress_,
@@ -188,7 +195,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Creates a new submission object.
+     * @dev User must have the required badges to create a submission and reserve smoe amount of THRIVE in order to submit.
+     * @param submission_ Struct containing the submission metadata.
+     * @return submissionId ID of the newly created submission.
+     */
     function createSubmission(
         Submission calldata submission_
     ) payable external onlyUserWithBadges(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
@@ -234,8 +246,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    // @dev Should this function be implemented?
-    // Problem is that the user can change the submissionMetadata while the review is ongoing
+    /**
+     * @notice Updates a submission object on-chain.
+     * @dev IS this function needed?
+     * @param editedSubmission_ New submission metadata.
+     * @param submissionId_ Submission ID.
+     */
     function updateSubmission (
         Submission calldata editedSubmission_,
         uint256 submissionId_
@@ -250,6 +266,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require deadline for submissions has not passed
         require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
 
+        // Require no reviews came in for this submission
+        require(reviewsPerSubmissionCounter[submissionId_] == 0, "Submission has reviews");
+        // @dev Add test for this
 
 
         // Save the edited submission to the `submissions` mapping
@@ -260,7 +279,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice User commits to review a specific submission.
+     * @param submissionId_ ID of the submission.
+     */
     function commitToReview(uint256 submissionId_) external 
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
         submissionPending(submissionId_)
@@ -314,7 +336,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice User creates the commited review with metadata and decision on submission.
+     * @dev Previously created Review object is updated with new passed information.
+     * @param review_ Review object containing the review metadata and decision.
+     * @param reviewId_ Review ID.
+     */
     function createReview(
         Review calldata review_,
         uint256 reviewId_
@@ -407,7 +434,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     }
 
-    // @inheritdoc IThriveReview
+
+    /**
+     * @notice Deletes pendings reviews if they are eligible for deleting.
+     * @dev Occupied space is freed for new commited reviews. Anyone can delete it.
+     * @param reviewIds_ Array of review IDs.
+     */
     function deletePendingReviews(uint256[] calldata reviewIds_) external {
         for (uint256 i = 0; i < reviewIds_.length; i++) {
             deletePendingReview(reviewIds_[i]);
@@ -415,7 +447,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Deletes a pending review if it is eligible for deleting.
+     * @dev Occupied space is freed for new commited reviews. Anyone can delete it.
+     * @param reviewId_ Review ID.
+     */
     function deletePendingReview(uint256 reviewId_) public {
 
         // Require that the review is in the "COMMITED" status
@@ -442,7 +478,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     }    
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Decision can be reached on a submission if all conditions are met.
+     * @param submissionId_ Submission ID.
+     */
     function reachDecisionOnSubmission(uint256 submissionId_) external 
         submissionPending(submissionId_)
     {
@@ -451,7 +490,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Decision is reached on a submission if conditions are met. WorkerUnit is called to payout the submitter.
+     * @param submissionId_ Submission ID.
+     */
     function _reachDecisionOnSubmission(uint256 submissionId_) internal {
         
         // Fetch the submission from storage and copy to memory
@@ -507,7 +549,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Function for a badge to manually make a decision on a submission when neither judgement reached threshold OR not enough reviews came in (less than minimum).
+     * @param submissionId_ Submission ID.
+     * @param decision_ Decision on the submission.
+     */
     function reachDecisionOnSubmissionAsBadge(uint256 submissionId_, Decision decision_) external 
         onlyUserWithBadges(reviewConfiguration.judgeBadges) 
         submissionPending(submissionId_)
@@ -596,7 +642,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
     */
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Distributes rewards to correct reviewers when the submission is finalized.
+     * @param submissionId_ Submission ID.
+     */
     function _payoutReviewersOnSubmission(uint256 submissionId_) internal {
         
         // Fetch the submission from storage
@@ -648,7 +697,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Pays out the submission reserved funds to the submitter if his submission is ACCEPTED - otherwise return incorrect and unused reviewer funds to submitter.
+     * @param submissionId_ Submission ID.
+     */
     function _payoutSubmitterReservedFunds(uint256 submissionId_) internal {
 
         // Fetch the submission from storage
@@ -684,13 +736,20 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Checks if this Review contract has a WorkerUnit tied to it or if its a standalone Review.
+     * @return bool True if the contract has a WorkerUnit contract, false otherwise.
+     */
     function hasWorkerUnitContract() public view returns (bool) {
         return workerUnitAddress != address(0);
     }
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Checks if the user has a pending submission.
+     * @param user Address of the user.
+     * @return bool True if the user has a pending submission, false otherwise.
+     */
     function userHasPendingSubmission(address user) public view returns (bool) {
 
         uint256[] memory userSubmissionIds = userSubmissions[user];
@@ -705,7 +764,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         return false;
     }
 
-    // @inheritdoc IThriveReview
+
+    /**
+     * @notice Checks if the user has an ACCEPTED submission.
+     * @param user Address of the user.
+     * @return bool True if the user has an accepted submission, false otherwise.
+     */
     function userHasAcceptedSubmission(address user) public view returns (bool) {
 
         uint256[] memory userSubmissionIds = userSubmissions[user];
@@ -721,7 +785,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    // @inheritdoc IThriveReview
+    /**
+     * @notice Function to retrieve funds reserved for reviewers submitted during creation of the Review contract.
+     * @dev Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
+     */
     function retrieveFundsByOwner() external onlyOwner {
 
         // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.

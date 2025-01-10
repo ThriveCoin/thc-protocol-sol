@@ -146,8 +146,7 @@ contract ThriveReviewFactory is
     }
 
     /**
-     * @notice Creates a new ThriveReview contract
-     * Optional: This function can be used to connect an existing ThriveWorkUnit to a ThriveReview contract.
+     * @notice Creates a new ThriveReview contract without a WorkerUnit connection.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
      */
     function createReviewContract(
@@ -182,6 +181,7 @@ contract ThriveReviewFactory is
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
         (bool success, ) = thriveReviewContract.call{value: reviewConfiguration_.reviewerRewardsTotalAllocation}("");
         require(success);
+        
 
 
         // ADD EVENTS LATER ON
