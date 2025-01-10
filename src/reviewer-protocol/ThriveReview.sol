@@ -550,7 +550,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-     * @notice Function for a badge to manually make a decision on a submission when neither judgement reached threshold OR not enough reviews came in (less than minimum).
+     * @notice Function for a badge holding user to manually make a decision on a submission when neither judgement reaches threshold OR not enough reviews came in (less than minimum).
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
      */
@@ -698,7 +698,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-     * @notice Pays out the submission reserved funds to the submitter if his submission is ACCEPTED - otherwise return incorrect and unused reviewer funds to submitter.
+     * @notice Pays out the submission reserved funds to the submitter if his submission is ACCEPTED - otherwise return only a fraction of funds.
      * @param submissionId_ Submission ID.
      */
     function _payoutSubmitterReservedFunds(uint256 submissionId_) internal {
@@ -786,7 +786,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-     * @notice Function to retrieve funds reserved for reviewers submitted during creation of the Review contract.
+     * @notice Function to retrieve funds reserved for reviewers sent during creation of the Review contract.
      * @dev Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
      */
     function retrieveFundsByOwner() external onlyOwner {
