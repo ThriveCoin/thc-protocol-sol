@@ -437,6 +437,21 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
+    function test13x_fail_ToUpdateSubmissionThatHasReviews() public {
+
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review, 0);
+
+        vm.expectRevert("Submission has reviews");
+        thriveReview.updateSubmission(submission, 0);
+    }
+
     function test13_fail_ToUpdateSubmissionThatIsNotPending() public {
         
         // Create submission
@@ -747,9 +762,6 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Fetch user reviews
         uint256 userReviewId = thriveReview.userReviews(address(this), 0);
         assertEq(userReviewId, 0, "User reviews ids are not set correctly");
-
-        uint256 reviewsPerSubmissionCounter = thriveReview.reviewsPerSubmissionCounter(0);
-        assertEq(reviewsPerSubmissionCounter, 1, "Reviews per submission counter is not set correctly");
 
         // Fetch submission after the review
         (, , uint256 reviewCount, uint256 acceptedReviewCount, uint256 rejectedReviewCount, IThriveReview.Decision submissionDecision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);

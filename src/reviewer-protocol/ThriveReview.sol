@@ -100,14 +100,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping of counters for commited reviews per submission: submissionId => Number of commited reviews
     mapping(uint256 => uint256) public committedReviewsPerSubmissionCounter;
 
-    // Mapping of counters for reviews per submission: SubmissionId => Number of reviews
-    mapping(uint256 => uint256) public reviewsPerSubmissionCounter;
-
     // Mapping that checks if a user has commited to review a specific submission: userAddress => submissionId => bool
     mapping(address => mapping(uint256 => bool)) public userCommitedToReview;
 
     // Mapping of reviews per submission: submissionId => reviewId[]
-    mapping(uint256 => uint256[]) public submissionReviews; // @dev maybe this mapping is not needed at all
+    mapping(uint256 => uint256[]) public submissionReviews;
 
     // Mapping of user addresses to their submission reviews: userAddress => submissionId => true/false
     mapping(address => mapping(uint256 => bool)) public  userClaimedRewardForReview;
@@ -267,7 +264,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
 
         // Require no reviews came in for this submission
-        require(reviewsPerSubmissionCounter[submissionId_] == 0, "Submission has reviews");
+        require(submissionReviews[submissionId_].length == 0, "Submission has reviews");
         // @dev Add test for this
 
 
@@ -361,10 +358,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require user to be the committer to the review
         require(commitedReview.reviewer == _msgSender(), "User is not the committer of this review");
 
-        // Require that maximum amount reviews per submission has not been reached
-        require(reviewsPerSubmissionCounter[commitedReview.submissionId] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
-        // We can remove this if maxCommitedPerSubmission == maxReviewsPerSubmission
-
         // Check that the deadline hasn't passed
         require(block.timestamp <= commitedReview.deadline, "Review commitment deadline has passed");
         
@@ -388,20 +381,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the review ID to the user's reviews
         userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
 
-        // Increment the counter of reviews
-        reviewsPerSubmissionCounter[commitedReview.submissionId]++;
-
-
-        // @dev 
-        // Should we decrement the counter of committed reviews here to open up space for other commits?
-        // Doesn't make a lot of sense, but it "speeds up" the process of reviewing.
-        // This would make reviewing a "who's faster" contests, which is maybe not good.
-        //
-        // committedReviewsPerSubmissionCounter[review_.submissionId]--;
 
 
         // Save reviews of a submission
-        submissionReviews[commitedReview.submissionId].push(reviewId_); // @dev maybe this mapping is not needed at all
+        submissionReviews[commitedReview.submissionId].push(reviewId_);
 
 
 
