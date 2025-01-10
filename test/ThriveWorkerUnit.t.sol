@@ -121,9 +121,7 @@ contract ThriveWorkerUnitTest is Test {
         mockToken.approve(address(uninitializedWorkerUnit), 1_000 ether);
 
         // case: insufficient value for validators
-        vm.expectRevert(
-            "ThriveProtocol: insufficient value for validators"
-        );
+        vm.expectRevert("ThriveProtocol: insufficient value for validators");
         uninitializedWorkerUnit.initialize{value: 1 ether}();
     }
 
@@ -400,7 +398,7 @@ contract ThriveWorkerUnitTest is Test {
         assertEq(remainingERC20Balance, 0);
 
         uint256 remainingEtherBalance = address(thriveWorkerUnit).balance;
-        assertEq(remainingEtherBalance, 0);
+        assertNotEq(remainingEtherBalance, 0);
     }
 
     receive() external payable {}

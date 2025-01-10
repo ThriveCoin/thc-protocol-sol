@@ -112,20 +112,29 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         require(!ready, "ThriveProtocol: already initialized");
         uint256 maxRewardsCounter = maxRewards / rewardAmount;
         uint256 totalRequiredValue = maxRewardsCounter * validationRewardAmount;
-        require(
-            msg.value >= totalRequiredValue,
-            "ThriveProtocol: insufficient value for validators"
-        );
-        require(
-            IERC20(rewardToken).balanceOf(msg.sender) >= maxRewards,
-            "ThriveProtocol: insufficient value for contributors"
-        );
+        if (rewardToken == address(0)) {
+            // native token case
+            require(
+                msg.value >= totalRequiredValue + maxRewards,
+                "ThriveProtocol: insufficient value for validators and rewards"
+            );
+        } else {
+            // ERC20 token case: msg.value must cover totalRequiredValue
+            require(
+                msg.value >= totalRequiredValue,
+                "ThriveProtocol: insufficient value for validators"
+            );
+            require(
+                IERC20(rewardToken).balanceOf(msg.sender) >= maxRewards,
+                "ThriveProtocol: insufficient token balance for rewards"
+            );
 
-        IERC20(rewardToken).safeTransferFrom(
-            msg.sender,
-            address(this),
-            maxRewards
-        );
+            IERC20(rewardToken).safeTransferFrom(
+                msg.sender,
+                address(this),
+                maxRewards
+            );
+        }
         ready = true;
 
         emit Initialized();
@@ -152,24 +161,46 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
         bool hasAtLeastOneBadge = false;
 
-        for (uint256 i = 0; i < requiredBadges.length(); i++) {
-            if (badgeQuery.hasBadge(contributor, requiredBadges.at(i))) {
-                hasAtLeastOneBadge = true;
-                break;
+        if (requiredBadges.length() > 0) {
+            for (uint256 i = 0; i < requiredBadges.length(); i++) {
+                if (badgeQuery.hasBadge(contributor, requiredBadges.at(i))) {
+                    hasAtLeastOneBadge = true;
+                    break;
+                }
             }
-        }
 
-        require(
-            hasAtLeastOneBadge,
-            "ThriveProtocol: required badge is missing!"
-        );
+            require(
+                hasAtLeastOneBadge,
+                "ThriveProtocol: required badge is missing!"
+            );
+        }
 
         completions[contributor]++;
         // contributor
-        IERC20(rewardToken).safeTransfer(contributor, rewardAmount);
-        // validator
-        (bool success, ) = msg.sender.call{value: validationRewardAmount}("");
-        require(success, "ThriveProtocol: Ether transfer to validator failed");
+        if (rewardToken == address(0)) {
+            // case: native token
+            (bool success, ) = payable(contributor).call{value: rewardAmount}(
+                ""
+            );
+            require(
+                success,
+                "ThriveProtocol: Ether transfer to contributor failed"
+            );
+        } else {
+            // case: ERC20 token
+            IERC20(rewardToken).safeTransfer(contributor, rewardAmount);
+        }
+
+        if (validationRewardAmount > 0) {
+            // validator
+            (bool success, ) = payable(msg.sender).call{
+                value: validationRewardAmount
+            }("");
+            require(
+                success,
+                "ThriveProtocol: Ether transfer to validator failed"
+            );
+        }
 
         emit ConfirmationAdded(
             contributor,
@@ -237,22 +268,28 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             "ThriveProtocol: work unit is still active"
         );
 
-        uint256 remainingERC20 = IERC20(rewardToken).balanceOf(address(this));
-        if (remainingERC20 > 0) {
-            IERC20(rewardToken).safeTransfer(moderator, remainingERC20);
-            emit Withdrawn(rewardToken, remainingERC20);
-        }
-
-        uint256 remainingEther = address(this).balance;
-        if (remainingEther > 0) {
-            (bool success, ) = payable(moderator).call{value: remainingEther}(
-                ""
+        if (rewardToken == address(0)) {
+            // case: native token
+            uint256 remainingEther = address(this).balance;
+            if (remainingEther > 0) {
+                (bool success, ) = payable(moderator).call{
+                    value: remainingEther
+                }("");
+                require(
+                    success,
+                    "ThriveProtocol: Ether transfer to validator failed"
+                );
+                emit Withdrawn(address(0), remainingEther);
+            }
+        } else {
+            // case: ERC20 token
+            uint256 remainingERC20 = IERC20(rewardToken).balanceOf(
+                address(this)
             );
-            require(
-                success,
-                "ThriveProtocol: Ether transfer to validator failed"
-            );
-            emit Withdrawn(address(0), remainingEther);
+            if (remainingERC20 > 0) {
+                IERC20(rewardToken).safeTransfer(moderator, remainingERC20);
+                emit Withdrawn(rewardToken, remainingERC20);
+            }
         }
     }
 
