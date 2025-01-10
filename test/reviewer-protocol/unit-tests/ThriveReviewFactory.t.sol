@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+
+// This file contains unit tests for the reviewer protocol - ThriveReviewFactory.
+// The primary objectives are to validate proper authorization, enforce contract restrictions, ensure functions handle data correctly and operate as intended/per specs.
+// Note: Event testing is not included in this file.
+
+
 import {Test} from "forge-std/Test.sol";
 
 import "./BasicTestConfigs.t.sol";
@@ -12,7 +18,11 @@ import "../../../src/reviewer-protocol/ThriveReview.sol";
 import "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 
+// Command to run this test script:
 // forge clean && forge test --match-contract ThriveReviewFactoryUnitTests
+
+
+
 contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
     using Upgrades for address;
@@ -49,10 +59,10 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         thriveReviewFactory = ThriveReviewFactory(thriveReviewFactoryAddress);
     }
 
-    function test01_create_ReviewContractAndWorkUnit() public {
+    function test01_success_CreateReviewContractAndWorkUnit() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
-        (address thriveReviewContract, address thriveWorkUnitContract) = thriveReviewFactory.createWorkUnitAndReviewContract{value: 10 ether}(
+        (address thriveReviewContract, address thriveWorkUnitContract) = thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
             workUnitArgs, reviewConfiguration
         );
 
@@ -60,30 +70,31 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         assertNotEq(thriveWorkUnitContract, address(0), "ThriveWorkUnit contract address should not be zero address");
     }
 
-    function test03_create_OnlyReviewContract() public {
+    function test02_success_CreateOnlyReviewContract() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
-        address thriveReviewContract = thriveReviewFactory.createReviewContract{value: 10 ether}(reviewConfiguration);
+        address thriveReviewContract = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(reviewConfiguration);
 
         assertNotEq(thriveReviewContract, address(0), "ThriveReview contract address should not be zero address");
     }
 
-    function test04_fail_ToCreateContractsWithInsufficientFunds() public {
+    function test03_revert_ToCreateContractsWithInsufficientFunds() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
-        vm.expectRevert("ThriveReviewFactory: small reward amount sent");
+        vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
         thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION - 1}(
             workUnitArgs, reviewConfiguration
         );
 
-        vm.expectRevert("ThriveReviewFactory: small reward amount sent");
+        // Test creating a ThriveReview contract with insufficient funds
+        vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
         thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION - 1}(
             reviewConfiguration
         );
 
     }
 
-    function test05_ReviewFactoryShouldProceedFundsToReviewContract() public {
+    function test04_success_ReviewFactoryProceedFundsToReviewContract() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
         (address thriveReviewContract, ) = thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
@@ -101,22 +112,6 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         // Ensure ThriveReview contract has received the funds
         assertEq(address(thriveReviewContract_2).balance, REVIEW_CONTRACT_ALLOCATION, "ThriveReview contract should have received the funds");
 
-    }
-
-    function test06_fail_ToAddReviewContractOnWorkUnitIfCallerNotModerator() public {
-
-        // Create ThriveWorkUnit
-        address thriveWorkUnitContract = thriveWorkerUnitFactory.createThriveWorkUnit(workUnitArgs);
-
-        // Set ThriveWorkUnit address in reviewConfiguration
-        reviewConfiguration.workUnit = thriveWorkUnitContract;
-
-        vm.startPrank(randomUser);
-        vm.expectRevert();
-        thriveReviewFactory.createReviewContract{value: 10 ether}(
-           reviewConfiguration
-        );
-        vm.stopPrank();
     }
 
 }

@@ -246,11 +246,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     /**
      * @notice Updates a submission object on-chain.
      * @dev IS this function needed?
-     * @param editedSubmission_ New submission metadata.
+     * @param submissionMetadata_ New submission metadata.
      * @param submissionId_ Submission ID.
      */
     function updateSubmission (
-        Submission calldata editedSubmission_,
+        string calldata submissionMetadata_,
         uint256 submissionId_
     ) external 
         onlyUserWithBadges(reviewConfiguration.submitterBadges) 
@@ -265,11 +265,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Require no reviews came in for this submission
         require(submissionReviews[submissionId_].length == 0, "Submission has reviews");
-        // @dev Add test for this
+
 
 
         // Save the edited submission to the `submissions` mapping
-        idToSubmissions[submissionId_].submissionMetadata = editedSubmission_.submissionMetadata;
+        idToSubmissions[submissionId_].submissionMetadata = submissionMetadata_;
 
         // Emit event - fill data later
         emit SubmissionUpdated(submissionId_);
@@ -337,17 +337,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @notice User creates the commited review with metadata and decision on submission.
      * @dev Previously created Review object is updated with new passed information.
      * @param review_ Review object containing the review metadata and decision.
-     * @param reviewId_ Review ID.
      */
     function createReview(
-        Review calldata review_,
-        uint256 reviewId_
-    ) external 
+        Review calldata review_
+    ) external
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
     {
 
         // Fetch the commited review from storage and copy to memory
-        Review memory commitedReview = reviews[reviewId_];
+        Review memory commitedReview = reviews[review_.id];
 
         // Require user to have commited to the review
         require(commitedReview.status == ReviewStatus.COMMITED, "User has not commited to this review");
@@ -368,6 +366,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(block.timestamp <= reviewConfiguration.reviewDeadline, "Review deadline has passed");
 
 
+
+        // Fetch the review ID and increment the counter
+        uint256 reviewId_ = review_.id;
 
         // Save the review to the `reviews` mapping
         reviews[reviewId_].reviewMetadata = review_.reviewMetadata;
@@ -637,6 +638,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require for the submission to be finalized
         require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
 
+        // Require that the rewards have not already been paid out for this submission
+        require(!reviewerRewardsPaidOutForSubmission[submissionId_], "Rewards have already been paid out");
+
+
+        // Update variable to show that the reviewers have claimed the reward
+        reviewerRewardsPaidOutForSubmission[submissionId_] = true;
 
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
@@ -647,8 +654,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Fetch the review from storage
             Review storage review = reviews[reviewIds[i]];
 
-            // Require that the rewards have not already been paid out for this submission
-            require(!reviewerRewardsPaidOutForSubmission[submissionId_], "Rewards have already been paid out");
 
             // Require that the user made the judgement that is the same as the final decision
             if (submission.decision == review.decision) {
@@ -659,8 +664,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             }
         }
 
-        // Update variable to show that the reviewers have claimed the reward
-        reviewerRewardsPaidOutForSubmission[submissionId_] = true;
 
         // Update the reserved funds for the submission
         _payoutSubmitterReservedFunds(submissionId_);

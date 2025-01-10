@@ -97,14 +97,14 @@ contract ThriveReviewFactory is
     ) external payable returns (address, address) {
 
         // Require enough funds are sent to payout the reward for reviewers
-        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: small reward amount sent");
+        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
 
 
         // Require reviewersRewardTotalAllocation amount is enough to cover all reviewers potentially
         require(
             reviewConfiguration_.reviewerRewardsTotalAllocation >=
                 reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
-            "ThriveReviewFactory: small reward amount"
+            "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
         );
 
 
@@ -154,20 +154,22 @@ contract ThriveReviewFactory is
     ) external payable returns (address) {
 
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
-        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: small reward amount sent");
+        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
 
 
         // Require reviewersRewardTotalAllocation amount is enough to cover potentially all reviewers
         require(
             reviewConfiguration_.reviewerRewardsTotalAllocation >=
                 reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
-            "ThriveReviewFactory: small reward amount"
+            "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
         );
 
 
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract = Clones.clone(thriveReviewContractImplementation);
 
+        // Make sure worker unit is non-existent
+        reviewConfiguration_.workUnit = address(0);
 
         // Initialize the newly created ThriveReview contract.
         IThriveReview(thriveReviewContract).initialize(
@@ -179,7 +181,7 @@ contract ThriveReviewFactory is
 
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration_.reviewerRewardsTotalAllocation}("");
+        (bool success, ) = thriveReviewContract.call{value: msg.value}("");
         require(success);
         
 
@@ -189,6 +191,8 @@ contract ThriveReviewFactory is
 
         return thriveReviewContract;
     }
+
+    
 
     /**
      * @notice Overriden function that enables upgrading the contract.

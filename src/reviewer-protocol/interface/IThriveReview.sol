@@ -43,7 +43,7 @@ interface IThriveReview {
         // The time allowed for a reviewer to complete their review after commiting to it.
         uint32 reviewCommitmentDeadline;
 
-        // 
+        // Timestamp until when reviewing is allowed.
         uint32 reviewDeadline;
 
         // An array of badges required for a user to contribute submissions.

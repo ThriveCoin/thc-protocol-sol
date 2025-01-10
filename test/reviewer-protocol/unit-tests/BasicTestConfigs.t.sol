@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+// This file contains basic struct/object configurations for the unit tests in the reviewer protocol.
+
 import {Test} from "forge-std/Test.sol";
 
 import "../../../src/interface/IThriveWorkerUnitFactory.sol";
@@ -69,12 +71,15 @@ abstract contract BasicTestConfigs is Test {
         // Some data is intentionally wrongly filled because only some fields are written on-chain
         // and we want to prevent users from manipulating this data
         review = IThriveReview.Review({
-            id: 1,
+            id: 0,
             submissionId: 1,
+            // This is not written on-chain
             reviewer: address(this),
             reviewMetadata: "reviewMetadata",
             deadline: 1 days,
+            // This is not written on-chain
             decision: IThriveReview.Decision.ACCEPTED,
+            // This is not written on-chain
             status: IThriveReview.ReviewStatus.COMMITED
         });
     }
