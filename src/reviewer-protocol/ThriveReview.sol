@@ -41,7 +41,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ ID of the submission.
      */
     modifier submissionPending(uint256 submissionId_) {
-        require(submissions[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
+        require(idToSubmissions[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
         _;
     }
 
@@ -52,6 +52,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * 
      * @dev Check later what storage variables are not actually needed.
      */
+
+    Submission[] public submissions;
 
     // Review configuration - configuration/rules of the work unit review process
     ReviewConfiguration public reviewConfiguration;
@@ -84,7 +86,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     mapping(address => uint256[]) public userSubmissions;
 
     // Mapping of submission IDs to the Submission object
-    mapping(uint256 => Submission) public submissions;
+    mapping(uint256 => Submission) public idToSubmissions;
 
 
     // REVIEWS
@@ -215,13 +217,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         submissionId = submissionCounter++;
 
         // Save the submission to the `submissions` mapping
-        submissions[submissionId].submissionMetadata = submission_.submissionMetadata;
+        idToSubmissions[submissionId].submissionMetadata = submission_.submissionMetadata;
 
         // Change the status of the submission to "PENDING"
-        submissions[submissionId].status = SubmissionStatus.PENDING;
+        idToSubmissions[submissionId].status = SubmissionStatus.PENDING;
 
         // Save the contributor's address to be the msg.sender
-        submissions[submissionId].contributor = _msgSender();
+        idToSubmissions[submissionId].contributor = _msgSender();
 
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
@@ -243,7 +245,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     {
 
         // Require user to have submitted the submission
-        require(submissions[submissionId_].contributor == _msgSender(), "Caller has not submitted this submission");
+        require(idToSubmissions[submissionId_].contributor == _msgSender(), "Caller has not submitted this submission");
         
         // Require deadline for submissions has not passed
         require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
@@ -251,7 +253,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
         // Save the edited submission to the `submissions` mapping
-        submissions[submissionId_].submissionMetadata = editedSubmission_.submissionMetadata;
+        idToSubmissions[submissionId_].submissionMetadata = editedSubmission_.submissionMetadata;
 
         // Emit event - fill data later
         emit SubmissionUpdated(submissionId_);
@@ -327,7 +329,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(commitedReview.status == ReviewStatus.COMMITED, "User has not commited to this review");
 
         // Require for the submission to be `PENDING`
-        require(submissions[commitedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
+        require(idToSubmissions[commitedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
 
         // Require user to be the committer to the review
         require(commitedReview.reviewer == _msgSender(), "User is not the committer of this review");
@@ -379,7 +381,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // HANDLE SUBMISSION OBJECT
 
         // Fetch the submission from storage
-        Submission storage submission = submissions[commitedReview.submissionId];
+        Submission storage submission = idToSubmissions[commitedReview.submissionId];
 
         // Update the review count on submission
         submission.reviewCount++;
@@ -453,7 +455,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     function _reachDecisionOnSubmission(uint256 submissionId_) internal {
         
         // Fetch the submission from storage and copy to memory
-        Submission storage submission = submissions[submissionId_];
+        Submission storage submission = idToSubmissions[submissionId_];
 
 
         // Check if the submission has enough reviews to reach a decision
@@ -512,7 +514,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     {
 
         // Fetch the submission from storage
-        Submission storage submission = submissions[submissionId_];
+        Submission storage submission = idToSubmissions[submissionId_];
                 
         // User with badge can only make a final decision when the submission has NOT reached the agreement threshold on either ACCEPTED or REJECTED with max reviews
         // OR when the review deadline has passed and the submission has not reached a decision
@@ -598,7 +600,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     function _payoutReviewersOnSubmission(uint256 submissionId_) internal {
         
         // Fetch the submission from storage
-        Submission storage submission = submissions[submissionId_];
+        Submission storage submission = idToSubmissions[submissionId_];
 
         // Require for the submission to be finalized
         require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
@@ -650,7 +652,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     function _payoutSubmitterReservedFunds(uint256 submissionId_) internal {
 
         // Fetch the submission from storage
-        Submission storage submission = submissions[submissionId_];
+        Submission storage submission = idToSubmissions[submissionId_];
 
         // Require for the submission to be finalized
         require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
@@ -694,7 +696,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         uint256[] memory userSubmissionIds = userSubmissions[user];
         
         for (uint256 i = 0; i < userSubmissionIds.length; i++) {
-            Submission memory submission = submissions[userSubmissionIds[i]];
+            Submission memory submission = idToSubmissions[userSubmissionIds[i]];
             if (submission.status == SubmissionStatus.PENDING) {
                 return true;
             }
@@ -709,7 +711,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         uint256[] memory userSubmissionIds = userSubmissions[user];
         
         for (uint256 i = 0; i < userSubmissionIds.length; i++) {
-            Submission memory submission = submissions[userSubmissionIds[i]];
+            Submission memory submission = idToSubmissions[userSubmissionIds[i]];
             if (submission.decision == Decision.ACCEPTED) {
                 return true;
             }
