@@ -53,7 +53,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @dev Check later what storage variables are not actually needed.
      */
 
-    Submission[] public submissions;
 
     // Review configuration - configuration/rules of the work unit review process
     ReviewConfiguration public reviewConfiguration;
@@ -81,6 +80,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     ////// USER VARIABLES //////
 
     // SUBMISSIONS
+
+    Submission[] public submissions;
 
     // Mapping of user addresses to their submission IDs
     mapping(address => uint256[]) public userSubmissions;
@@ -225,14 +226,16 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the submission ID and increment the counter
         submissionId = submissionCounter++;
 
+        Submission storage submission = idToSubmissions[submissionId];
+
         // Save the submission to the `submissions` mapping
-        idToSubmissions[submissionId].submissionMetadata = submission_.submissionMetadata;
+        submission.submissionMetadata = submission_.submissionMetadata;
 
         // Change the status of the submission to "PENDING"
-        idToSubmissions[submissionId].status = SubmissionStatus.PENDING;
+        submission.status = SubmissionStatus.PENDING;
 
         // Save the contributor's address to be the msg.sender
-        idToSubmissions[submissionId].contributor = _msgSender();
+        submission.contributor = _msgSender();
 
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
@@ -370,16 +373,19 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the review ID and increment the counter
         uint256 reviewId_ = review_.id;
 
+        Review storage userReview = reviews[reviewId_];
+
         // Save the review to the `reviews` mapping
-        reviews[reviewId_].reviewMetadata = review_.reviewMetadata;
+        userReview.reviewMetadata = review_.reviewMetadata;
 
         // Save the reviewers' decision on the submission
-        reviews[reviewId_].decision = review_.decision;
+        userReview.decision = review_.decision;
 
         // Change the status of the review to `DONE`
-        reviews[reviewId_].status = ReviewStatus.DONE;
+        userReview.status = ReviewStatus.DONE;
 
-        // Save the review ID to the user's reviews
+
+        // Save the review ID to users' reviews array
         userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
 
 
@@ -480,7 +486,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
     function _reachDecisionOnSubmission(uint256 submissionId_) internal {
         
-        // Fetch the submission from storage and copy to memory
+        // Fetch the submission from storage
         Submission storage submission = idToSubmissions[submissionId_];
 
 
