@@ -348,7 +348,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     {
 
         // Fetch the committed review from storage and copy to memory
-        Review memory committedReview = reviews[review_.id];
+        Review storage committedReview = reviews[review_.id];
 
         // Require user to have committed to the review
         require(committedReview.status == ReviewStatus.COMMITTED, "User has not committed to this review");
@@ -370,20 +370,19 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
-        // Fetch the review ID and increment the counter
-        uint256 reviewId_ = review_.id;
-
-        Review storage userReview = reviews[reviewId_];
-
         // Save the review to the `reviews` mapping
-        userReview.reviewMetadata = review_.reviewMetadata;
+        committedReview.reviewMetadata = review_.reviewMetadata;
 
         // Save the reviewers' decision on the submission
-        userReview.decision = review_.decision;
+        committedReview.decision = review_.decision;
 
         // Change the status of the review to `DONE`
-        userReview.status = ReviewStatus.DONE;
+        committedReview.status = ReviewStatus.DONE;
 
+
+
+        // Get the review ID
+        uint256 reviewId_ = committedReview.id;
 
         // Save the review ID to users' reviews array
         userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
