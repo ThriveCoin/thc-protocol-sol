@@ -538,12 +538,12 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(reviewer, address(this), "Reviewer is not set correctly");
         assertEq(reviewMetadata, "", "Review metadata is not set correctly");
         assertEq(deadline, block.timestamp + reviewConfiguration.reviewCommitmentDeadline, "Deadline is not set correctly");
-        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.COMMITED), "Review status is not set correctly");
+        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.COMMITTED), "Review status is not set correctly");
         assertEq(uint256(decision), uint256(IThriveReview.Decision.NONE), "Decision is not set correctly");
 
         // Fetch user commmits to review the submission
-        uint256 counterOfCommitedReviews = thriveReview.committedReviewsPerSubmissionCounter(0);
-        assertEq(counterOfCommitedReviews, 1, "User review ids are not set correctly");
+        uint256 counterOfCommittedReviews = thriveReview.committedReviewsPerSubmissionCounter(0);
+        assertEq(counterOfCommittedReviews, 1, "User review ids are not set correctly");
     }
 
 
@@ -642,12 +642,12 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test18_revert_FailToCreateReviewThatWasNotCommited() public {
+    function test18_revert_FailToCreateReviewThatWasNotCommitted() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
 
-        vm.expectRevert("User has not commited to this review");
+        vm.expectRevert("User has not committed to this review");
         thriveReview.createReview(review);
     }
 
@@ -715,7 +715,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(randomUser);
         thriveReview.commitToReview(0);
 
-        // User can not create review commited by someone else
+        // User can not create review committed by someone else
         vm.expectRevert("User is not the committer of this review");
         review.id=1;
         thriveReview.createReview(review);
@@ -827,8 +827,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         uint256 committedReviewsPerSubmissionCounter = thriveReview.committedReviewsPerSubmissionCounter(0);
         assertEq(committedReviewsPerSubmissionCounter, 3, "Committed reviews per submission counter is not set correctly");
 
-        bool userCommitedToReview = thriveReview.userCommitedToReview(address(this), 0);
-        assertEq(userCommitedToReview, true, "User has not commited to review");
+        bool userCommittedToReview = thriveReview.userCommittedToReview(address(this), 0);
+        assertEq(userCommittedToReview, true, "User has not committed to review");
 
         vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
 
@@ -860,8 +860,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         committedReviewsPerSubmissionCounter = thriveReview.committedReviewsPerSubmissionCounter(0);
         assertEq(committedReviewsPerSubmissionCounter, 0, "Committed reviews per submission counter is not set correctly");
 
-        userCommitedToReview = thriveReview.userCommitedToReview(address(this), 0);
-        assertEq(userCommitedToReview, false, "Storage updated incorrectly");
+        userCommittedToReview = thriveReview.userCommittedToReview(address(this), 0);
+        assertEq(userCommittedToReview, false, "Storage updated incorrectly");
 
     }
 
@@ -888,7 +888,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         reviewIds[0] = 0;
         reviewIds[1] = 1;
 
-        vm.expectRevert("Review is not in 'COMMITED' status");
+        vm.expectRevert("Review is not in 'COMMITTED' status");
         thriveReview.deletePendingReviews(reviewIds);
     }
 

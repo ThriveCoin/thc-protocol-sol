@@ -123,7 +123,7 @@ interface IThriveReview {
     // Status of a review object for a submission
     enum ReviewStatus {
         NONE,
-        COMMITED,
+        COMMITTED,
         DONE
     }
 

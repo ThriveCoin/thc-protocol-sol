@@ -74,7 +74,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     uint256 public reviewCounter;
 
     // Amount of THRIVE submitters must reserve for reviewers
-    uint256 public submitterReserveFunds;
+    uint256 public submitterReservedFunds;
 
 
 
@@ -95,13 +95,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     mapping(uint256 => Review) public reviews;
 
     // Mapping of user addresses to their review IDs
-    mapping(address => uint256[]) public userReviews;
+    mapping(address => uint256[]) public userReviews; // mapping may not be needed
 
-    // Mapping of counters for commited reviews per submission: submissionId => Number of commited reviews
+    // Mapping of counters for committed reviews per submission: submissionId => Number of committed reviews
     mapping(uint256 => uint256) public committedReviewsPerSubmissionCounter;
 
-    // Mapping that checks if a user has commited to review a specific submission: userAddress => submissionId => bool
-    mapping(address => mapping(uint256 => bool)) public userCommitedToReview;
+    // Mapping that checks if a user has committed to review a specific submission: userAddress => submissionId => bool
+    mapping(address => mapping(uint256 => bool)) public userCommittedToReview;
 
     // Mapping of reviews per submission: submissionId => reviewId[]
     mapping(uint256 => uint256[]) public submissionReviews;
@@ -183,7 +183,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         }
 
         // Calculate amount of funds needed to reserve for reviewers (potentially max reviewers on submission)
-        submitterReserveFunds = reviewConfiguration.reviewerReward * reviewConfiguration.maximumReviewsPerSubmission;
+        submitterReservedFunds = reviewConfiguration.reviewerReward * reviewConfiguration.maximumReviewsPerSubmission;
 
 
         /// EVENT
@@ -218,7 +218,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(block.timestamp <= reviewConfiguration.submissionDeadline, "Submission deadline has passed");
 
         // Require user enough funds to pay max number of reviewers
-        require(msg.value >= submitterReserveFunds, "Insufficient funds to pay reviewers");
+        require(msg.value >= submitterReservedFunds, "Insufficient funds to pay reviewers");
 
 
 
@@ -285,8 +285,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         submissionPending(submissionId_)
     {
 
-        // Require that the user has not already commited to review the submission
-        require(!userCommitedToReview[_msgSender()][submissionId_], "User has already committed to review this submission");
+        // Require that the user has not already committed to review the submission
+        require(!userCommittedToReview[_msgSender()][submissionId_], "User has already committed to review this submission");
 
         // Require that maximum amount of commits to review has not been reached
         require(committedReviewsPerSubmissionCounter[submissionId_] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
@@ -316,13 +316,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Set the deadline for the review
         review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentDeadline;
 
-        // Change the status of the review to `COMMITED`
-        review.status = ReviewStatus.COMMITED;
+        // Change the status of the review to `COMMITTED`
+        review.status = ReviewStatus.COMMITTED;
 
 
 
         // Make sure the user can't commit to review the same submission again
-        userCommitedToReview[_msgSender()][submissionId_] = true;
+        userCommittedToReview[_msgSender()][submissionId_] = true;
 
         // Increment the counter of committed reviews
         committedReviewsPerSubmissionCounter[submissionId_]++;
@@ -334,7 +334,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-     * @notice User creates the commited review with metadata and decision on submission.
+     * @notice User creates the committed review with metadata and decision on submission.
      * @dev Previously created Review object is updated with new passed information.
      * @param review_ Review object containing the review metadata and decision.
      */
@@ -344,20 +344,20 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
     {
 
-        // Fetch the commited review from storage and copy to memory
-        Review memory commitedReview = reviews[review_.id];
+        // Fetch the committed review from storage and copy to memory
+        Review memory committedReview = reviews[review_.id];
 
-        // Require user to have commited to the review
-        require(commitedReview.status == ReviewStatus.COMMITED, "User has not commited to this review");
+        // Require user to have committed to the review
+        require(committedReview.status == ReviewStatus.COMMITTED, "User has not committed to this review");
 
         // Require for the submission to be `PENDING`
-        require(idToSubmissions[commitedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
+        require(idToSubmissions[committedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
 
         // Require user to be the committer to the review
-        require(commitedReview.reviewer == _msgSender(), "User is not the committer of this review");
+        require(committedReview.reviewer == _msgSender(), "User is not the committer of this review");
 
         // Check that the deadline hasn't passed
-        require(block.timestamp <= commitedReview.deadline, "Review commitment deadline has passed");
+        require(block.timestamp <= committedReview.deadline, "Review commitment deadline has passed");
         
         // Require that the review decision is either "ACCEPTED" or "REJECTED"
         require(review_.decision == Decision.ACCEPTED || review_.decision == Decision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
@@ -385,14 +385,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
         // Save reviews of a submission
-        submissionReviews[commitedReview.submissionId].push(reviewId_);
+        submissionReviews[committedReview.submissionId].push(reviewId_);
 
 
 
         // HANDLE SUBMISSION OBJECT
 
         // Fetch the submission from storage
-        Submission storage submission = idToSubmissions[commitedReview.submissionId];
+        Submission storage submission = idToSubmissions[committedReview.submissionId];
 
         // Update the review count on submission
         submission.reviewCount++;
@@ -406,7 +406,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
         // Reacka decision on submission automatically IF conditions are met
-        _reachDecisionOnSubmission(commitedReview.submissionId);
+        _reachDecisionOnSubmission(committedReview.submissionId);
 
 
         //
@@ -421,7 +421,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     /**
      * @notice Deletes pendings reviews if they are eligible for deleting.
-     * @dev Occupied space is freed for new commited reviews. Anyone can delete it.
+     * @dev Occupied space is freed for new committed reviews. Anyone can delete it.
      * @param reviewIds_ Array of review IDs.
      */
     function deletePendingReviews(uint256[] calldata reviewIds_) external {
@@ -433,13 +433,13 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     /**
      * @notice Deletes a pending review if it is eligible for deleting.
-     * @dev Occupied space is freed for new commited reviews. Anyone can delete it.
+     * @dev Occupied space is freed for new committed reviews. Anyone can delete it.
      * @param reviewId_ Review ID.
      */
     function deletePendingReview(uint256 reviewId_) public {
 
-        // Require that the review is in the "COMMITED" status
-        require(reviews[reviewId_].status == ReviewStatus.COMMITED, "Review is not in 'COMMITED' status");
+        // Require that the review is in the "COMMITTED" status
+        require(reviews[reviewId_].status == ReviewStatus.COMMITTED, "Review is not in 'COMMITTED' status");
         
         // Require that the reviews' deadline has passed
         require(block.timestamp > reviews[reviewId_].deadline, "Review deadline has not passed");
@@ -449,7 +449,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         address reviewer = reviews[reviewId_].reviewer;
 
         // User un-committed from review
-        userCommitedToReview[reviewer][submissionId] = false;
+        userCommittedToReview[reviewer][submissionId] = false;
 
         // Decrement the counter of committed reviews
         committedReviewsPerSubmissionCounter[submissionId]--;
@@ -700,7 +700,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         if (submission.decision == Decision.ACCEPTED) {
 
             // Pay the submitter
-            (bool success, ) = submission.contributor.call{value: submitterReserveFunds}("");
+            (bool success, ) = submission.contributor.call{value: submitterReservedFunds}("");
             require(success);
 
 

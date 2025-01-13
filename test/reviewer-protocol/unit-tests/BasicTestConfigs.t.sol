@@ -80,7 +80,7 @@ abstract contract BasicTestConfigs is Test {
             // This is not written on-chain
             decision: IThriveReview.Decision.ACCEPTED,
             // This is not written on-chain
-            status: IThriveReview.ReviewStatus.COMMITED
+            status: IThriveReview.ReviewStatus.COMMITTED
         });
     }
 }
