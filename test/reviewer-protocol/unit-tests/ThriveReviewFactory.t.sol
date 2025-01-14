@@ -114,4 +114,22 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
     }
 
+
+    function test05_success_UpdateAddressesOnReviewFactory() public {
+
+        address newThriveWorkerUnitFactory_ = address(0x1234);
+        address newThriveReviewContractImplementation_ = address(0x2345);
+        address newBadgeQueryContractAddress_ = address(0x3456);
+
+        thriveReviewFactory.updateAddresses(
+            newThriveWorkerUnitFactory_,
+            newThriveReviewContractImplementation_,
+            newBadgeQueryContractAddress_
+        );
+
+        assertEq(thriveReviewFactory.thriveWorkerUnitFactory(), newThriveWorkerUnitFactory_, "ThriveWorkerUnitFactory address should be updated");
+        assertEq(thriveReviewFactory.thriveReviewContractImplementation(), newThriveReviewContractImplementation_, "ThriveReviewContractImplementation address should be updated");
+        assertEq(thriveReviewFactory.badgeQueryContractAddress(), newBadgeQueryContractAddress_, "BadgeQueryContractAddress address should be updated");
+    }
+
 }

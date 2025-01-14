@@ -84,6 +84,33 @@ contract ThriveReviewFactory is
     }
 
 
+    /**
+     * @notice Updates the addresses of storage contracts this factory contract interacts with.
+     * @param newThriveWorkerUnitFactory_ Address of the new ThriveWorkerUnitFactory contract.
+     * @param newThriveReviewContractImplementation_ Address of the new ThriveReview contract implementation.
+     * @param newBadgeQueryContractAddress_ Address of the new BadgeQuery contract.
+     */
+    function updateAddresses(
+        address newThriveWorkerUnitFactory_,
+        address newThriveReviewContractImplementation_,
+        address newBadgeQueryContractAddress_
+    ) external onlyOwner {
+        
+        // Update the address of the ThriveWorkerUnitFactory contract
+        thriveWorkerUnitFactory = newThriveWorkerUnitFactory_;
+
+        // Update the address of the ThriveReview contract implementation
+        thriveReviewContractImplementation = newThriveReviewContractImplementation_;
+
+        // Update the address of the BadgeQuery contract
+        badgeQueryContractAddress = newBadgeQueryContractAddress_;
+
+
+        // ADD EVENTS LATER
+        ///////////////////
+    }
+
+
 
     /**
      * @notice Creates new WorkerUnit and ThriveReview contracts.

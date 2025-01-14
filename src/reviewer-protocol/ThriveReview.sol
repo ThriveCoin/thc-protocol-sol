@@ -353,6 +353,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require user to have committed to the review
         require(committedReview.status == ReviewStatus.COMMITTED, "User has not committed to this review");
 
+        // We can not use `submissionPending` modifier because user can commit to one submission ID and then bypass the modifier
+        // by sending another one in review_ object. Here we use the submission ID previously committed to and saved in reviews mapping.
         // Require for the submission to be `PENDING`
         require(idToSubmissions[committedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
 
