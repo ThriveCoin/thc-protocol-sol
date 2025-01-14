@@ -159,6 +159,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         address owner_
     ) external initializer {
 
+        // Require for the agreement threshold to be above 50% percent
+        require(reviewConfiguration_.agreementThreshold > 5000, "Agreement threshold must be above 50%");
+
         // Set the ReviewConfiguration object/struct
         reviewConfiguration = reviewConfiguration_;
 
@@ -655,7 +658,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
 
-        // Loop through the reviews
+        // Loop through the reviews for specific submission
         for (uint256 i = 0; i < reviewIds.length; i++) {
 
             // Fetch the review from storage

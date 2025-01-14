@@ -153,6 +153,28 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
     }
 
+    function test02x_revert_AgreementThresholdCanNotBe50PercentOrLower() public {
+
+        // Set agreement threshold to 50%
+        reviewConfiguration.agreementThreshold = 5000;
+
+        // Expect to revert because agreement threshold is too low
+        vm.expectRevert();
+        (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
+            .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            workUnitArgs, reviewConfiguration
+        );
+
+        // Set agreement threshold to less than 50%
+        reviewConfiguration.agreementThreshold = 4567;
+        vm.expectRevert();
+        (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
+            .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            workUnitArgs, reviewConfiguration
+        );
+
+    }
+
     function test02x_revert_CanNotInitializeIfThereIsNotEnoughFundsOnWorkerUnit() public {
 
         // Allow more submissions than there is funds to be paid out on worker unit
