@@ -5,8 +5,8 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 
-import "../../../src/interface/IThriveWorkerUnitFactory.sol";
-import "../../../src/reviewer-protocol/interface/IThriveReview.sol";
+import "../../src/interface/IThriveWorkerUnitFactory.sol";
+import "../../src/reviewer-protocol/interface/IThriveReview.sol";
 
 
 abstract contract BasicTestConfigs is Test {
@@ -19,6 +19,8 @@ abstract contract BasicTestConfigs is Test {
 
     uint256 public constant REVIEW_CONTRACT_ALLOCATION = 8_000;
 
+    uint256 SUBMITTER_LOCKED_FUNDS;
+
     // When you write it, you can deploy the real contract
     address public badgeQueryContractAddress =
         address(uint160(uint256(keccak256(abi.encodePacked("badgeQuery")))));
@@ -27,6 +29,8 @@ abstract contract BasicTestConfigs is Test {
         validators.push(address(0x1));
         validators.push(address(0x2));
 
+        // Some data is intentionally wrongly filled because only some fields are written on-chain
+        // and we want to prevent users from manipulating this data
         workUnitArgs = IThriveWorkerUnitFactory.WorkUnitArgs({
             moderator: address(this),
             rewardToken: address(0),
@@ -69,8 +73,6 @@ abstract contract BasicTestConfigs is Test {
             status: IThriveReview.SubmissionStatus.PENDING
         });
 
-        // Some data is intentionally wrongly filled because only some fields are written on-chain
-        // and we want to prevent users from manipulating this data
         review = IThriveReview.Review({
             id: 0,
             submissionId: 1,

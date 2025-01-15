@@ -9,7 +9,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 
-import "./BasicTestConfigs.t.sol";
+import "../BasicTestConfigs.t.sol";
 
 import "../../../src/ThriveWorkerUnitFactory.sol";
 import "../../../src/reviewer-protocol/ThriveReviewFactory.sol";

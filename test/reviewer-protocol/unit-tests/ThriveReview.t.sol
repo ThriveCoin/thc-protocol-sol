@@ -20,7 +20,7 @@ import "../../../src/reviewer-protocol/ThriveReviewFactory.sol";
 import "../../../src/reviewer-protocol/ThriveReview.sol";
 import "../../../src/interface/IThriveWorkerUnit.sol";
 
-import "./BasicTestConfigs.t.sol";
+import "../BasicTestConfigs.t.sol";
 
 
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -45,8 +45,6 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     ThriveReview thriveReview;
 
     MockERC20 mockToken;
-
-    uint256 SUBMITTER_LOCKED_FUNDS;
 
     function setUp() public {
 
@@ -274,7 +272,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Check that the submission is finalized
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly"); 
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
@@ -323,7 +321,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
 
@@ -364,7 +362,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Check that the submission is finalized
-        (, , , , , , submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , , submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
         // Try to create another submission, but can not because the user has reached the maximum submissions
@@ -421,7 +419,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Get the submission
         (address contributor, string memory submissionMetadata, uint256 reviewCount, 
         uint256 acceptedReviewCount, uint256 rejectedReviewCount, IThriveReview.Decision decision, 
-        IThriveReview.SubmissionStatus status) = thriveReview.idToSubmissions(0);
+        IThriveReview.SubmissionStatus status) = thriveReview.idToSubmission(0);
 
         // Assert submission is stored correctly
         assertEq(contributor, submission.contributor, "Contributor is not set correctly");
@@ -454,7 +452,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Get the submission
         (, string memory submissionMetadata, uint256 reviewCount, 
         uint256 acceptedReviewCount, uint256 rejectedReviewCount, IThriveReview.Decision decision, 
-        IThriveReview.SubmissionStatus status) = thriveReview.idToSubmissions(0);
+        IThriveReview.SubmissionStatus status) = thriveReview.idToSubmission(0);
 
         // Assert submission is stored correctly
         assertEq(submissionMetadata, "Updated submission metadata", "Submission metadata is not set correctly");
@@ -543,7 +541,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
         vm.expectRevert("Submission is not in 'PENDING' status");
@@ -664,7 +662,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
         vm.expectRevert("Submission is not in 'PENDING' status");
@@ -722,7 +720,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Now submission has enough reviews to be judged on
         // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
         // Can not create review because the submission has already been judged on.
@@ -830,7 +828,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(userReviewId, 0, "User reviews ids are not set correctly");
 
         // Fetch submission after the review
-        (, , uint256 reviewCount, uint256 acceptedReviewCount, uint256 rejectedReviewCount, IThriveReview.Decision submissionDecision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , uint256 reviewCount, uint256 acceptedReviewCount, uint256 rejectedReviewCount, IThriveReview.Decision submissionDecision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(reviewCount, 1, "Review count is not set correctly");
         assertEq(acceptedReviewCount, 1, "Accepted review count is not set correctly");
         assertEq(rejectedReviewCount, 0, "Rejected review count is not set correctly");
@@ -999,7 +997,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Check that the submission is finalized
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission decision is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
@@ -1079,7 +1077,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Check that the submission is finalized
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.REJECTED), "Submission decision is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
@@ -1160,7 +1158,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReviewWithoutWorkUnit.idToSubmissions(0);
+        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReviewWithoutWorkUnit.idToSubmission(0);
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
     }
 
@@ -1231,7 +1229,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Check that the submission is still pending because there is no consensus on decision
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.NONE), "Submission status is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
 
@@ -1241,7 +1239,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Check that the submission is still pending because there is no consensus on decision
-        (, , , , , decision, submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , decision, submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
@@ -1320,7 +1318,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
 
         // Check that the submission is still pending because there is no consensus on decision
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
     }
@@ -1415,7 +1413,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Check that the submission is still finalized
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
@@ -1458,7 +1456,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Check that the submission is finalized
-        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission decision is not set correctly");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
