@@ -1471,6 +1471,16 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Assert user has funds eligible for claiming
         assertEq(thriveReview.failedDistributionAmounts(address(failedDistributionExampleContract)), reviewConfiguration.reviewerReward, "User should have funds to claim");
+    
+
+        // Claim the failed distribution amount
+        failedDistributionExampleContract.claimFailedDistributionFunds();
+
+        // Assert that the user has claimed the funds
+        assertEq(thriveReview.failedDistributionAmounts(address(failedDistributionExampleContract)), 0, "User should have claimed the funds");
+
+        // Assert that the user has received the funds
+        assertEq(address(failedDistributionExampleContract).balance, balanceBeforeClaimingReward + reviewConfiguration.reviewerReward, "User should have received the funds");
     }
     
 
@@ -1479,11 +1489,15 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 }
 
 
+
+// This contract is written as an example of how a malicious address may act and try to fail the distribution of funds
+// We also test that in case of such failed distribution, the address can manually claim funds.
 contract FailedDistributionExampleContract {
     
 
     ThriveReview public thriveReview;
 
+    uint256 counter = 0;
 
     constructor(ThriveReview _thriveReview) {
         thriveReview = _thriveReview;
@@ -1494,7 +1508,14 @@ contract FailedDistributionExampleContract {
         thriveReview.createReview(review_);
     }
 
+    function claimFailedDistributionFunds() public {
+        counter++;
+        thriveReview.claimFailedDistributionFunds();
+    }
+
     receive() external payable {
-        revert();
+        if (counter == 0) {
+            revert();
+        }
     }
 }
