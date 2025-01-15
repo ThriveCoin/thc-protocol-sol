@@ -153,6 +153,28 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
     }
 
+    function test02x_revert_AgreementThresholdCanNotBe50PercentOrLower() public {
+
+        // Set agreement threshold to 50%
+        reviewConfiguration.agreementThreshold = 5000;
+
+        // Expect to revert because agreement threshold is too low
+        vm.expectRevert();
+        (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
+            .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            workUnitArgs, reviewConfiguration
+        );
+
+        // Set agreement threshold to less than 50%
+        reviewConfiguration.agreementThreshold = 4567;
+        vm.expectRevert();
+        (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
+            .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            workUnitArgs, reviewConfiguration
+        );
+
+    }
+
     function test02x_revert_CanNotInitializeIfThereIsNotEnoughFundsOnWorkerUnit() public {
 
         // Allow more submissions than there is funds to be paid out on worker unit
@@ -915,230 +937,6 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.deletePendingReviews(reviewIds);
     }
     
-    /*
-    function test27_success_ClaimReviewerRewardForCorrectJudgement() public {
-        
-        // Create a submission
-        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
-
-        // Commit to review
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        thriveReview.createReview(review, 0);
-
-
-        vm.prank(address(0x1));
-        // Commit to a review
-        thriveReview.commitToReview(0);
-
-        vm.prank(address(0x1));
-        // Create a review
-        thriveReview.createReview(review, 1);
-
-
-        vm.prank(address(0x2));
-        // Commit to a review
-        thriveReview.commitToReview(0);
-
-        vm.prank(address(0x2));
-        // Create a review
-        thriveReview.createReview(review, 2);
-
-
-        // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
-        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
-
-        // Assert balance before claiming
-        uint256 balanceBeforeClaimingReward = address(this).balance;
-
-        // Claim reviewer reward
-        thriveReview.claimReviewerReward(0);
-
-        // Assert balance after claiming
-        uint256 balanceAfterClaimingReward = address(this).balance;
-
-        assertEq(balanceAfterClaimingReward, balanceBeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
-
-        // Get the review
-        (, , , , , , IThriveReview.ReviewStatus status) = thriveReview.reviews(0);
-
-        // Assert review is deleted
-        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.DONE), "Review status is not set correctly");
-    }
-
-
-    function test28_revert_ToClaimReviewerRewardForIncorrectJudgement() public {
-        
-        // Create a submission
-        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
-
-        // Commit to review
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        thriveReview.createReview(review, 0);
-
-        // Commit to a review
-        vm.prank(address(0x1));
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        review.decision = IThriveReview.Decision.REJECTED;
-        vm.prank(address(0x1));
-        thriveReview.createReview(review, 1);
-
-        // Commit to a review
-        vm.prank(address(0x2));
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        review.decision = IThriveReview.Decision.REJECTED;
-        vm.prank(address(0x2));
-        thriveReview.createReview(review, 2);
-
-        // Commit to a review
-        vm.prank(address(0x3));
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        review.decision = IThriveReview.Decision.REJECTED;
-        vm.prank(address(0x3));
-        thriveReview.createReview(review, 3);
-
-
-
-        // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
-        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
-
-        // Assert balance before claiming
-        uint256 balanceBeforeClaimingReward = address(this).balance;
-
-        // Claim reviewer reward
-        thriveReview.claimReviewerReward(0);
-
-        // Assert balance after claiming
-        uint256 balanceAfterClaimingReward = address(this).balance;
-
-        assertEq(balanceAfterClaimingReward, balanceBeforeClaimingReward, "Reviewer reward should not be claimed for incorrect judgement");
-    }
-
-
-    function test29_revert_ToClaimReviewerRewardTwice() public {
-                
-        // Create a submission
-        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
-
-        // Commit to review
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        thriveReview.createReview(review, 0);
-
-
-        vm.prank(address(0x1));
-        // Commit to a review
-        thriveReview.commitToReview(0);
-
-        vm.prank(address(0x1));
-        // Create a review
-        thriveReview.createReview(review, 1);
-
-
-        vm.prank(address(0x2));
-        // Commit to a review
-        thriveReview.commitToReview(0);
-
-        vm.prank(address(0x2));
-        // Create a review
-        thriveReview.createReview(review, 2);
-
-        // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
-        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
-
-        // Assert balance before claiming
-        uint256 balanceBeforeClaimingReward = address(this).balance;
-
-        // Claim reviewer reward
-        thriveReview.claimReviewerReward(0);
-
-        // Assert balance after claiming
-        uint256 balanceAfterClaimingReward = address(this).balance;
-
-        assertEq(balanceAfterClaimingReward, balanceBeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
-
-        // Get the review
-        (, , , , , , IThriveReview.ReviewStatus status) = thriveReview.reviews(0);
-
-        // Assert review is deleted
-        assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.DONE), "Review status is not set correctly");
-
-        // This should revert
-        vm.expectRevert("User has already claimed the reward");
-        thriveReview.claimReviewerReward(0);
-
-    }
-
-
-    function test30_revert_ToClaimReviewerRewardForOtherUser() public {
-        
-        // Create a submission
-        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
-
-        // Commit to review
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        thriveReview.createReview(review, 0);
-
-
-        vm.prank(address(0x1));
-        // Commit to a review
-        thriveReview.commitToReview(0);
-
-        vm.prank(address(0x1));
-        // Create a review
-        thriveReview.createReview(review, 1);
-
-
-        vm.prank(address(0x2));
-        // Commit to a review
-        thriveReview.commitToReview(0);
-
-        vm.prank(address(0x2));
-        // Create a review
-        thriveReview.createReview(review, 2);
-
-        // Check that the submission is finalized
-        (, , , , , , IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
-        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
-
-        // Claim reviewer reward should revert for other user
-        vm.expectRevert("User has not submitted this review");
-        thriveReview.claimReviewerReward(1);
-
-    }
-
-
-    function test31_revert_ToClaimReviewerRewardForNonFinalizedSubmissions() public {
-        
-        // Create a submission
-        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
-
-        // Commit to review
-        thriveReview.commitToReview(0);
-
-        // Create a review
-        thriveReview.createReview(review, 0);
-
-        // Claim reviewer reward should revert for non-finalized submission
-        vm.expectRevert("Submission is not in 'FINALIZED' status");
-        thriveReview.claimReviewerReward(0);
-    }
-    */
 
    function testxyz_success_CorrectReviewersArePaidOutOnAcceptedSubmissionFinalization() public {
         
@@ -1616,7 +1414,78 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
     }
 
+    
+    function testxx_success_FailedDistributionManualClaim() public {
+
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Now review as a contract account
+        FailedDistributionExampleContract failedDistributionExampleContract = new FailedDistributionExampleContract(thriveReview);
+
+        // Contrat balance before submission finalization
+        uint256 balanceBeforeClaimingReward = address(failedDistributionExampleContract).balance;
+
+        // Commit to review and create review
+        review.id=2;
+        failedDistributionExampleContract.review(0, review);
+
+
+        // Check that the submission is finalized
+        (, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmissions(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission decision is not set correctly");
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        // Contract balance after submission finalization
+        uint256 balanceAfterClaimingReward = address(failedDistributionExampleContract).balance;
+
+        // Assert balance after rewards distribution and submission finalization
+        // These balances should be the same since distribution to the contract should have failed.
+        assertEq(balanceAfterClaimingReward, balanceBeforeClaimingReward, "Distribution to contract should have failed");
+
+        // Assert user has funds eligible for claiming
+        assertEq(thriveReview.failedDistributionAmounts(address(failedDistributionExampleContract)), reviewConfiguration.reviewerReward, "User should have funds to claim");
+    }
+    
 
     receive() external payable {}
 
+}
+
+
+contract FailedDistributionExampleContract {
+    
+
+    ThriveReview public thriveReview;
+
+
+    constructor(ThriveReview _thriveReview) {
+        thriveReview = _thriveReview;
+    }
+
+    function review(uint256 submissionId_, IThriveReview.Review calldata review_) public {
+        thriveReview.commitToReview(submissionId_);
+        thriveReview.createReview(review_);
+    }
+
+    receive() external payable {
+        revert();
+    }
 }

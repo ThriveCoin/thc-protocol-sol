@@ -116,6 +116,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping of submission IDs to the reward claimed status
     mapping(uint256 => bool) public reviewerRewardsPaidOutForSubmission;
 
+    // Mapping of failed distribution amounts for reviewers so users can claim manually: userAddress => THRIVE amount
+    mapping(address => uint256) public failedDistributionAmounts;
+
 
 
     /**
@@ -158,6 +161,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         address badgeQueryContractAddress_,
         address owner_
     ) external initializer {
+
+        // Require for the agreement threshold to be above 50% percent
+        require(reviewConfiguration_.agreementThreshold > 5000, "Agreement threshold must be above 50%");
 
         // Set the ReviewConfiguration object/struct
         reviewConfiguration = reviewConfiguration_;
@@ -353,6 +359,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require user to have committed to the review
         require(committedReview.status == ReviewStatus.COMMITTED, "User has not committed to this review");
 
+        // We can not use `submissionPending` modifier because user can commit to one submission ID and then bypass the modifier
+        // by sending another one in review_ object. Here we use the submission ID previously committed to and saved in reviews mapping.
         // Require for the submission to be `PENDING`
         require(idToSubmissions[committedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
 
@@ -587,49 +595,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         //////// EVENT
     }
 
-    /* Commented out because we will distribute rewards for reviewers when the submission is finalized automatically
-    // @inheritdoc IThriveReview
-    function claimReviewerRewards(uint256[] calldata reviewIds_) external {
-        for (uint256 i = 0; i < reviewIds_.length; i++) {
-            claimReviewerReward(reviewIds_[i]);
-        }
-    }
-
-
-    // @inheritdoc IThriveReview
-    function claimReviewerReward(uint256 reviewId_) public {
-
-        // Require that the user has not already claimed the reward
-        require(!rewardsClaimedForReview[reviewId_], "User has already claimed the reward");
-
-        // Fetch the review from storage
-        Review storage review = reviews[reviewId_];
-
-        // Require user submitted the review
-        require(review.reviewer == _msgSender(), "User has not submitted this review");
-
-        // Fetch the submission from storage
-        Submission storage submission = submissions[review.submissionId];
-
-        // Require for the submission to be finalized
-        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
-
-        // Require that the user made the judgement that is the same as the final decision
-        if(submission.decision == review.decision) {
-
-            // Update variable to show that the user has claimed the reward
-            rewardsClaimedForReview[reviewId_] = true;
-
-            // Pay the reviewer
-            (bool success, ) = _msgSender().call{value: reviewConfiguration.reviewerReward}("");
-            require(success);
-        }
-
-
-        ///// EVENTS
-        //////////////
-    }
-    */
 
     /**
      * @notice Distributes rewards to correct reviewers when the submission is finalized.
@@ -653,7 +618,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
 
-        // Loop through the reviews
+        // Loop through the reviews for specific submission
         for (uint256 i = 0; i < reviewIds.length; i++) {
 
             // Fetch the review from storage
@@ -663,9 +628,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Require that the user made the judgement that is the same as the final decision
             if (submission.decision == review.decision) {
 
-                // Pay the reviewer
+                // Pay the reviewer - Do not revert on failure because we want to continue with the payouts. 
+                // Those whose payouts failed will be able to claim manually.
                 (bool success, ) = review.reviewer.call{value: reviewConfiguration.reviewerReward}("");
-                require(success);
+                if (!success) failedDistributionAmounts[review.reviewer] += reviewConfiguration.reviewerReward;
             }
         }
 
@@ -704,9 +670,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Check if the decision is ACCEPTED
         if (submission.decision == Decision.ACCEPTED) {
 
-            // Pay the submitter
+            // Refund the submitter - Do not revert on failure because we want to continue with the payouts. 
+            // Those whose payouts failed will be able to claim manually.
             (bool success, ) = submission.contributor.call{value: submitterReservedFunds}("");
-            require(success);
+            if (!success) failedDistributionAmounts[submission.contributor] += submitterReservedFunds;
 
 
             // Check if the decision is REJECTED
@@ -717,12 +684,37 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             uint256 remainingAmountToPayout = reviewConfiguration.reviewerReward * submission.acceptedReviewsCount
                                                 + reviewConfiguration.maximumReviewsPerSubmission - submission.reviewCount;
 
-            // Pay the submitter
+            // Refund the submitter - Do not revert on failure because we want to continue with the payouts. 
+            // Those whose payouts failed will be able to claim manually.
             (bool success, ) = submission.contributor.call{value: remainingAmountToPayout}("");
-            require(success);
+            if (!success) failedDistributionAmounts[submission.contributor] += remainingAmountToPayout;
 
         }
 
+    }
+
+
+    /**
+     * @notice Allows reviewers to claim their rewards if the payout failed.
+     * @dev This function is needed because the automatic distribution payout might fail due to various reasons.
+     */
+    function claimFailedDistributionFunds() external {
+
+        // Fetch the amount of failed distribution funds
+        uint256 amount = failedDistributionAmounts[_msgSender()];
+
+        // Require that the user has failed distribution funds
+        require(amount > 0, "User has no failed distribution funds");
+
+        // Reset the failed distribution funds
+        delete failedDistributionAmounts[_msgSender()];
+
+        // Payout the user
+        (bool success, ) = _msgSender().call{value: amount}("");
+        require(success);
+
+
+        // EMIT EVENT
     }
 
 
@@ -785,8 +777,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
         require(block.timestamp > reviewConfiguration.submissionDeadline, "Submission deadline has not passed");
 
-        // Require there are no pending submissions
-
+        // Require there are no `PENDING` or `DISPUTED` submissions
 
 
         // Do not send entire balance but only what is left after payouts
