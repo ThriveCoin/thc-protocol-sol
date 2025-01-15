@@ -6,6 +6,13 @@ pragma solidity ^0.8.24;
 // Note: Event testing is not included in this file.
 
 
+// How to run tests:
+// forge clean && forge test
+
+// How to run coverage:
+// forge clean && forge coverage --ir-minimum
+
+
 import {Test} from "forge-std/Test.sol";
 
 import "../../../src/ThriveWorkerUnitFactory.sol";
@@ -200,7 +207,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         (address workUnit, uint256 reviewerRewardsTotalAllocation, uint256 reviewerReward, 
         uint32 agreementThreshold, uint32 maximumSubmissionsPerUser, uint32 minimumReviews, uint32 maximumSubmissions,
-        uint32 maximumReviewsPerSubmission, uint32 submissionDeadline, uint32 reviewCommitmentDeadline, 
+        uint32 maximumReviewsPerSubmission, uint32 submissionDeadline, uint32 reviewCommitmentDeadline, uint32 reviewDeadline,
         string memory reviewMetadata, string memory submissionMetadata) = thriveReview.reviewConfiguration();
 
         // Assert review configuration is initialized properly
@@ -214,8 +221,10 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(maximumReviewsPerSubmission, reviewConfiguration.maximumReviewsPerSubmission, "maximumReviewsPerSubmission is not set correctly");
         assertEq(submissionDeadline, reviewConfiguration.submissionDeadline, "submissionDeadline is not set correctly");
         assertEq(reviewCommitmentDeadline, reviewConfiguration.reviewCommitmentDeadline, "reviewCommitmentDeadline is not set correctly");
+        assertEq(reviewDeadline, reviewConfiguration.reviewDeadline, "reviewDeadline is not set correctly");
         assertEq(reviewMetadata, reviewConfiguration.reviewMetadata, "reviewMetadata is not set correctly");
         assertEq(submissionMetadata, reviewConfiguration.submissionMetadata, "submissionMetadata is not set correctly");
+        
         */
     }
 
