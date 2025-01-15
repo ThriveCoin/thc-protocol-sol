@@ -8,7 +8,7 @@ pragma solidity ^0.8.24;
  */
 interface IThriveReview {
 
-    // @dev Add desc on this
+    // Configuration for a ThriveReview contract.
     struct ReviewConfiguration {
 
         // Reference to the ThriveWorkUnit on the Thrive Protocol which the configuration is being created for.
@@ -63,7 +63,7 @@ interface IThriveReview {
     }
 
 
-    // @dev Add desc on this
+    // Submission object that stores all details of a submission.
     struct Submission {
 
         // The EVM address of the contributor submitting the work unit for review

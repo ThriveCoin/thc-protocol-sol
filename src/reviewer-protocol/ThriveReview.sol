@@ -473,16 +473,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         ////// EVENT
 
-    }    
-
-    /**
-     * @notice Decision can be reached on a submission if all conditions are met.
-     * @param submissionId_ Submission ID.
-     */
-    function reachDecisionOnSubmission(uint256 submissionId_) external 
-        submissionPending(submissionId_)
-    {
-        _reachDecisionOnSubmission(submissionId_);
     }
 
 

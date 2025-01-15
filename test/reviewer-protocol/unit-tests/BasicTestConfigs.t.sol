@@ -17,7 +17,7 @@ abstract contract BasicTestConfigs is Test {
 
     address[] public validators;
 
-    uint256 public constant REVIEW_CONTRACT_ALLOCATION = 10_000;
+    uint256 public constant REVIEW_CONTRACT_ALLOCATION = 8_000;
 
     // When you write it, you can deploy the real contract
     address public badgeQueryContractAddress =
@@ -42,7 +42,7 @@ abstract contract BasicTestConfigs is Test {
 
         reviewConfiguration = IThriveReview.ReviewConfiguration({
             workUnit: address(0),
-            reviewerRewardsTotalAllocation: 10_000,
+            reviewerRewardsTotalAllocation: 8_000,
             reviewerReward: 400,
             agreementThreshold: 7_000, // 70%
             maximumSubmissionsPerUser: 2,

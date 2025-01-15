@@ -15,12 +15,12 @@ import "../../../src/ThriveWorkerUnitFactory.sol";
 import "../../../src/reviewer-protocol/ThriveReviewFactory.sol";
 import "../../../src/reviewer-protocol/ThriveReview.sol";
 
+// @OpenZeppelin imports
 import "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 
 // Command to run this test script:
 // forge clean && forge test --match-contract ThriveReviewFactoryUnitTests
-
 
 
 contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
@@ -94,7 +94,24 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
     }
 
-    function test04_success_ReviewFactoryProceedFundsToReviewContract() public {
+    function test04_revert_ToCreateContractsWithMismatchReviewConfigurationVariables() public {
+
+        reviewConfiguration.reviewerRewardsTotalAllocation = REVIEW_CONTRACT_ALLOCATION - 1;
+
+        // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
+        vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers");
+        thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            workUnitArgs, reviewConfiguration
+        );
+
+        // Test creating a ThriveReview contract with insufficient funds
+        vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers");
+        thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            reviewConfiguration
+        );
+    }
+
+    function test05_success_ReviewFactoryProceedFundsToReviewContract() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
         (address thriveReviewContract, ) = thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
@@ -114,8 +131,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
     }
 
-
-    function test05_success_UpdateAddressesOnReviewFactory() public {
+    function test06_success_UpdateAddressesOnReviewFactory() public {
 
         address newThriveWorkerUnitFactory_ = address(0x1234);
         address newThriveReviewContractImplementation_ = address(0x2345);
@@ -132,4 +148,61 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         assertEq(thriveReviewFactory.badgeQueryContractAddress(), newBadgeQueryContractAddress_, "BadgeQueryContractAddress address should be updated");
     }
 
+    function test07_revert_FailToUpdateAddressesOnReviewFactoryIfNotOwner() public {
+
+        address newThriveWorkerUnitFactory_ = address(0x1234);
+        address newThriveReviewContractImplementation_ = address(0x2345);
+        address newBadgeQueryContractAddress_ = address(0x3456);
+
+        // Test updating addresses by non-owner
+        vm.prank(randomUser);
+        vm.expectRevert();
+        thriveReviewFactory.updateAddresses(
+            newThriveWorkerUnitFactory_,
+            newThriveReviewContractImplementation_,
+            newBadgeQueryContractAddress_
+        );
+    }
+
+    function test08_success_UpgradeReviewFactory() public {
+        
+        // Store old values to verify they persist after upgrade
+        address oldWorkerFactory = thriveReviewFactory.thriveWorkerUnitFactory();
+        address oldReviewImpl = thriveReviewFactory.thriveReviewContractImplementation();
+        address oldBadgeQuery = thriveReviewFactory.badgeQueryContractAddress();
+
+        // Upgrade to new implementation
+        Upgrades.upgradeProxy(
+            thriveReviewFactoryAddress,
+            "ThriveReviewFactoryV2.sol",
+            bytes("")
+        );
+
+        // Cast the proxy to the new implementation type
+        ThriveReviewFactory upgradedFactory = ThriveReviewFactory(thriveReviewFactoryAddress);
+
+        // Verify storage values persisted
+        assertEq(
+            upgradedFactory.thriveWorkerUnitFactory(),
+            oldWorkerFactory,
+            "Worker factory address should persist after upgrade"
+        );
+        assertEq(
+            upgradedFactory.thriveReviewContractImplementation(),
+            oldReviewImpl,
+            "Review implementation address should persist after upgrade"
+        );
+        assertEq(
+            upgradedFactory.badgeQueryContractAddress(),
+            oldBadgeQuery,
+            "Badge query address should persist after upgrade"
+        );
+
+        // Verify ownership persisted
+        assertEq(
+            upgradedFactory.owner(),
+            address(this),
+            "Owner should persist after upgrade"
+        );
+    }
 }
