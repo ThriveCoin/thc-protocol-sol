@@ -13,7 +13,7 @@ import {IBadgeQuery} from "../IBadgeQuery.sol";
 
 /**
  * @title ThriveReview
- * @dev Contract for managing reviews.
+ * @dev Contract for reviewer protocol.
  */
 contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
@@ -36,6 +36,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         _;
     }
 
+
     /**
      * @dev Modifier that checks if the submission is in "PENDING" status.
      * @param submissionId_ ID of the submission.
@@ -46,11 +47,20 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
+    /**
+     * @dev Modifier that checks if the user is involved in the submission either as contributor or reviewer.
+     * @param submissionId_ ID of the submission.
+     */
+    modifier onlyInvolvedInSubmission(uint256 submissionId_) {
+        require(userInvolvedInSubmission[_msgSender()][submissionId_], "User is not involved in this submission");
+        _;
+    }
+
+
+
 
     /**
      * Storage variables 
-     * 
-     * @dev Check later what storage variables are not actually needed.
      */
 
 
@@ -75,6 +85,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Amount of THRIVE submitters must reserve for reviewers
     uint256 public submitterReservedFunds;
 
+    // Total amount of failed distribution funds
+    uint256 public failedDistributionTotalAmount;
+
 
 
     ////// USER VARIABLES //////
@@ -95,9 +108,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping of review IDs to the Review object
     mapping(uint256 => Review) public reviews;
 
-    // Mapping of user addresses to their review IDs
-    mapping(address => uint256[]) public userReviews; // mapping may not be needed
-
     // Mapping of counters for committed reviews per submission: submissionId => Number of committed reviews
     mapping(uint256 => uint256) public committedReviewsPerSubmissionCounter;
 
@@ -112,9 +122,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     // Mapping of review IDs to the reward claimed status
     mapping(uint256 => bool) public rewardsClaimedForReview;
-
-    // Mapping of submission IDs to the reward claimed status
-    mapping(uint256 => bool) public reviewerRewardsPaidOutForSubmission;
 
     // Mapping of failed distribution amounts for reviewers so users can claim manually: userAddress => THRIVE amount
     mapping(address => uint256) public failedDistributionAmounts;
@@ -203,6 +210,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
 
+    ////////////////////////////////////////////////////////////////////
+    //                      SUBMISSION FUNCTIONS                      //
+    ////////////////////////////////////////////////////////////////////
+
+
+
     /**
      * @notice Creates a new submission object.
      * @dev User must have the required badges to create a submission and reserve smoe amount of THRIVE in order to submit.
@@ -238,6 +251,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         Submission storage submission = idToSubmission[submissionId];
 
+        // Save the submission ID to the submission
+        submission.id = submissionId;
+
         // Save the submission to the `submissions` mapping
         submission.submissionMetadata = submission_.submissionMetadata;
 
@@ -247,8 +263,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the contributor's address to be the msg.sender
         submission.contributor = _msgSender();
 
+        
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
+
+        // Save the submission to the `submissions` array
+        submissions.push(submission);
 
         // Save the users' involvement in the submission: contributor
         userInvolvedInSubmission[_msgSender()][submissionId] = true;
@@ -261,7 +281,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
     /**
      * @notice Updates a submission object on-chain.
-     * @dev IS this function needed?
      * @param submissionMetadata_ New submission metadata.
      * @param submissionId_ Submission ID.
      */
@@ -290,6 +309,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Emit event - fill data later
         emit SubmissionUpdated(submissionId_);
     }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////
+    //                       REVIEW FUNCTIONS                         //
+    ////////////////////////////////////////////////////////////////////
+
 
 
     /**
@@ -326,8 +353,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Save the reviewers address in storage for later authentication
         review.reviewer = _msgSender();
-
-        // @dev Should we make sure the reviewer is not the same user as the contributor?
 
         // Set the deadline for the review
         review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentDeadline;
@@ -398,11 +423,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Get the review ID
         uint256 reviewId_ = committedReview.id;
-
-        // Save the review ID to users' reviews array
-        userReviews[_msgSender()].push(reviewId_); // @dev maybe this mapping is not needed at all
-
-
 
         // Save reviews of a submission
         submissionReviews[committedReview.submissionId].push(reviewId_);
@@ -518,13 +538,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 // Submission is ACCEPTED
                 submission.decision = Decision.ACCEPTED;
 
-                // Distribute payouts to reviewers
-                _payoutReviewersOnSubmission(submissionId_);
+                // Start dispute period
+                submission.disputeDeadline = uint64(block.timestamp + 2 days);
 
-                // If work unit contract is set, confirm the submission on the work unit contract
-                if (hasWorkerUnitContract()) {
-                    IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
-                }
 
             } // Check if the ratio is above the agreement threshold
             else if (rejectedRatio >= reviewConfiguration.agreementThreshold) {
@@ -535,8 +551,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 // Submission is REJECTED
                 submission.decision = Decision.REJECTED;
 
-                // Distribute payouts to reviewers
-                _payoutReviewersOnSubmission(submissionId_);
+                // Start dispute period
+                submission.disputeDeadline = uint64(block.timestamp + 2 days);
                 
             }
         }
@@ -580,16 +596,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Submission is ACCEPTED or REJECTED
         submission.decision = decision_;
 
+        // Start dispute period
+        submission.disputeDeadline = uint64(block.timestamp + 2 days);
 
-        // Distribute payouts to reviewers
-        _payoutReviewersOnSubmission(submissionId_);
-
-
-        if (decision_ == Decision.ACCEPTED && hasWorkerUnitContract()) {
-
-            // Confirm the work unit was accepted
-            IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
-        }
 
 
         ////////
@@ -597,24 +606,201 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
+
+    /**
+     * @notice Allows reviewers to claim their rewards if the automatic payout/distribution failed.
+     * @dev This function is needed because the automatic distribution payout might fail due to various reasons.
+     */
+    function claimFailedDistributionFunds() external {
+
+        // Fetch the amount of failed distribution funds
+        uint256 amount = failedDistributionAmounts[_msgSender()];
+
+        // Require that the user has failed distribution funds
+        require(amount > 0, "User has no failed distribution funds");
+
+        // Reset the failed distribution funds
+        delete failedDistributionAmounts[_msgSender()];
+
+        // Payout the user
+        (bool success, ) = _msgSender().call{value: amount}("");
+        require(success);
+
+
+
+        // EMIT EVENT
+    }
+
+
+
+    /**
+     * @notice Function to retrieve funds reserved for reviewers sent during creation of the Review contract.
+     * @dev Owner should be able to withdraw remaining funds if all submissions are paid out and the deadline of submitting is reached.
+     */
+    function retrieveFundsByOwner() external onlyOwner {
+
+        // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
+        require(block.timestamp > reviewConfiguration.submissionDeadline, "Submission deadline has not passed");
+
+        // Require all submissions are PAID_OUT
+        require(allSubmissionsPaidOut(), "Not all submissions are paid out");
+
+
+        // Send entire balance but leave the failed distribution funds to be claimable
+        uint256 leftAfterPayouts = address(this).balance - failedDistributionTotalAmount;
+
+        // Transfer funds to owner
+        (bool success, ) = payable(_msgSender()).call{value: leftAfterPayouts}("");
+        require(success);
+
+
+        //// EVENT
+    }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////
+    //                      DISPUTE FUNCIONALITY                      //
+    ////////////////////////////////////////////////////////////////////
+
+
+
+    /**
+     * @notice Function to raise a dispute on a submission when user does not agree with final decision.
+     * @param submissionId_ Submission ID.
+     */
+    function raiseDisputeOnSubmission(uint256 submissionId_) external onlyInvolvedInSubmission(submissionId_) {
+
+        // Get the submission from storage
+        Submission storage submission = idToSubmission[submissionId_];
+
+        // @dev: Do we make sure the submitter raises dispute on rejected submissions and reviewers whose review decision does not match the final decision?
+        // Discuss w Mijo first.
+        
+        // Require that the submission is in "FINALIZED" status
+        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
+
+        // Require for the time-limit on disputing for the submission to NOT have passed
+        require(block.timestamp <= submission.disputeDeadline, "Dispute deadline has passed");
+
+
+        // Put submission in "DISPUTED" status
+        submission.status = SubmissionStatus.DISPUTED;
+
+
+        // EMIT EVENT
+    }
+
+
+    /**
+     * @notice Function for resolving disputes on submissions by user holding dispute badge.
+     * @param submissionId_ Submission ID.
+     * @param decision_ Decision on the submission.
+     */
+    function resolveDisputeOnSubmission(uint256 submissionId_, Decision decision_) external onlyUserWithBadges(reviewConfiguration.disputeResolverBadges) {
+
+        // Fetch submission from storage
+        Submission storage submission = idToSubmission[submissionId_];
+        
+        // Require for the submission to be in "DISPUTED" status
+        require(submission.status == SubmissionStatus.DISPUTED, "Submission is not in 'DISPUTED' status");
+
+
+        // Resolve the submission decision based on the resolvers' decision
+        submission.decision = decision_;
+
+        // Pay out reviewers
+        _distributeRewardsForSubmission(submissionId_);
+
+
+        //// EVENT
+    }
+
+    
+    /**
+     * @notice Function for canceling disputes on submissions. Distributes rewards to reviewers based on current decision. Only callable by owner.
+     * @param submissionId_ Submission ID.
+     */
+    function cancelDisputeOnSubmission(uint256 submissionId_) external onlyOwner {
+
+        // Fetch submission from storage
+        Submission memory submission = idToSubmission[submissionId_];
+
+        // Require for this submission to be "DISPUTED"
+        require(submission.status == SubmissionStatus.DISPUTED, "Submission is not in 'DISPUTED' status");
+
+        // Require for the time-limit on disputing for the submission to have passed + some buffer time so that owner does not cancel the dispute too early
+        require(block.timestamp > submission.disputeDeadline + 1 days, "Dispute deadline has not passed");
+
+
+        // Pay out reviewers
+        _distributeRewardsForSubmission(submissionId_);
+
+
+        //// EVENT
+    }
+
+
+
+    /**
+     * @notice Function for distributing payouts to reviewers for non-disputed submissions.
+     * @param submissionIds_ Array of submission IDs.
+     */
+    function distributePayoutsForNonDisputedSubmissions(uint256[] calldata submissionIds_) external {
+        for (uint256 i = 0; i < submissionIds_.length; i++) {
+            distributePayoutsForNonDisputedSubmission(submissionIds_[i]);
+        }
+    }
+
+
+
+    /**
+     * @notice Function for distributing payouts to reviewers for non-disputed submissions.
+     * @param submissionId_ Submission ID.
+     */
+    function distributePayoutsForNonDisputedSubmission(uint256 submissionId_) public {
+
+        // Fetch submission from storage
+        Submission memory submission = idToSubmission[submissionId_];
+
+        // Require for the submission to be in "FINALIZED" status
+        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
+
+        // Require for the dispute time-limit to have passed
+        require(block.timestamp > submission.disputeDeadline, "Dispute deadline has not passed");
+        
+
+        // Pay out reviewers
+        _distributeRewardsForSubmission(submissionId_);
+
+
+        //////// EVENT
+    }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////
+    //                          PAYOUT LOGIC                          //
+    ////////////////////////////////////////////////////////////////////
+
+
     /**
      * @notice Distributes rewards to correct reviewers when the submission is finalized.
      * @param submissionId_ Submission ID.
      */
-    function _payoutReviewersOnSubmission(uint256 submissionId_) internal {
+    function _distributeRewardsForSubmission(uint256 submissionId_) internal {
         
         // Fetch the submission from storage
         Submission storage submission = idToSubmission[submissionId_];
 
-        // Require for the submission to be finalized
-        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
-
-        // Require that the rewards have not already been paid out for this submission
-        require(!reviewerRewardsPaidOutForSubmission[submissionId_], "Rewards have already been paid out");
+        // Require that the submission is in "FINALIZED" or "DISPUTED" status
+        require(submission.status == SubmissionStatus.FINALIZED || submission.status == SubmissionStatus.DISPUTED, "Submission is not in 'FINALIZED' or 'DISPUTED' status");
 
 
-        // Update variable to show that the reviewers have claimed the reward
-        reviewerRewardsPaidOutForSubmission[submissionId_] = true;
+        // Update submission status to "PAID_OUT"
+        submission.status = SubmissionStatus.PAID_OUT;
 
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
@@ -623,7 +809,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         for (uint256 i = 0; i < reviewIds.length; i++) {
 
             // Fetch the review from storage
-            Review storage review = reviews[reviewIds[i]];
+            Review memory review = reviews[reviewIds[i]];
 
 
             // Require that the user made the judgement that is the same as the final decision
@@ -632,13 +818,26 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 // Pay the reviewer - Do not revert on failure because we want to continue with the payouts. 
                 // Those whose payouts failed will be able to claim manually.
                 (bool success, ) = review.reviewer.call{value: reviewConfiguration.reviewerReward}("");
-                if (!success) failedDistributionAmounts[review.reviewer] += reviewConfiguration.reviewerReward;
+                if (!success) {
+                    failedDistributionAmounts[review.reviewer] += reviewConfiguration.reviewerReward;
+                    failedDistributionTotalAmount += reviewConfiguration.reviewerReward;
+                }
             }
         }
 
 
-        // Update the reserved funds for the submission
+
+        // Pay out and update the reserved funds for the submission
         _payoutSubmitterReservedFunds(submissionId_);
+
+
+        // If there is a WorkerUnit, pay out the contributor on the WorkerUnit
+        if (submission.decision == Decision.ACCEPTED && hasWorkerUnitContract()) {
+
+            // Confirm the work unit was accepted
+            IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
+        }
+
 
 
 
@@ -662,11 +861,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     function _payoutSubmitterReservedFunds(uint256 submissionId_) internal {
 
         // Fetch the submission from storage
-        Submission storage submission = idToSubmission[submissionId_];
-
-        // Require for the submission to be finalized
-        require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
-
+        Submission memory submission = idToSubmission[submissionId_];
 
         // Check if the decision is ACCEPTED
         if (submission.decision == Decision.ACCEPTED) {
@@ -674,7 +869,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Refund the submitter - Do not revert on failure because we want to continue with the payouts. 
             // Those whose payouts failed will be able to claim manually.
             (bool success, ) = submission.contributor.call{value: submitterReservedFunds}("");
-            if (!success) failedDistributionAmounts[submission.contributor] += submitterReservedFunds;
+            if (!success) {
+                failedDistributionAmounts[submission.contributor] += submitterReservedFunds;
+                failedDistributionTotalAmount += submitterReservedFunds;
+            }
 
 
             // Check if the decision is REJECTED
@@ -688,45 +886,21 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             // Refund the submitter - Do not revert on failure because we want to continue with the payouts. 
             // Those whose payouts failed will be able to claim manually.
             (bool success, ) = submission.contributor.call{value: remainingAmountToPayout}("");
-            if (!success) failedDistributionAmounts[submission.contributor] += remainingAmountToPayout;
+            if (!success) {
+                failedDistributionAmounts[submission.contributor] += remainingAmountToPayout;
+                failedDistributionTotalAmount += remainingAmountToPayout;
+            }
 
         }
 
     }
 
 
-    /**
-     * @notice Allows reviewers to claim their rewards if the payout failed.
-     * @dev This function is needed because the automatic distribution payout might fail due to various reasons.
-     */
-    function claimFailedDistributionFunds() external {
 
-        // Fetch the amount of failed distribution funds
-        uint256 amount = failedDistributionAmounts[_msgSender()];
-
-        // Require that the user has failed distribution funds
-        require(amount > 0, "User has no failed distribution funds");
-
-        // Reset the failed distribution funds
-        delete failedDistributionAmounts[_msgSender()];
-
-        // Payout the user
-        (bool success, ) = _msgSender().call{value: amount}("");
-        require(success);
-
-
-        // EMIT EVENT
-    }
-
-
-
-    /**
-     * @notice Checks if this Review contract has a WorkerUnit tied to it or if its a standalone Review.
-     * @return bool True if the contract has a WorkerUnit contract, false otherwise.
-     */
-    function hasWorkerUnitContract() public view returns (bool) {
-        return workerUnitAddress != address(0);
-    }
+    
+    ////////////////////////////////////////////////////////////////////
+    //                          VIEW FUNCTIONS                        //
+    ////////////////////////////////////////////////////////////////////
 
 
     /**
@@ -770,22 +944,48 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-     * @notice Function to retrieve funds reserved for reviewers sent during creation of the Review contract.
-     * @dev Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
+     * @notice Checks if all submissions are paid out.
+     * @return bool True if all submissions are paid out, false otherwise.
      */
-    function retrieveFundsByOwner() external onlyOwner {
+    function allSubmissionsPaidOut() public view returns (bool) {
 
-        // Owner should be able to withdraw remaining funds if there are no pending submissions and the deadline of submitting is reached.
-        require(block.timestamp > reviewConfiguration.submissionDeadline, "Submission deadline has not passed");
+        for (uint256 i = 0; i < submissions.length; i++) {
+            if (submissions[i].status != SubmissionStatus.PAID_OUT) {
+                return false;
+            }
+        }
 
-        // Require there are no `PENDING` or `DISPUTED` submissions
-
-
-        // Do not send entire balance but only what is left after payouts
-        uint256 leftAfterPayouts = address(this).balance; // @dev calculate this
-        (bool success, ) = payable(_msgSender()).call{value: leftAfterPayouts}("");
-        require(success);
+        return true;
     }
+
+    
+    /**
+     * @notice Fetches the decision of a submission.
+     * @return IThriveReview.Decision NONE/ACCEPTED/REJECTED.
+     */
+    function getSubmissionDecision(uint256 submissionId_) public view returns (Decision) {
+        return idToSubmission[submissionId_].decision;
+    }
+
+    /**
+     * @notice Fetches the status of a submission.
+     * @return IThriveReview.SubmissionStatus NONE/PENDING/FINALIZED/DISPUTED/PAID_OUT.
+     */
+    function getSubmissionStatus(uint256 submissionId_) public view returns (SubmissionStatus) {
+        return idToSubmission[submissionId_].status;
+    }
+
+
+
+    /**
+     * @notice Checks if this Review contract has a WorkerUnit tied to it or if its a standalone Review.
+     * @return bool True if the contract has a WorkerUnit contract, false otherwise.
+     */
+    function hasWorkerUnitContract() public view returns (bool) {
+        return workerUnitAddress != address(0);
+    }
+
+
 
 
     /**

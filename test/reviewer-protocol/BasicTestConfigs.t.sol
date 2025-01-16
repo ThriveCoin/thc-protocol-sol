@@ -25,9 +25,15 @@ abstract contract BasicTestConfigs is Test {
     address public badgeQueryContractAddress =
         address(uint160(uint256(keccak256(abi.encodePacked("badgeQuery")))));
 
+    
+    bytes32[] submitterBadges = new bytes32[](1);
+
+
     constructor() {
         validators.push(address(0x1));
         validators.push(address(0x2));
+
+        submitterBadges[0] = keccak256(abi.encodePacked("submitterBadge"));
 
         // Some data is intentionally wrongly filled because only some fields are written on-chain
         // and we want to prevent users from manipulating this data
@@ -56,7 +62,7 @@ abstract contract BasicTestConfigs is Test {
             submissionDeadline: uint32(block.timestamp) + 10 days,
             reviewCommitmentDeadline: 1 days,
             reviewDeadline: 7 days,
-            submitterBadges: new bytes32[](0),
+            submitterBadges: submitterBadges,
             reviewerBadges: new bytes32[](0),
             judgeBadges: new bytes32[](0),
             disputeResolverBadges: new bytes32[](0),
@@ -65,11 +71,13 @@ abstract contract BasicTestConfigs is Test {
         });
 
         submission = IThriveReview.Submission({
+            id: 0,
             contributor: address(this),
             submissionMetadata: "",
             reviewCount: 123,
             acceptedReviewsCount: 10,
             rejectedReviewsCount: 213,
+            disputeDeadline: 0,
             decision: IThriveReview.Decision.ACCEPTED,
             status: IThriveReview.SubmissionStatus.PENDING
         });

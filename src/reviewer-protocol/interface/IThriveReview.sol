@@ -69,20 +69,26 @@ interface IThriveReview {
     // Submission object that stores all details of a submission.
     struct Submission {
 
+        // Submission id in contract
+        uint256 id;
+
+        // The number of reviews that have been conducted on the submission
+        uint64 reviewCount;
+
+        // The number of reviews that have been accepted
+        uint64 acceptedReviewsCount;
+
+        // The number of reviews that have been rejected
+        uint64 rejectedReviewsCount;
+
+        // The timestamp until the submission decision can be disputed
+        uint64 disputeDeadline;
+
         // The EVM address of the contributor submitting the work unit for review
         address contributor;
 
         // JSON object that contains the information shown to reviewers during the review process
         string submissionMetadata;
-
-        // The number of reviews that have been conducted on the submission
-        uint256 reviewCount;
-
-        // The number of reviews that have been accepted
-        uint256 acceptedReviewsCount;
-
-        // The number of reviews that have been rejected
-        uint256 rejectedReviewsCount;
 
         // Review decision on this submission - saved after conditions for reaching a verdict are met
         Decision decision;
@@ -120,7 +126,9 @@ interface IThriveReview {
     enum SubmissionStatus {
         NONE,
         PENDING,
-        FINALIZED
+        FINALIZED,
+        DISPUTED,
+        PAID_OUT
     }
 
     // Status of a review object for a submission

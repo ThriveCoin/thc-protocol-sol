@@ -65,7 +65,7 @@ contract ThriveReviewFactory is
         address owner_
     ) external initializer {
 
-        // @dev add update function for this address?
+        // Save the address of the ThriveWorkerUnitFactory contract
         thriveWorkerUnitFactory = thriveWorkerUnitFactory_;
 
         // Save the implementation address for the ThriveReview contract
@@ -156,7 +156,7 @@ contract ThriveReviewFactory is
             reviewConfiguration_,
             address(this),
             badgeQueryContractAddress,
-            _msgSender()
+            _msgSender() // @dev should be a passed argument?
         );
 
 
@@ -203,7 +203,7 @@ contract ThriveReviewFactory is
             reviewConfiguration_,
             address(this),
             badgeQueryContractAddress,
-            _msgSender()
+            _msgSender() // @dev should be a passed argument?
         );
 
 
