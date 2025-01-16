@@ -55,6 +55,9 @@ interface IThriveReview {
         // An array of badges required for a user to be able to make a decision on a submission under certain terms.
         bytes32[] judgeBadges;
 
+        // An array of badges require for an address to resolve disputes
+        bytes32[] disputeResolverBadges;
+
         // JSON object containing descriptive information for the review, such as review summary, reviewer instructions, and estimated time to complete the review.
         string reviewMetadata;
 

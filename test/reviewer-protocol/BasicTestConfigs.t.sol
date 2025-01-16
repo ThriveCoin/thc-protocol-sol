@@ -59,6 +59,7 @@ abstract contract BasicTestConfigs is Test {
             submitterBadges: new bytes32[](0),
             reviewerBadges: new bytes32[](0),
             judgeBadges: new bytes32[](0),
+            disputeResolverBadges: new bytes32[](0),
             reviewMetadata: "reviewMetadata",
             submissionMetadata: "submissionMetadata"
         });
