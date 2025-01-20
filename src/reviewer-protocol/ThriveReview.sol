@@ -510,6 +510,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
+    ////////////////////////////////////////////////////////////////////
+    //                 SUBMISSION DECISION FUNCTIONS                  //
+    ////////////////////////////////////////////////////////////////////
+
+
 
     /**
      * @notice Decision is reached on a submission if conditions are met. WorkerUnit is called to payout the submitter.
@@ -608,6 +613,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         //////// EVENT
     }
 
+
+    ////////////////////////////////////////////////////////////////////
+    //                 FUNDS MANAGEMENT FUNCTIONS                     //
+    ////////////////////////////////////////////////////////////////////
 
 
     /**
