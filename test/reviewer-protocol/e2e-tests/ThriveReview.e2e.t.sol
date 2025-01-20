@@ -181,7 +181,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
 
         // Fetch first submission
-        (uint256 id, uint64 reviewCount, uint64 acceptedReviewsCount, uint64 rejectedReviewsCount, , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
+        (uint256 id, uint64 reviewCount, uint64 acceptedReviewsCount, uint64 rejectedReviewsCount, , , , , IThriveReview.Decision decision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
 
         // Assert submission storage state is as expected
         assertEq(reviewCount, 1, "Review count should be 1 for submission 0");
@@ -192,7 +192,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
 
         // Fetch second submission
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , decision, submissionStatus) = thriveReview.idToSubmission(1);
+        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(1);
 
         // Assert submission storage state is as expected
         assertEq(reviewCount, 1, "Review count should be 1 for submission 1");
@@ -246,7 +246,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
 
         // Fetch third submission
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , decision, submissionStatus) = thriveReview.idToSubmission(0);
+        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(0);
 
         // Assert submission storage state is as expected
         assertEq(reviewCount, 3, "Review count should be 3 for submission 0");
@@ -280,7 +280,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
 
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , decision, submissionStatus) = thriveReview.idToSubmission(1);
+        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(1);
 
         // Assert submission storage state is as expected
         assertEq(reviewCount, 3, "Review count should be 3 for submission 1");
@@ -339,7 +339,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         
 
         // Fetch submission 3
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , decision, submissionStatus) = thriveReview.idToSubmission(2);
+        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(2);
 
         // Assert submission storage state is as expected
         assertEq(reviewCount, 4, "Review count should be 3 for submission 2");

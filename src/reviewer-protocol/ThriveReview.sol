@@ -263,6 +263,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the contributor's address to be the msg.sender
         submission.contributor = _msgSender();
 
+        // Set the deadline for the reviews
+        submission.reviewDeadline = uint64(block.timestamp + reviewConfiguration.reviewDeadlinePeriod);
+
         
         // Save the submission ID to the user's submissions
         userSubmissions[_msgSender()].push(submissionId);
@@ -335,7 +338,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(committedReviewsPerSubmissionCounter[submissionId_] < reviewConfiguration.maximumReviewsPerSubmission, "Maximum amount of commits to review has been reached");
 
         // Require that the deadline to review has not passed
-        require(block.timestamp <= reviewConfiguration.reviewDeadline, "Review deadline has passed");
+        require(block.timestamp <= idToSubmission[submissionId_].reviewDeadline, "Review deadline has passed");
 
 
 
@@ -355,7 +358,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         review.reviewer = _msgSender();
 
         // Set the deadline for the review
-        review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentDeadline;
+        review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentPeriod;
 
         // Change the status of the review to `COMMITTED`
         review.status = ReviewStatus.COMMITTED;
@@ -399,14 +402,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require user to be the committer to the review
         require(committedReview.reviewer == _msgSender(), "User is not the committer of this review");
 
-        // Check that the deadline hasn't passed
+        // Require that the commitment deadline has not passed
         require(block.timestamp <= committedReview.deadline, "Review commitment deadline has passed");
         
         // Require that the review decision is either "ACCEPTED" or "REJECTED"
         require(review_.decision == Decision.ACCEPTED || review_.decision == Decision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
         
-        // Require that the deadline to review has not passed
-        require(block.timestamp <= reviewConfiguration.reviewDeadline, "Review deadline has passed");
+        // Require that the deadline to review this submission has not passed
+        require(block.timestamp <= idToSubmission[committedReview.submissionId].reviewDeadline, "Review deadline has passed");
 
 
 
@@ -582,7 +585,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // but we also disallow reviewing after the deadline, so its not like the badge is front-running the reviewers/decision.
         require(
             submission.reviewCount >= reviewConfiguration.maximumReviewsPerSubmission || 
-            block.timestamp > reviewConfiguration.reviewDeadline,
+            block.timestamp > submission.reviewDeadline,
             "Submission has not reached requirements for a final decision as badge"
         );
 

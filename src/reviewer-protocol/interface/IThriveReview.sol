@@ -41,10 +41,10 @@ interface IThriveReview {
         uint32 submissionDeadline;
 
         // The time allowed for a reviewer to complete their review after commiting to it.
-        uint32 reviewCommitmentDeadline;
+        uint32 reviewCommitmentPeriod;
 
-        // Timestamp until when reviewing is allowed.
-        uint32 reviewDeadline;
+        // Fixed period for reviews after a submission is created.
+        uint32 reviewDeadlinePeriod;
 
         // An array of badges required for a user to contribute submissions.
         bytes32[] submitterBadges;
@@ -73,13 +73,16 @@ interface IThriveReview {
         uint256 id;
 
         // The number of reviews that have been conducted on the submission
-        uint64 reviewCount;
+        uint32 reviewCount;
 
         // The number of reviews that have been accepted
-        uint64 acceptedReviewsCount;
+        uint32 acceptedReviewsCount;
 
         // The number of reviews that have been rejected
-        uint64 rejectedReviewsCount;
+        uint32 rejectedReviewsCount;
+
+        // The timestamp until the submission can be reviewed
+        uint64 reviewDeadline;
 
         // The timestamp until the submission decision can be disputed
         uint64 disputeDeadline;

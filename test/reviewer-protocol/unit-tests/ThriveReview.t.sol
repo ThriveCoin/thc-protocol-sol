@@ -13,7 +13,10 @@ pragma solidity ^0.8.24;
 // forge clean && forge coverage --ir-minimum
 
 
+// Foundry imports
 import {Test} from "forge-std/Test.sol";
+import "forge-std/console.sol";
+
 
 import "../../../src/ThriveWorkerUnitFactory.sol";
 import "../../../src/reviewer-protocol/ThriveReviewFactory.sol";
@@ -26,7 +29,9 @@ import "../BasicTestConfigs.t.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 
 
+// @openzeppelin-upgrades
 import "openzeppelin-foundry-upgrades/Upgrades.sol";
+
 
 contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     using Upgrades for address;
@@ -45,6 +50,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     ThriveReview thriveReview;
 
     MockERC20 mockToken;
+
+    uint256 currentBlockTimestamp;
 
     function setUp() public {
 
@@ -110,6 +117,9 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.deal(address(0x3), 1 ether);
         vm.deal(address(0x4), 1 ether);
         vm.deal(address(0x5), 1 ether);
+
+        // Set current block timestamp
+        currentBlockTimestamp = block.timestamp;
 
 
         // Helper variable that calculates submitter amount needed to create a submission
@@ -418,7 +428,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
 
         // Get the submission
-        (uint256 id, uint64 reviewCount, uint64 acceptedReviewCount, uint64 rejectedReviewCount, , address contributor, string memory submissionMetadata, 
+        (uint256 id, uint64 reviewCount, uint64 acceptedReviewCount, uint64 rejectedReviewCount, , , address contributor, string memory submissionMetadata, 
         IThriveReview.Decision decision, IThriveReview.SubmissionStatus status) = thriveReview.idToSubmission(0);
 
         // Assert submission is stored correctly
@@ -451,7 +461,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.updateSubmission(submission.submissionMetadata, 0);
 
         // Get the submission
-        (,,,,,,
+        (,,,,,,,
         string memory submissionMetadata, IThriveReview.Decision decision, 
         IThriveReview.SubmissionStatus status) = thriveReview.idToSubmission(0);
 
@@ -563,7 +573,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(submissionId, 0, "Submission id is not set correctly");
         assertEq(reviewer, address(this), "Reviewer is not set correctly");
         assertEq(reviewMetadata, "", "Review metadata is not set correctly");
-        assertEq(deadline, block.timestamp + reviewConfiguration.reviewCommitmentDeadline, "Deadline is not set correctly");
+        assertEq(deadline, currentBlockTimestamp + reviewConfiguration.reviewCommitmentPeriod, "Deadline is not set correctly");
         assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.COMMITTED), "Review status is not set correctly");
         assertEq(uint256(decision), uint256(IThriveReview.Decision.NONE), "Decision is not set correctly");
 
@@ -591,7 +601,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
 
         // Go to right after the review deadline to commit
-        vm.warp(block.timestamp + reviewConfiguration.reviewDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
 
         vm.expectRevert("Review deadline has passed");
         thriveReview.commitToReview(0);
@@ -757,7 +767,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Go to right after the review commitment deadline to create review
-        vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewCommitmentPeriod + 1);
 
         vm.expectRevert("Review commitment deadline has passed");
         thriveReview.createReview(review);
@@ -770,17 +780,17 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
 
         // Go to right before the review deadline to commit
-        vm.warp(reviewConfiguration.reviewDeadline - 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod - 1);
 
         // Commit to review
         thriveReview.commitToReview(0);
 
         // Go to right after the review deadline to create review
-        vm.warp(reviewConfiguration.reviewDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
 
         vm.expectRevert("Review deadline has passed");
         thriveReview.createReview(review);
-    }
+    } 
 
 
     function test22_revert_FailToCreateReviewWithNonAcceptedDecision() public {
@@ -817,13 +827,13 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(submissionId, 0, "Submission id is not set correctly");
         assertEq(reviewer, address(this), "Reviewer is not set correctly");
         assertEq(reviewMetadata, "reviewMetadata", "Review metadata is not set correctly");
-        assertEq(deadline, block.timestamp + reviewConfiguration.reviewCommitmentDeadline, "Deadline is not set correctly");
+        assertEq(deadline, currentBlockTimestamp + reviewConfiguration.reviewCommitmentPeriod, "Deadline is not set correctly");
         assertEq(uint256(status), uint256(IThriveReview.ReviewStatus.DONE), "Review status is not set correctly");
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Decision is not set correctly");
 
         
         // Fetch submission after the review
-        (, uint64 reviewCount, uint64 acceptedReviewCount, uint64 rejectedReviewCount, , , , IThriveReview.Decision submissionDecision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
+        (, uint64 reviewCount, uint64 acceptedReviewCount, uint64 rejectedReviewCount, , , , , IThriveReview.Decision submissionDecision, IThriveReview.SubmissionStatus submissionStatus) = thriveReview.idToSubmission(0);
         assertEq(reviewCount, 1, "Review count is not set correctly");
         assertEq(acceptedReviewCount, 1, "Accepted review count is not set correctly");
         assertEq(rejectedReviewCount, 0, "Rejected review count is not set correctly");
@@ -854,7 +864,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         bool userCommittedToReview = thriveReview.userCommittedToReview(address(this), 0);
         assertEq(userCommittedToReview, true, "User has not committed to review");
 
-        vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewCommitmentPeriod + 1);
 
         // Delete pending reviews
         uint256[] memory reviewIds = new uint256[](3);
@@ -905,7 +915,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
 
-        vm.warp(block.timestamp + reviewConfiguration.reviewCommitmentDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewCommitmentPeriod + 1);
 
         // Delete pending reviews
         uint256[] memory reviewIds = new uint256[](2);
@@ -997,7 +1007,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Go to after dispute deadline
-        vm.warp(block.timestamp + 2 days + 1);
+        vm.warp(currentBlockTimestamp + 2 days + 1);
 
         // Distribute rewards
         thriveReview.distributePayoutsForNonDisputedSubmission(0);
@@ -1082,7 +1092,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
         // Go to after dispute deadline
-        vm.warp(block.timestamp + 2 days + 1);
+        vm.warp(currentBlockTimestamp + 2 days + 1);
 
         // Distribute rewards
         thriveReview.distributePayoutsForNonDisputedSubmission(0);
@@ -1284,7 +1294,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
         uint256 balanceAddress2BeforeClaimingReward = address(0x2).balance;
 
-        vm.warp(reviewConfiguration.reviewDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
         thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.REJECTED);
 
 
@@ -1329,7 +1339,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Go to right after the review deadline
-        vm.warp(reviewConfiguration.reviewDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
 
         // Finalize this submission as a judge badge
         thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
@@ -1391,7 +1401,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
         // Go to right after the review deadline
-        vm.warp(reviewConfiguration.reviewDeadline + 1);
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
 
         // Revert to finalize the submission with no proper decision
         vm.expectRevert("Decision must be either 'ACCEPTED' or 'REJECTED'");
@@ -1481,7 +1491,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
 
         // Go to after dispute deadline
-        vm.warp(block.timestamp + 2 days + 1);
+        vm.warp(currentBlockTimestamp + 2 days + 1);
 
         // Distribute rewards
         thriveReview.distributePayoutsForNonDisputedSubmission(0);

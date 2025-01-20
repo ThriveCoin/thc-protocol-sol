@@ -60,8 +60,8 @@ abstract contract BasicTestConfigs is Test {
             maximumSubmissions: 5,
             maximumReviewsPerSubmission: 4,
             submissionDeadline: uint32(block.timestamp) + 10 days,
-            reviewCommitmentDeadline: 1 days,
-            reviewDeadline: 7 days,
+            reviewCommitmentPeriod: 1 days,
+            reviewDeadlinePeriod: 7 days,
             submitterBadges: submitterBadges,
             reviewerBadges: new bytes32[](0),
             judgeBadges: new bytes32[](0),
@@ -77,6 +77,7 @@ abstract contract BasicTestConfigs is Test {
             reviewCount: 123,
             acceptedReviewsCount: 10,
             rejectedReviewsCount: 213,
+            reviewDeadline: 1234,
             disputeDeadline: 0,
             decision: IThriveReview.Decision.ACCEPTED,
             status: IThriveReview.SubmissionStatus.PENDING
