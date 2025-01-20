@@ -116,11 +116,13 @@ contract ThriveReviewFactory is
      * @notice Creates new WorkerUnit and ThriveReview contracts.
      * @param workUnitArgs_ Struct containing args for properly initializing WorkUnit contract.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
+     * @param owner_ Owner address of the newly created ThriveReview contract.
      * @return Address of the newly created ThriveReview contract.
      */
     function createWorkUnitAndReviewContract(
         IThriveWorkerUnitFactory.WorkUnitArgs memory workUnitArgs_,
-        IThriveReview.ReviewConfiguration memory reviewConfiguration_
+        IThriveReview.ReviewConfiguration memory reviewConfiguration_,
+        address owner_
     ) external payable returns (address, address) {
 
         // Require enough funds are sent to payout the reward for reviewers
@@ -156,7 +158,7 @@ contract ThriveReviewFactory is
             reviewConfiguration_,
             address(this),
             badgeQueryContractAddress,
-            _msgSender() // @dev should be a passed argument?
+            owner_
         );
 
 
@@ -177,7 +179,8 @@ contract ThriveReviewFactory is
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
      */
     function createReviewContract(
-        IThriveReview.ReviewConfiguration memory reviewConfiguration_
+        IThriveReview.ReviewConfiguration memory reviewConfiguration_,
+        address owner_
     ) external payable returns (address) {
 
         // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
@@ -203,7 +206,7 @@ contract ThriveReviewFactory is
             reviewConfiguration_,
             address(this),
             badgeQueryContractAddress,
-            _msgSender() // @dev should be a passed argument?
+            owner_
         );
 
 

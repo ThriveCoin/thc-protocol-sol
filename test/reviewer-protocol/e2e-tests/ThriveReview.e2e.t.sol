@@ -90,7 +90,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         // Create a ThriveWorkUnit and ThriveReview contract
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
             .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         // Instantiate the ThriveReview contract

@@ -63,7 +63,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
         (address thriveReviewContract, address thriveWorkUnitContract) = thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         assertNotEq(thriveReviewContract, address(0), "ThriveReview contract address should not be zero address");
@@ -73,7 +73,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
     function test02_success_CreateOnlyReviewContract() public {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
-        address thriveReviewContract = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(reviewConfiguration);
+        address thriveReviewContract = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(reviewConfiguration, address(this));
 
         assertNotEq(thriveReviewContract, address(0), "ThriveReview contract address should not be zero address");
     }
@@ -83,13 +83,13 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
         vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
         thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION - 1}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         // Test creating a ThriveReview contract with insufficient funds
         vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
         thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION - 1}(
-            reviewConfiguration
+            reviewConfiguration, address(this)
         );
 
     }
@@ -101,13 +101,13 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
         vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers");
         thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         // Test creating a ThriveReview contract with insufficient funds
         vm.expectRevert("ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers");
         thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            reviewConfiguration
+            reviewConfiguration, address(this)
         );
     }
 
@@ -115,7 +115,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
         (address thriveReviewContract, ) = thriveReviewFactory.createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         // Ensure ThriveReview contract has received the funds
@@ -123,7 +123,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract
         address thriveReviewContract_2 = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-           reviewConfiguration
+           reviewConfiguration, address(this)
         );
 
         // Ensure ThriveReview contract has received the funds

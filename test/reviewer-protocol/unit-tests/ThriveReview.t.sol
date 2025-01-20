@@ -80,7 +80,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a ThriveWorkUnit and ThriveReview contract
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
             .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         // Instantiate the ThriveReview contract
@@ -167,7 +167,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.expectRevert();
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
             .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
         // Set agreement threshold to less than 50%
@@ -175,7 +175,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.expectRevert();
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
             .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
     }
@@ -189,7 +189,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.expectRevert();
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
             .createWorkUnitAndReviewContract{value: 10 ether}(
-            workUnitArgs, reviewConfiguration
+            workUnitArgs, reviewConfiguration, address(this)
         );
 
     }
@@ -1114,7 +1114,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Deploy ThriveReview with no work unit
         address thriveReviewAddressWoWorkUnit = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            reviewConfiguration
+            reviewConfiguration, address(this)
         );
 
         ThriveReview thriveReviewWithoutWorkUnit = ThriveReview(payable(thriveReviewAddressWoWorkUnit));
@@ -1131,7 +1131,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         
         // Deploy ThriveReview with no work unit
         address thriveReviewAddressWoWorkUnit = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
-            reviewConfiguration
+            reviewConfiguration, address(this)
         );
 
         ThriveReview thriveReviewWithoutWorkUnit = ThriveReview(payable(thriveReviewAddressWoWorkUnit));
