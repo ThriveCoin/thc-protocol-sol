@@ -266,7 +266,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         userInvolvedInSubmission[_msgSender()][submissionId] = true;
 
 
-        // Emit event - fill data later
+        // Emit event
         emit SubmissionCreated(submissionId);
     }
 
@@ -298,7 +298,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the edited submission to the `submissions` mapping
         idToSubmission[submissionId_].submissionMetadata = submissionMetadata_;
 
-        // Emit event - fill data later
+        // Emit event
         emit SubmissionUpdated(submissionId_);
     }
 
@@ -479,6 +479,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         
         // Require that the reviews' deadline has passed
         require(block.timestamp > reviews[reviewId_].deadline, "Review deadline has not passed");
+
 
         // Fetch the review data
         uint256 submissionId = reviews[reviewId_].submissionId;
@@ -828,7 +829,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 }
             }
         }
-
 
 
         // Pay out and update the reserved funds for the submission

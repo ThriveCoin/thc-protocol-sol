@@ -136,8 +136,8 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         /// 1st submission will be rejected
         /// 2nd submission will be accepted
         /// 3rd submission will be accepted by 75%
-        /// 4th submission will be judged by judge badge
-        /// 5th submission will be rejected by 75%
+        /// 4th submission will be judged by judge badge        - Will be disputed
+        /// 5th submission will be rejected by 75%              - Will be disputed
 
         // Create first submission for user 1 - this one will be rejected
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission); // id: 0
@@ -257,16 +257,9 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
 
 
-        /////// We will write payout tests after implementing DISPUTE functionality
-        ///////////////////////
-        ////////////////////////////////////////
-
-
-
         // Create fourth submission for user 4 - this one will be judged by judge badge
         vm.prank(submitter4);
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission); // id: 3
-
 
 
         // Reviewer 3 commits to review submission 2 
@@ -349,7 +342,9 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status should be FINALIZED for submission 2");
 
 
-        ////// STILL HAVE TO FINISH SUBMISSION 4 AND 5
+        // submission 4 and 5 have to be finished
+
+
     }
 
 }
