@@ -127,9 +127,11 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
     }
 
+    ////////////////////////////////////////////////////////
+    //                 BASIC CONFIG TESTS                 //
+    ////////////////////////////////////////////////////////
 
-
-    function test01_revert_CanNotInitializeReviewContractTwice() public {
+    function test_000_revert_CanNotInitializeReviewContractTwice() public {
 
         // Try to initialize the ThriveReview contract again
         bytes4 selector = bytes4(keccak256("InvalidInitialization()"));
@@ -143,7 +145,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test02_success_ReviewContractInitializedCorrectly() public view {
+    function test_001_success_ReviewContractInitializedCorrectly() public view {
 
         // Assert storage variables are initialized properly
         assertEq(
@@ -168,7 +170,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
     }
 
-    function test02x_revert_AgreementThresholdCanNotBe50PercentOrLower() public {
+    function test_002_revert_AgreementThresholdCanNotBe50PercentOrLower() public {
 
         // Set agreement threshold to 50%
         reviewConfiguration.agreementThreshold = 5000;
@@ -190,7 +192,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
     }
 
-    function test02x_revert_CanNotInitializeIfThereIsNotEnoughFundsOnWorkerUnit() public {
+    function test_003_revert_CanNotInitializeIfThereIsNotEnoughFundsOnWorkerUnit() public {
 
         // Allow more submissions than there is funds to be paid out on worker unit
         reviewConfiguration.maximumSubmissions = 100;
@@ -206,7 +208,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
     // This test can be uncommented and run with: --via-ir flag
-    function test03_success_ReviewConfigurationVariablesCorrectlyStored()
+    function test_004_success_ReviewConfigurationVariablesCorrectlyStored()
         public
         view
     {
@@ -237,7 +239,13 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test04_revert_UserCanNotHaveMoreThanOnePendingSubmission() public {
+    ////////////////////////////////////////////////////////
+    //                 SUBMISSION TESTS                   //
+    ////////////////////////////////////////////////////////
+
+
+
+    function test_100_revert_UserCanNotHaveMoreThanOnePendingSubmission() public {
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
 
@@ -245,7 +253,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
     }
 
-    function test05_revert_UserCanNotHaveMoreThanOneAcceptedSubmission() public {
+    function test_101_revert_UserCanNotHaveMoreThanOneAcceptedSubmission() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -294,7 +302,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test06_revert_UserCanNotHaveMoreThanMaximumSubmissionsPerUser() public {
+    function test_102_revert_UserCanNotHaveMoreThanMaximumSubmissionsPerUser() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -383,7 +391,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test07_revert_UserCanNotSubmitWhenThereAreMaximumSubmissions() public {
+    function test_103_revert_UserCanNotSubmitWhenThereAreMaximumSubmissions() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -412,7 +420,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test08_revert_UserCanNotSubmitAfterSubmissionDeadline() public {
+    function test_104_revert_UserCanNotSubmitAfterSubmissionDeadline() public {
 
         // Go to time after submission deadline
         vm.warp(reviewConfiguration.submissionDeadline + 1);
@@ -422,7 +430,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
     
 
-    function test09_success_SubmissionStateIsCorrectlyStoredOnchain() public {
+    function test_105_success_SubmissionStateIsCorrectlyStoredOnchain() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -450,7 +458,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test10_success_SubmissionDataIsUpdatedOnchain() public {
+    function test_106_success_SubmissionDataIsUpdatedOnchain() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -472,7 +480,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test11_revert_FailToUpdateSubmissionAfterSubmissionDeadline() public {
+    function test_107_revert_FailToUpdateSubmissionAfterSubmissionDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -485,7 +493,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test12_revert_FailToUpdateSubmissionMadeByAnotherUser() public {
+    function test_108_revert_FailToUpdateSubmissionMadeByAnotherUser() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -497,7 +505,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test13x_revert_FailToUpdateSubmissionThatAlreadyHasReviews() public {
+    function test_109_revert_FailToUpdateSubmissionThatAlreadyHasReviews() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -512,7 +520,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.updateSubmission(submission.submissionMetadata, 0);
     }
 
-    function test13_revert_FailToUpdateSubmissionThatIsNotPending() public {
+    function test_110_revert_FailToUpdateSubmissionThatIsNotPending() public {
         
         // Create submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -557,7 +565,13 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test14_success_UserCommitsToReview() public {
+
+    ////////////////////////////////////////////////////////
+    //                    REVIEW TESTS                    //
+    ////////////////////////////////////////////////////////
+
+
+    function test_200_success_UserCommitsToReview() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -583,7 +597,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test15_revert_FailToCommitReviewToTheSameSubmissionTwice() public {
+    function test_201_revert_FailToCommitReviewToTheSameSubmissionTwice() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -595,7 +609,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
     }
 
-    function test16x_revert_FailToCommitReviewAfterReviewDeadline() public {
+    function test_202_revert_FailToCommitReviewAfterReviewDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -607,7 +621,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
     }
 
-    function test16_revert_FailToCommitReviewAfterMaximumReviewsPerSubmissionReached() public {
+    function test_203_revert_FailToCommitReviewAfterMaximumReviewsPerSubmissionReached() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -633,7 +647,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test17_revert_FailToCommitReviewToSubmissionThatIsNotPending() public {
+    function test_204_revert_FailToCommitReviewToSubmissionThatIsNotPending() public {
 
         // Create submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -678,7 +692,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test18_revert_FailToCreateReviewThatWasNotCommitted() public {
+    function test_205_revert_FailToCreateReviewThatWasNotCommitted() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -688,7 +702,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test19_revert_FailToCreateReviewForSubmissionThatIsNotPending() public {
+    function test_206_revert_FailToCreateReviewForSubmissionThatIsNotPending() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -739,7 +753,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test20_revert_FailToCreateReviewByUserWhoDidNotCommitTheSameReview() public {
+    function test_207_revert_FailToCreateReviewByUserWhoDidNotCommitTheSameReview() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -758,7 +772,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test21_revert_FailToCreateReviewAfterReviewCommitmentDeadline() public {
+    function test_208_revert_FailToCreateReviewAfterReviewCommitmentDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -774,7 +788,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test21x_revert_FailToCreateReviewAfterReviewDeadline() public {
+    function test_209_revert_FailToCreateReviewAfterReviewDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -793,7 +807,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     } 
 
 
-    function test22_revert_FailToCreateReviewWithNonAcceptedDecision() public {
+    function test_210_revert_FailToCreateReviewWithNonAcceptedDecision() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -808,7 +822,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test23_success_CreateReviewAfterCommittingToIt() public {
+    function test_211_success_CreateReviewAfterCommittingToIt() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -842,7 +856,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
     
-    function test24_success_DeletePendingReviews() public {
+    function test_212_success_DeletePendingReviews() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -900,7 +914,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
     
-    function test25_revert_FailToDeleteNonCommittedReview() public {
+    function test_213_revert_FailToDeleteNonCommittedReview() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -927,7 +941,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test26_revert_FailToDeleteNonExpiredCommittedReview() public {
+    function test_214_revert_FailToDeleteNonExpiredCommittedReview() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -950,7 +964,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
     
 
-   function testxyz_success_CorrectReviewersArePaidOutOnAcceptedSubmissionFinalization() public {
+   function test_215_success_CorrectReviewersArePaidOutOnAcceptedSubmissionFinalization() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1029,7 +1043,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
 
-    function testxyz_success_CorrectReviewersArePaidOutOnRejectedSubmissionFinalization() public {
+    function test_216_success_CorrectReviewersArePaidOutOnRejectedSubmissionFinalization() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1120,7 +1134,12 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
 
 
-    function test32_success_CreateReviewContractWithoutWorkerUnit() public {
+    ////////////////////////////////////////////////////////
+    //            REVIEW TESTS WO WORKER UNIT             //
+    ////////////////////////////////////////////////////////
+
+
+    function test_300_success_CreateReviewContractWithoutWorkerUnit() public {
 
         // Deploy ThriveReview with no work unit
         address thriveReviewAddressWoWorkUnit = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
@@ -1137,7 +1156,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
     }
 
-    function test33_success_ReviewContractShouldNotRevertWhenFinalizingSubmissionWithoutWorkUnit() public {
+    function test_301_success_ReviewContractShouldNotRevertWhenFinalizingSubmissionWithoutWorkUnit() public {
         
         // Deploy ThriveReview with no work unit
         address thriveReviewAddressWoWorkUnit = thriveReviewFactory.createReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
@@ -1180,7 +1199,12 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function testxx_success_RetrieveFundsAsOwner() public {
+    ////////////////////////////////////////////////////////
+    //     FUNDS MANAGEMENT AND JUDGING WITH BADGE        //
+    ////////////////////////////////////////////////////////
+
+
+    function test_400_success_RetrieveFundsAsOwner() public {
         uint256 balanceBefore = address(this).balance;
 
         vm.warp(reviewConfiguration.submissionDeadline + 1);
@@ -1192,14 +1216,14 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(balanceAfter, balanceBefore + REVIEW_CONTRACT_ALLOCATION, "Owner should be able to retrieve funds");
     }
 
-    function testxx_revert_FailToRetrieveFundsAsNonOwner() public {
+    function test_401_revert_FailToRetrieveFundsAsNonOwner() public {
 
         vm.prank(randomUser);
         vm.expectRevert();
         thriveReview.retrieveFundsByOwner();
     }
 
-    function testxx_success_ReachDecisionOnSubmissionAsBadgeAfterMaxReviews() public {
+    function test_402_success_ReachDecisionOnSubmissionAsBadgeAfterMaxReviews() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1265,7 +1289,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function testxy_success_CorrectReviewersArePaidOutOnBadgeSubmissionFinalization() public {
+    function test_403_success_CorrectReviewersArePaidOutOnBadgeSubmissionFinalization() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1316,7 +1340,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function testxx_success_ReachDecisionOnSubmissionAsBadgeAfterReviewDeadline() public {
+    function test_404_success_ReachDecisionOnSubmissionAsBadgeAfterReviewDeadline() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1351,7 +1375,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
     }
 
-    function testxx_revert_FailToReachDecisionOnSubmissionAsBadgeBeforeDeadlineWithoutMaxReviews() public {
+    function test_405_revert_FailToReachDecisionOnSubmissionAsBadgeBeforeDeadlineWithoutMaxReviews() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1378,7 +1402,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
     }
 
-    function testxx_revert_FailToReachDecisionOnSubmissionAsBadgeWithNoProperDecision() public {
+    function test_406_revert_FailToReachDecisionOnSubmissionAsBadgeWithNoProperDecision() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1409,7 +1433,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
     }
 
-    function testxx_revert_FailToReachDecisionAsBadgeOnNonPendingSubmission() public {
+    function test_407_revert_FailToReachDecisionAsBadgeOnNonPendingSubmission() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1451,7 +1475,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
     
-    function testxx_success_FailedDistributionManualClaim() public {
+    function test_408_success_FailedDistributionManualClaim() public {
 
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1520,7 +1544,12 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
     
-    function test000_revert_FailToRaiseDisputeOnNonFinalizedSubmission() public {
+    ////////////////////////////////////////////////////////
+    //              DISPUTE FUNCTIONALITY                 //
+    ////////////////////////////////////////////////////////
+
+
+    function test_500_revert_FailToRaiseDisputeOnNonFinalizedSubmission() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1549,7 +1578,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test001_revert_FailToRaiseDisputeAfterDisputeDeadlinePasses() public {
+    function test_501_revert_FailToRaiseDisputeAfterDisputeDeadlinePasses() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1590,7 +1619,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test0002_revert_FailToRaiseDisputeIfNotInvolvedInSubmission() public {
+    function test_502_revert_FailToRaiseDisputeIfNotInvolvedInSubmission() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1630,7 +1659,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test002_success_RaiseDisputeOnSubmission() public {
+    function test_503_success_RaiseDisputeOnSubmission() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1674,7 +1703,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test003_revert_FailToResolveDisputeOnNonDisputedSubmission() public {
+    function test_504_revert_FailToResolveDisputeOnNonDisputedSubmission() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1703,7 +1732,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test004_success_ResolveDisputeAndSuccessfullyDistributeRewards() public {
+    function test_505_success_ResolveDisputeAndSuccessfullyDistributeRewards() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1780,7 +1809,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
     
 
-    function test005_revert_FailToCancelNonDisputedSubmission() public {
+    function test_506_revert_FailToCancelNonDisputedSubmission() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1809,7 +1838,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test006_revert_FailToCancelDisputeBeforeTime() public {
+    function test_507_revert_FailToCancelDisputeBeforeTime() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1856,7 +1885,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test007_success_CancelDisputeOnSubmissionAndDistributeRewards() public {
+    function test_508_success_CancelDisputeOnSubmissionAndDistributeRewards() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1924,7 +1953,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test008_revert_FailToDistributePayoutsToNonFinalizedSubmissions() public {
+    function test_509_revert_FailToDistributePayoutsToNonFinalizedSubmissions() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -1956,7 +1985,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test009_revert_FailToDistributePayoutsToFinalizedSubmissionsBeforeDisputeDeadline() public {
+    function test_510_revert_FailToDistributePayoutsToFinalizedSubmissionsBeforeDisputeDeadline() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
@@ -2000,7 +2029,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
     }
 
 
-    function test0000_success_DistributePayoutToFinalizedNonDisputedSubmission() public {
+    function test_511_success_DistributePayoutToFinalizedNonDisputedSubmission() public {
         
         // Create a submission
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
