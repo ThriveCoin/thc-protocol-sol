@@ -47,17 +47,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     }
 
 
-    /**
-     * @dev Modifier that checks if the user is involved in the submission either as contributor or reviewer.
-     * @param submissionId_ ID of the submission.
-     */
-    modifier onlyInvolvedInSubmission(uint256 submissionId_) {
-        require(userInvolvedInSubmission[_msgSender()][submissionId_], "User is not involved in this submission");
-        _;
-    }
-
-
-
 
     /**
      * Storage variables 
@@ -682,7 +671,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @notice Function to raise a dispute on a submission when user does not agree with final decision.
      * @param submissionId_ Submission ID.
      */
-    function raiseDisputeOnSubmission(uint256 submissionId_) external onlyInvolvedInSubmission(submissionId_) {
+    function raiseDisputeOnSubmission(uint256 submissionId_) external {
 
         // Get the submission from storage
         Submission storage submission = idToSubmission[submissionId_];
@@ -695,6 +684,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Require for the time-limit on disputing for the submission to NOT have passed
         require(block.timestamp <= submission.disputeDeadline, "Dispute deadline has passed");
+
+        // Require that the user is involved in the submission
+        require(userInvolvedInSubmission[_msgSender()][submissionId_], "User is not involved in the submission");
 
 
         // Put submission in "DISPUTED" status

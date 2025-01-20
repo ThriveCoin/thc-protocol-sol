@@ -43,7 +43,7 @@ abstract contract BasicTestConfigs is Test {
             rewardAmount: 10,
             maxRewards: 100 ether,
             validationRewardAmount: 0,
-            deadline: 8 days,
+            deadline: 10 days,
             maxCompletionsPerUser: 2,
             validators: validators,
             assignedContributor: address(0),

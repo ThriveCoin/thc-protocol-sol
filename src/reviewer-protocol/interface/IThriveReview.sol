@@ -36,11 +36,11 @@ interface IThriveReview {
 
         // The maximum number of reviews that can be conducted for a submission.
         uint32 maximumReviewsPerSubmission;
-        // The time until contributor is allowed to submit their work unit submission.
 
+        // The time until contributor is allowed to submit their work unit submission.
         uint32 submissionDeadline;
 
-        // The time allowed for a reviewer to complete their review after commiting to it.
+        // The time period allowed for a reviewer to complete their review after commiting to it.
         uint32 reviewCommitmentPeriod;
 
         // Fixed period for reviews after a submission is created.

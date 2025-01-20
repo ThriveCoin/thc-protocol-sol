@@ -1518,7 +1518,533 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Assert that the user has received the funds
         assertEq(address(failedDistributionExampleContract).balance, balanceBeforeClaimingReward + reviewConfiguration.reviewerReward, "User should have received the funds");
     }
+
     
+    function test000_revert_FailToRaiseDisputeOnNonFinalizedSubmission() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Check that the submission is still pending
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
+
+        vm.expectRevert("Submission is not in 'FINALIZED' status");
+        thriveReview.raiseDisputeOnSubmission(0);
+    }
+
+
+    function test001_revert_FailToRaiseDisputeAfterDisputeDeadlinePasses() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=2;
+        thriveReview.createReview(review);
+
+        // Check that the submission is finalized
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        // Go to after dispute deadline
+        vm.warp(currentBlockTimestamp + 2 days + 1);
+
+        vm.expectRevert("Dispute deadline has passed");
+        thriveReview.raiseDisputeOnSubmission(0);
+    }
+
+
+    function test0002_revert_FailToRaiseDisputeIfNotInvolvedInSubmission() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=2;
+        thriveReview.createReview(review);
+
+
+        // Check that the submission is finalized
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        vm.expectRevert("User is not involved in the submission");
+        vm.prank(address(0x3));
+        thriveReview.raiseDisputeOnSubmission(0);
+    }
+
+
+    function test002_success_RaiseDisputeOnSubmission() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x3));
+        review.id=2;
+        thriveReview.createReview(review);
+
+        // Check that the submission is finalized
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        // Raise dispute
+        thriveReview.raiseDisputeOnSubmission(0);
+
+        // Check that the submission is disputed
+        IThriveReview.SubmissionStatus submissionStatusAfterDispute = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatusAfterDispute), uint256(IThriveReview.SubmissionStatus.DISPUTED), "Submission status is not set correctly");
+    }
+
+
+    function test003_revert_FailToResolveDisputeOnNonDisputedSubmission() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Check that the submission is still pending
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
+
+        vm.expectRevert("Submission is not in 'DISPUTED' status");
+        thriveReview.resolveDisputeOnSubmission(0, IThriveReview.Decision.ACCEPTED);
+    }
+
+
+    function test004_success_ResolveDisputeAndSuccessfullyDistributeRewards() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x3));
+        review.id=2;
+        review.decision = IThriveReview.Decision.REJECTED;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x4));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x4));
+        review.id=3;
+        review.decision = IThriveReview.Decision.ACCEPTED;
+        thriveReview.createReview(review);
+
+
+        // User 0x3 balance before dispute resolution
+        uint256 balanceAddress3BeforeDispute = address(0x3).balance;
+
+
+        // Check that the submission is finalized
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+        // Raise dispute
+        thriveReview.raiseDisputeOnSubmission(0);
+
+        // Check that the submission is disputed
+        IThriveReview.SubmissionStatus submissionStatusAfterDispute = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatusAfterDispute), uint256(IThriveReview.SubmissionStatus.DISPUTED), "Submission status is not set correctly");
+
+        // Resolve dispute
+        thriveReview.resolveDisputeOnSubmission(0, IThriveReview.Decision.REJECTED);
+
+        // Check that the submission is resolved
+        IThriveReview.SubmissionStatus submissionStatusAfterResolve = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatusAfterResolve), uint256(IThriveReview.SubmissionStatus.PAID_OUT), "Submission status is not set correctly");
+
+        // Check that the submission is rejected
+        IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.REJECTED), "Submission decision is not set correctly");
+
+        // Check address 0x3 balance after dispute resolution
+        uint256 balanceAddress3AfterDispute = address(0x3).balance;
+
+        // Check that the reviewer who made the right decision is paid out
+        assertEq(balanceAddress3AfterDispute, balanceAddress3BeforeDispute + reviewConfiguration.reviewerReward, "Reviewer balance is not set correctly");
+    }
+    
+
+    function test005_revert_FailToCancelNonDisputedSubmission() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Check that the submission is still pending
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
+
+        vm.expectRevert("Submission is not in 'DISPUTED' status");
+        thriveReview.cancelDisputeOnSubmission(0);
+    }
+
+
+    function test006_revert_FailToCancelDisputeBeforeTime() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x3));
+        review.id=2;
+        thriveReview.createReview(review);
+
+
+        // Raise dispute
+        thriveReview.raiseDisputeOnSubmission(0);
+
+        // Check that the submission is disputed
+        IThriveReview.SubmissionStatus submissionStatusAfterDispute = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatusAfterDispute), uint256(IThriveReview.SubmissionStatus.DISPUTED), "Submission status is not set correctly");
+
+        // Go to before dispute deadline
+        vm.warp(currentBlockTimestamp + 3 days - 1);
+
+        vm.expectRevert("Dispute deadline has not passed");
+        thriveReview.cancelDisputeOnSubmission(0);
+    }
+
+
+    function test007_success_CancelDisputeOnSubmissionAndDistributeRewards() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x2));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x2));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x3));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x3));
+        review.id=2;
+        thriveReview.createReview(review);
+
+        
+        // Raise dispute
+        thriveReview.raiseDisputeOnSubmission(0);
+
+        // Check that the submission is disputed
+        IThriveReview.SubmissionStatus submissionStatusAfterDispute = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatusAfterDispute), uint256(IThriveReview.SubmissionStatus.DISPUTED), "Submission status is not set correctly");
+
+
+        // Go to after dispute time + buffer
+        vm.warp(currentBlockTimestamp + 3 days + 1);
+
+
+        // User 0x3 balance before dispute resolution
+        uint256 balanceAddress3BeforeDispute = address(0x3).balance;
+
+        // Cancel dispute
+        thriveReview.cancelDisputeOnSubmission(0);
+
+        // Check that the submission is resolved
+        IThriveReview.SubmissionStatus submissionStatusAfterResolve = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatusAfterResolve), uint256(IThriveReview.SubmissionStatus.PAID_OUT), "Submission status is not set correctly");
+
+        // Check that the submission is accepted
+        IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission decision is not set correctly");
+
+
+        // Check address 0x3 balance after dispute resolution
+        uint256 balanceAddress3AfterDispute = address(0x3).balance;
+
+        // Check that the reviewer who made the right decision is paid out
+        assertEq(balanceAddress3AfterDispute, balanceAddress3BeforeDispute + reviewConfiguration.reviewerReward, "Reviewer balance is not set correctly");
+
+    }
+
+
+    function test008_revert_FailToDistributePayoutsToNonFinalizedSubmissions() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+        // Check that the submission is still pending
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status is not set correctly");
+
+        // Go to after dispute deadline
+        vm.expectRevert("Submission is not in 'FINALIZED' status");
+        uint256[] memory submissionIds = new uint256[](1);
+        submissionIds[0] = 0;
+        thriveReview.distributePayoutsForNonDisputedSubmissions(submissionIds);
+    }
+
+
+    function test009_revert_FailToDistributePayoutsToFinalizedSubmissionsBeforeDisputeDeadline() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+
+
+        // Go to right after the review deadline
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
+
+        // Finalize this submission as a judge badge
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
+
+        // Check that the submission is still pending because there is no consensus on decision
+        IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
+        IThriveReview.SubmissionStatus submissionStatus = thriveReview.getSubmissionStatus(0);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Submission status is not set correctly");
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status is not set correctly");
+
+
+        // Go to before dispute deadline
+        vm.warp(block.timestamp + 2 days - 1);
+
+
+        vm.expectRevert("Dispute deadline has not passed");
+        thriveReview.distributePayoutsForNonDisputedSubmission(0);
+    }
+
+
+    function test0000_success_DistributePayoutToFinalizedNonDisputedSubmission() public {
+        
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Commit to review
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        thriveReview.createReview(review);
+
+        // Commit to review
+        vm.prank(address(0x1));
+        thriveReview.commitToReview(0);
+
+        // Create a review
+        vm.prank(address(0x1));
+        review.id=1;
+        thriveReview.createReview(review);
+
+
+        // Balance of address 0x1 before getting reward
+        uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
+
+
+        // Go to right after the review deadline
+        vm.warp(currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1);
+
+        // Finalize this submission as a judge badge
+        thriveReview.reachDecisionOnSubmissionAsBadge(0, IThriveReview.Decision.ACCEPTED);
+
+        // Go to after dispute deadline
+        vm.warp(block.timestamp + 2 days + 1);
+
+        // Distribute rewards
+        thriveReview.distributePayoutsForNonDisputedSubmission(0);
+
+        // Check payout to correct reviewers
+        uint256 balanceAddress1AfterClaimingReward = address(0x1).balance;
+
+        // Make sure that the reviewer rewards are distributed correctly
+        assertEq(balanceAddress1AfterClaimingReward, balanceAddress1BeforeClaimingReward + reviewConfiguration.reviewerReward, "Reviewer reward is not claimed correctly");
+
+    }
+
 
     receive() external payable {}
 
