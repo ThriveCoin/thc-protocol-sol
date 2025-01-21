@@ -677,8 +677,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Get the submission from storage
         Submission storage submission = idToSubmission[submissionId_];
 
-        // @dev: Do we make sure the submitter raises dispute on rejected submissions and reviewers whose review decision does not match the final decision?
-        // Discuss w Mijo first.
+        // NICE-TO-HAVE: We make sure the submitter can only raise dispute on rejected submissions and reviewers whose review decision does not match the final decision?
         
         // Require that the submission is in "FINALIZED" status
         require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
