@@ -48,7 +48,26 @@ contract ThriveReviewFactory is
      * @notice Emitted when a new Review contract is created.
      * @param reviewContract Address of the review contract.
      */
-    event ReviewContractCreated(address reviewContract);
+    event ReviewContractCreated(address indexed reviewContract);
+
+    /**
+     * @notice Emitted when a new WorkUnit and corresponding Review contract are created.
+     * @param reviewContract Address of the newly created review contract.
+     * @param workUnitContract Address of the newly created work unit contract.
+     */
+    event WorkUnitAndReviewCreated(address indexed reviewContract, address indexed workUnitContract);
+
+    /**
+     * @notice Emitted when the addresses used by this factory are updated.
+     * @param newThriveWorkerUnitFactory Address of the new ThriveWorkerUnitFactory contract.
+     * @param newThriveReviewContractImplementation Address of the new ThriveReview contract implementation.
+     * @param newBadgeQueryContractAddress Address of the new BadgeQuery contract.
+     */
+    event AddressesUpdated(
+        address indexed newThriveWorkerUnitFactory,
+        address indexed newThriveReviewContractImplementation,
+        address indexed newBadgeQueryContractAddress
+    );
 
 
     /**
@@ -77,10 +96,6 @@ contract ThriveReviewFactory is
         // Initialize the contract with the provided owner
         __Ownable_init(owner_);
         __UUPSUpgradeable_init();
-
-
-        /// EVENTS
-        //////////////
     }
 
 
@@ -105,9 +120,12 @@ contract ThriveReviewFactory is
         // Update the address of the BadgeQuery contract
         badgeQueryContractAddress = newBadgeQueryContractAddress_;
 
-
-        // ADD EVENTS LATER
-        ///////////////////
+        // Emit event for addresses update
+        emit AddressesUpdated(
+            newThriveWorkerUnitFactory_,
+            newThriveReviewContractImplementation_,
+            newBadgeQueryContractAddress_
+        );
     }
 
 
@@ -117,7 +135,7 @@ contract ThriveReviewFactory is
      * @param workUnitArgs_ Struct containing args for properly initializing WorkUnit contract.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
      * @param owner_ Owner address of the newly created ThriveReview contract.
-     * @return Address of the newly created ThriveReview contract.
+     * @return Address of the newly created ThriveReview contract and the newly created WorkUnit contract.
      */
     function createWorkUnitAndReviewContract(
         IThriveWorkerUnitFactory.WorkUnitArgs memory workUnitArgs_,
@@ -126,13 +144,17 @@ contract ThriveReviewFactory is
     ) external payable returns (address, address) {
 
         // Require enough funds are sent to payout the reward for reviewers
-        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
-
+        require(
+            msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation,
+            "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent"
+        );
 
         // Require reviewersRewardTotalAllocation amount is enough to cover all reviewers potentially
         require(
             reviewConfiguration_.reviewerRewardsTotalAllocation >=
-                reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
+            reviewConfiguration_.reviewerReward *
+            reviewConfiguration_.maximumReviewsPerSubmission *
+            reviewConfiguration_.maximumSubmissions,
             "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
         );
 
@@ -164,12 +186,10 @@ contract ThriveReviewFactory is
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
         (bool success, ) = thriveReviewContract.call{value: reviewConfiguration_.reviewerRewardsTotalAllocation}("");
-        require(success);
+        require(success, "ThriveReviewFactory: Transfer of reviewer rewards failed");
 
-
-
-        // ADD EVENTS LATER
-        ///////////////////
+        // Emit event for creation of WorkUnit and Review
+        emit WorkUnitAndReviewCreated(thriveReviewContract, workUnitContract);
 
         return (thriveReviewContract, workUnitContract);
     }
@@ -177,20 +197,26 @@ contract ThriveReviewFactory is
     /**
      * @notice Creates a new ThriveReview contract without a WorkerUnit connection.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
+     * @param owner_ Owner address of the newly created ThriveReview contract.
+     * @return Address of the newly created ThriveReview contract.
      */
     function createReviewContract(
         IThriveReview.ReviewConfiguration memory reviewConfiguration_,
         address owner_
     ) external payable returns (address) {
 
-        // The amount of THRIVE sent must be equal or greater to the reward amount for reviewers
-        require(msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation, "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent");
-
+        // The amount of funds sent must be equal or greater to the reward amount for reviewers
+        require(
+            msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation,
+            "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent"
+        );
 
         // Require reviewersRewardTotalAllocation amount is enough to cover potentially all reviewers
         require(
             reviewConfiguration_.reviewerRewardsTotalAllocation >=
-                reviewConfiguration_.reviewerReward * reviewConfiguration_.maximumReviewsPerSubmission * reviewConfiguration_.maximumSubmissions,
+            reviewConfiguration_.reviewerReward *
+            reviewConfiguration_.maximumReviewsPerSubmission *
+            reviewConfiguration_.maximumSubmissions,
             "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
         );
 
@@ -212,12 +238,10 @@ contract ThriveReviewFactory is
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
         (bool success, ) = thriveReviewContract.call{value: msg.value}("");
-        require(success);
-        
+        require(success, "ThriveReviewFactory: Transfer of reviewer rewards failed");
 
-
-        // ADD EVENTS LATER ON
-        ///////////////////////
+        // Emit event for review contract creation
+        emit ReviewContractCreated(thriveReviewContract);
 
         return thriveReviewContract;
     }
@@ -232,4 +256,5 @@ contract ThriveReviewFactory is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
 }
