@@ -141,14 +141,86 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
 
     // Event emitted when a submission is created
-    event SubmissionCreated(uint256 submissionId);
+    event SubmissionCreated(uint256 indexed submissionId);
 
     // Event emitted when a submission is updated
-    event SubmissionUpdated(uint256 submissionId);
+    event SubmissionUpdated(uint256 indexed submissionId);
 
     // Event emitted when a review is created
-    event ReviewCreated(uint256 reviewId);
+    event ReviewCreated(uint256 indexed reviewId);
 
+    // Event emitted when the ThriveReview contract is initialized
+    event ThriveReviewInitialized(
+        address indexed thriveReviewFactoryAddress,
+        address indexed badgeQueryContractAddress,
+        address indexed owner
+    );
+
+    // Event emitted when a review is committed
+    event ReviewCommitted(
+        uint256 indexed reviewId,
+        uint256 indexed submissionId,
+        address indexed reviewer
+    );
+
+    // Event emitted when a pending review is deleted
+    event PendingReviewDeleted(
+        uint256 indexed reviewId,
+        address indexed reviewer,
+        uint256 indexed submissionId
+    );
+
+    // Event emitted when a decision is reached on a submission
+    event SubmissionDecisionReached(uint256 indexed submissionId, Decision decision);
+
+    // Event emitted when a decision is reached on a submission by a badge holder
+    event SubmissionDecisionReachedAsBadge(
+        uint256 indexed submissionId,
+        Decision decision,
+        address indexed badgeHolder
+    );
+
+    // Event emitted when failed distribution funds are claimed
+    event FailedDistributionFundsClaimed(address indexed claimer, uint256 amount);
+
+    // Event emitted when funds are retrieved by the owner
+    event FundsRetrievedByOwner(address indexed owner, uint256 amount);
+
+    // Event emitted when a submission is disputed
+    event SubmissionDisputed(uint256 indexed submissionId);
+
+    // Event emitted when a dispute on a submission is resolved
+    event SubmissionDisputeResolved(uint256 indexed submissionId, Decision decision);
+
+    // Event emitted when a dispute on a submission is canceled
+    event SubmissionDisputeCanceled(uint256 indexed submissionId);
+
+    // Event emitted when payouts for a non-disputed submission are distributed
+    event NonDisputedSubmissionPayoutDistributed(uint256 indexed submissionId);
+
+    // Event emitted when submitter reserved funds are paid out
+    event SubmitterReservedFundsPaidOut(
+        uint256 indexed submissionId,
+        address indexed contributor,
+        uint256 amount,
+        Decision decision
+    );
+
+    // Event emitted when a reviewer payout is successful
+    event ReviewerPayoutSuccessful(
+        uint256 indexed submissionId,
+        uint256 indexed reviewId,
+        address indexed reviewer,
+        uint256 amount
+    );
+
+    // Event emitted when a reviewer payout fails
+    event ReviewerPayoutFailed(
+        uint256 indexed submissionId,
+        uint256 indexed reviewId,
+        address indexed reviewer,
+        uint256 amount
+    );
 
 
     // Scaler value for calculating ratios of accepted/rejected reviews
@@ -208,8 +280,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         submitterReservedFunds = reviewConfiguration.reviewerReward * reviewConfiguration.maximumReviewsPerSubmission;
 
 
-        /// EVENT
-        ////////////////
+        // Emit event
+        emit ThriveReviewInitialized(thriveReviewFactoryAddress_, badgeQueryContractAddress_, owner_);
     }
 
 
@@ -376,8 +448,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         committedReviewsPerSubmissionCounter[submissionId_]++;
 
 
-        ///// EVENT
-        //////////////
+        // Emit event
+        emit ReviewCommitted(reviewId, submissionId_, _msgSender());
     }
 
 
@@ -458,13 +530,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Reach decision on submission automatically IF conditions are met
         _reachDecisionOnSubmission(committedReview.submissionId);
 
-
-
-        //
-        ////// EVENT
-        ////////////////
-
-
+        // Emit event
         emit ReviewCreated(reviewId_);
 
     }
@@ -510,8 +576,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         delete reviews[reviewId_];
 
 
-        ////// EVENT
-
+        // Emit event
+        emit PendingReviewDeleted(reviewId_, reviewer, submissionId);
     }
 
 
@@ -570,9 +636,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             }
         }
 
-
-        /////// EVENT
-        //////////////
+        // Emit event
+        emit SubmissionDecisionReached(submissionId_, submission.decision);
     }
 
 
@@ -612,10 +677,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Start dispute period
         submission.disputeDeadline = uint64(block.timestamp + 2 days);
 
-
-
-        ////////
-        //////// EVENT
+        // Emit event
+        emit SubmissionDecisionReachedAsBadge(submissionId_, decision_, _msgSender());
     }
 
 
@@ -646,9 +709,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         (bool success, ) = _msgSender().call{value: amount}("");
         require(success);
 
-
-
-        // EMIT EVENT
+        // Emit event
+        emit FailedDistributionFundsClaimed(_msgSender(), amount);
     }
 
 
@@ -673,8 +735,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         (bool success, ) = payable(_msgSender()).call{value: leftAfterPayouts}("");
         require(success);
 
-
-        //// EVENT
+        // Emit event
+        emit FundsRetrievedByOwner(_msgSender(), leftAfterPayouts);
     }
 
 
@@ -710,8 +772,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Put submission in "DISPUTED" status
         submission.status = SubmissionStatus.DISPUTED;
 
-
-        // EMIT EVENT
+        // Emit event
+        emit SubmissionDisputed(submissionId_);
     }
 
 
@@ -735,8 +797,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Pay out reviewers and submitter
         _distributeRewardsForSubmission(submissionId_);
 
-
-        //// EVENT
+        // Emit event
+        emit SubmissionDisputeResolved(submissionId_, decision_);
     }
 
     
@@ -759,8 +821,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Pay out reviewers and submitter
         _distributeRewardsForSubmission(submissionId_);
 
-
-        //// EVENT
+        // Emit event
+        emit SubmissionDisputeCanceled(submissionId_);
     }
 
 
@@ -796,8 +858,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Pay out reviewers and submitter
         _distributeRewardsForSubmission(submissionId_);
 
-
-        //////// EVENT
+        // Emit event
+        emit NonDisputedSubmissionPayoutDistributed(submissionId_);
     }
 
 
@@ -809,7 +871,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-     * @notice Distributes rewards to correct reviewers and submitter when the submission is finalized.
+     * @notice Distributes rewards to correct reviewers and submitter if submission is accepted.
      * @param submissionId_ Submission ID.
      */
     function _distributeRewardsForSubmission(uint256 submissionId_) internal {
@@ -843,6 +905,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 if (!success) {
                     failedDistributionAmounts[review.reviewer] += reviewConfiguration.reviewerReward;
                     failedDistributionTotalAmount += reviewConfiguration.reviewerReward;
+
+                    // Emit event for failed payout
+                    emit ReviewerPayoutFailed(submissionId_, review.id, review.reviewer, reviewConfiguration.reviewerReward);
+                } else {
+                    // Emit event for successful payout
+                    emit ReviewerPayoutSuccessful(submissionId_, review.id, review.reviewer, reviewConfiguration.reviewerReward);
                 }
             }
         }
@@ -859,10 +927,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             IThriveWorkerUnit(workerUnitAddress).confirm(submission.contributor, submission.submissionMetadata);
         }
 
-
-
-
-        ///// EVENTS
     }
 
 
@@ -895,8 +959,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 failedDistributionTotalAmount += submitterReservedFunds;
             }
 
+            emit SubmitterReservedFundsPaidOut(submissionId_, submission.contributor, submitterReservedFunds, submission.decision);
 
-            // Check if the decision is REJECTED
+        // Check if the decision is REJECTED
         } else if (submission.decision == Decision.REJECTED) {
 
             // Refund submitter funds that were reserved for reviewers who were incorrect in their reviews
@@ -912,6 +977,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 failedDistributionTotalAmount += remainingAmountToPayout;
             }
 
+            emit SubmitterReservedFundsPaidOut(submissionId_, submission.contributor, remainingAmountToPayout, submission.decision);
         }
 
     }
