@@ -24,17 +24,29 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
 
     /**
-     * @dev Modifier that checks if the user has the required badges.
-     * @param badges Array of badges that the user must have.
+     * @dev Modifier that checks if the user has at least one badge from the provided array.
+     * @param badges Array of badges to check.
      */
-    modifier onlyUserWithBadges(bytes32[] memory badges) {
-        for (uint256 i = 0; i < badges.length; i++) {
+    modifier onlyUserWithAtLeastOneBadge(bytes32[] memory badges) {
+        bool hasAtLeastOneBadge = false;
 
-            // Require that user has the required badge
-            require(IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i]), "User does not have required badge");
+        for (uint256 i = 0; i < badges.length; i++) {
+            // Check if the user has the badge
+            if (IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i])) {
+                hasAtLeastOneBadge = true;
+                break; // Exit loop early if at least one badge is found
+            }
         }
+
+        // If there are no badges present - we assume there is no auth for function that is called
+        if (badges.length == 0) {
+            hasAtLeastOneBadge = true;
+        }
+
+        require(hasAtLeastOneBadge, "User must have at least one required badge");
         _;
     }
+
 
 
     /**
@@ -213,7 +225,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
     function createSubmission(
         Submission calldata submission_
-    ) payable external onlyUserWithBadges(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
+    ) payable external onlyUserWithAtLeastOneBadge(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
 
         // Require that the user does not have a `PENDING` submission
         require(!userHasPendingSubmission(_msgSender()), "User has a pending submission");
@@ -280,7 +292,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         string calldata submissionMetadata_,
         uint256 submissionId_
     ) external 
-        onlyUserWithBadges(reviewConfiguration.submitterBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.submitterBadges) 
         submissionPending(submissionId_)
     {
 
@@ -316,7 +328,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ ID of the submission.
      */
     function commitToReview(uint256 submissionId_) external 
-        onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.reviewerBadges) 
         submissionPending(submissionId_)
     {
 
@@ -374,7 +386,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     function createReview(
         Review calldata review_
     ) external
-        onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.reviewerBadges) 
     {
 
         // Fetch the committed review from storage and copy to memory
@@ -567,7 +579,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param decision_ Decision on the submission.
      */
     function reachDecisionOnSubmissionAsBadge(uint256 submissionId_, Decision decision_) external 
-        onlyUserWithBadges(reviewConfiguration.judgeBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.judgeBadges) 
         submissionPending(submissionId_)
     {
 
@@ -702,7 +714,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
      */
-    function resolveDisputeOnSubmission(uint256 submissionId_, Decision decision_) external onlyUserWithBadges(reviewConfiguration.disputeResolverBadges) {
+    function resolveDisputeOnSubmission(uint256 submissionId_, Decision decision_) external onlyUserWithAtLeastOneBadge(reviewConfiguration.disputeResolverBadges) {
 
         // Fetch submission from storage
         Submission storage submission = idToSubmission[submissionId_];
