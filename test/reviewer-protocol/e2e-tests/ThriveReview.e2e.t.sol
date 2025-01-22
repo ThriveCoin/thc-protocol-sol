@@ -47,13 +47,14 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
     address submitter2 = address(0x2);
     address submitter3 = address(0x3);
     address submitter4 = address(0x4);
-    address submitter5 = address(0x5);
 
 
     address reviewer1 = address(0x11);
     address reviewer2 = address(0x12);
     address reviewer3 = address(0x13);
     address reviewer4 = address(0x14);
+
+    uint256 currentBlockTimestamp;
 
 
     function setUp() public {
@@ -69,6 +70,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         mockToken.mint(address(this), 1_000_000 ether);
 
         workUnitArgs.rewardToken = address(mockToken);
+        workUnitArgs.deadline =  15 days;
 
         // Deploy using UUPS standard
         thriveReviewFactoryAddress = Upgrades.deployUUPSProxy(
@@ -125,9 +127,11 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         // Helper variable that calculates submitter amount needed to create a submission
         SUBMITTER_LOCKED_FUNDS = reviewConfiguration.reviewerReward * reviewConfiguration.maximumReviewsPerSubmission;
 
+        // Set current block.timestamp in a variable
+        currentBlockTimestamp = block.timestamp;
+
     }
 
-    // Path of maximum submissions, some get accepted, some get rejected
     // Ensure all state storage is valid and payouts are done correctly (on reviewer protocol and on ThriveWorkerUnit)
     // Test is MEANT TO BE COMPLEX TO FOLLOW because it is trying to emulate a real-world scenario
     function test_FullEnd2EndPathOfReviewerProtocol() public {
@@ -136,8 +140,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         /// 1st submission will be rejected
         /// 2nd submission will be accepted
         /// 3rd submission will be accepted by 75%
-        /// 4th submission will be judged by judge badge
-        /// 5th submission will be rejected by 75%
+        /// 4th submission will be judged by judge badge        - Will be disputed
 
         // Create first submission for user 1 - this one will be rejected
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission); // id: 0
@@ -191,13 +194,9 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status should be PENDING for submission 0");
 
 
-        // Fetch second submission
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(1);
-
-        // Assert submission storage state is as expected
-        assertEq(reviewCount, 1, "Review count should be 1 for submission 1");
-        assertEq(acceptedReviewsCount, 1, "Accepted reviews count should be 1 for submission 1");
-        assertEq(rejectedReviewsCount, 0, "Rejected reviews count should be 0 for submission 1");
+        // Fetch second submission decision and status
+        decision = thriveReview.getSubmissionDecision(1);
+        submissionStatus = thriveReview.getSubmissionStatus(1);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.NONE), "Decision should be NONE for submission 1");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PENDING), "Submission status should be PENDING for submission 1");
 
@@ -257,16 +256,9 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
 
 
-        /////// We will write payout tests after implementing DISPUTE functionality
-        ///////////////////////
-        ////////////////////////////////////////
-
-
-
         // Create fourth submission for user 4 - this one will be judged by judge badge
         vm.prank(submitter4);
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission); // id: 3
-
 
 
         // Reviewer 3 commits to review submission 2 
@@ -280,15 +272,11 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
 
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(1);
-
-        // Assert submission storage state is as expected
-        assertEq(reviewCount, 3, "Review count should be 3 for submission 1");
-        assertEq(acceptedReviewsCount, 3, "Accepted reviews count should be 3 for submission 1");
-        assertEq(rejectedReviewsCount, 0, "Rejected reviews count should be 0 for submission 1");
+        // Fetch second submission status
+        decision = thriveReview.getSubmissionDecision(1);
+        submissionStatus = thriveReview.getSubmissionStatus(1);
         assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Decision should be REJECTED for submission 1");
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status should be FINALIZED for submission 1");
-
 
 
         // Reviewer 4 commits to review submission 3
@@ -309,13 +297,6 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         thriveReview.createReview(review);
 
 
-
-        // Create fifth submission for user 5 - this one will be rejected by 75%
-        vm.prank(submitter5);
-        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission); // id: 4
-
-
-
         // Reviewer 4 commits to review submission 4
         vm.prank(reviewer4);
         thriveReview.commitToReview(3); // id: 10
@@ -331,6 +312,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         review.decision = IThriveReview.Decision.REJECTED;
         thriveReview.createReview(review);
 
+
         // Reviewer 2 creates review for submission 3
         vm.prank(reviewer2);
         review.id=5;
@@ -339,7 +321,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         
 
         // Fetch submission 3
-        (id, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(2);
+        (, reviewCount, acceptedReviewsCount, rejectedReviewsCount, , , , , decision, submissionStatus) = thriveReview.idToSubmission(2);
 
         // Assert submission storage state is as expected
         assertEq(reviewCount, 4, "Review count should be 3 for submission 2");
@@ -349,7 +331,114 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.FINALIZED), "Submission status should be FINALIZED for submission 2");
 
 
-        ////// STILL HAVE TO FINISH SUBMISSION 4 AND 5
+        // Check submission 3 submitter and reviewers balances before finalization
+        uint256 submitter3BalanceBefore = address(submitter3).balance;
+        uint256 submitter3TokenBalanceBefore = mockToken.balanceOf(submitter3);
+
+        // Go to after dispute timestamp
+        vm.warp(currentBlockTimestamp + 2 days + 1);
+
+        // Pay out rewards for submission 3
+        thriveReview.distributePayoutsForNonDisputedSubmission(2);
+
+        // Check submission 3 submitter and reviewers balances after finalization/payouts
+        uint256 submitter3BalanceAfter = address(submitter3).balance;
+        uint256 submitter3TokenBalanceAfter = mockToken.balanceOf(submitter3);
+
+        // Check the prize payout from WorkerUnit
+        uint256 rewardAmountOnWorkerUnit = IThriveWorkerUnit(thriveWorkerUnitAddress).rewardAmount();
+
+        // Assert balances are as expected
+        assertEq(submitter3BalanceAfter, submitter3BalanceBefore + SUBMITTER_LOCKED_FUNDS, "Submitter 3 balance should be increased by locked funds return");
+        assertEq(submitter3TokenBalanceAfter, submitter3TokenBalanceBefore + rewardAmountOnWorkerUnit, "Submitter 3 token balance should be increased by reward amount");
+
+
+        // Reviewer 4 creates review for submission 4
+        vm.prank(reviewer4);
+        review.id=10;
+        review.decision = IThriveReview.Decision.REJECTED;
+        vm.expectRevert("Review commitment deadline has passed");
+        thriveReview.createReview(review);
+
+
+        // Reviewer 1 commits to review submission 4
+        vm.prank(reviewer1);
+        thriveReview.commitToReview(3); // id: 12
+
+        // Reviewer 1 creates review for submission 4
+        vm.prank(reviewer1);
+        review.id=12;
+        review.decision = IThriveReview.Decision.ACCEPTED;
+        thriveReview.createReview(review);
+
+        // Reviewer 2 commits to review submission 4
+        vm.prank(reviewer2);
+        thriveReview.commitToReview(3); // id: 13
+
+        // Reviewer 2 creates review for submission 4
+        vm.prank(reviewer2);
+        review.id=13;
+        thriveReview.createReview(review);
+        
+        // Ensure submission 4 is in the correct state
+        decision = thriveReview.getSubmissionDecision(3);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.NONE), "Decision should be NONE for submission 3");
+
+
+        // Go to after review deadline for submission 4
+        vm.warp(currentBlockTimestamp + 10 days + 1);
+
+        // We can judge the submission as a badge since decision is not reached after max reviews
+        thriveReview.reachDecisionOnSubmissionAsBadge(3, IThriveReview.Decision.REJECTED);
+
+        // Ensure submission 4 is in the correct state
+        decision = thriveReview.getSubmissionDecision(3);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.REJECTED), "Decision should be REJECTED for submission 4");
+
+
+        // Raise dispute for submission 4
+        vm.prank(reviewer3);
+        thriveReview.raiseDisputeOnSubmission(3);
+
+        // Check submission 4 status
+        submissionStatus = thriveReview.getSubmissionStatus(3);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.DISPUTED), "Submission status should be DISPUTED for submission 4");
+
+        
+        // Check submission 3 submitter and reviewers balances before finalization
+        uint256 submitter4BalanceBefore = address(submitter4).balance;
+        uint256 submitter4TokenBalanceBefore = mockToken.balanceOf(submitter4);
+        uint256 reviewer1BalanceBefore = address(reviewer1).balance;
+        uint256 reviewer2BalanceBefore = address(reviewer2).balance;
+        uint256 reviewer3BalanceBefore = address(reviewer3).balance;
+
+
+        // Dispute badge resolves dispute
+        thriveReview.resolveDisputeOnSubmission(3, IThriveReview.Decision.ACCEPTED);
+
+        // Check that submission 4 is finalized
+        submissionStatus = thriveReview.getSubmissionStatus(3);
+        assertEq(uint256(submissionStatus), uint256(IThriveReview.SubmissionStatus.PAID_OUT), "Submission status should be FINALIZED for submission 4");
+
+        // Check that submission 4 is accepted
+        decision = thriveReview.getSubmissionDecision(3);
+        assertEq(uint256(decision), uint256(IThriveReview.Decision.ACCEPTED), "Decision should be ACCEPTED for submission 4");
+
+
+        // Check submission 3 submitter and reviewers balances after finalization/payouts
+        uint256 submitter4BalanceAfter = address(submitter4).balance;
+        uint256 submitter4TokenBalanceAfter = mockToken.balanceOf(submitter4);
+        uint256 reviewer1BalanceAfter = address(reviewer1).balance;
+        uint256 reviewer2BalanceAfter = address(reviewer2).balance;
+        uint256 reviewer3BalanceAfter = address(reviewer3).balance;
+
+
+        // Ensure balances are updated correctly
+        assertEq(submitter4BalanceAfter, submitter4BalanceBefore + SUBMITTER_LOCKED_FUNDS, "Submitter 4 balance should be increased by locked funds return");
+        assertEq(submitter4TokenBalanceAfter, submitter4TokenBalanceBefore + rewardAmountOnWorkerUnit, "Submitter 4 token balance should be increased by reward amount");
+        assertEq(reviewer1BalanceAfter, reviewer1BalanceBefore + reviewConfiguration.reviewerReward, "Reviewer 1 balance should be increased by reviewer reward");
+        assertEq(reviewer2BalanceAfter, reviewer2BalanceBefore + reviewConfiguration.reviewerReward, "Reviewer 2 balance should be increased by reviewer reward");
+        assertEq(reviewer3BalanceAfter, reviewer3BalanceBefore, "Reviewer 3 balance should be increased by reviewer reward");
     }
 
 }

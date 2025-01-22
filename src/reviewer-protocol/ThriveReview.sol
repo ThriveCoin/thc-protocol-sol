@@ -24,17 +24,29 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
 
     /**
-     * @dev Modifier that checks if the user has the required badges.
-     * @param badges Array of badges that the user must have.
+     * @dev Modifier that checks if the user has at least one badge from the provided array.
+     * @param badges Array of badges to check.
      */
-    modifier onlyUserWithBadges(bytes32[] memory badges) {
-        for (uint256 i = 0; i < badges.length; i++) {
+    modifier onlyUserWithAtLeastOneBadge(bytes32[] memory badges) {
+        bool hasAtLeastOneBadge = false;
 
-            // Require that user has the required badge
-            require(IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i]), "User does not have required badge");
+        for (uint256 i = 0; i < badges.length; i++) {
+            // Check if the user has the badge
+            if (IBadgeQuery(badgeQueryContractAddress).hasBadge(_msgSender(), badges[i])) {
+                hasAtLeastOneBadge = true;
+                break; // Exit loop early if at least one badge is found
+            }
         }
+
+        // If there are no badges present - we assume there is no auth for function that is called
+        if (badges.length == 0) {
+            hasAtLeastOneBadge = true;
+        }
+
+        require(hasAtLeastOneBadge, "User must have at least one required badge");
         _;
     }
+
 
 
     /**
@@ -45,17 +57,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(idToSubmission[submissionId_].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
         _;
     }
-
-
-    /**
-     * @dev Modifier that checks if the user is involved in the submission either as contributor or reviewer.
-     * @param submissionId_ ID of the submission.
-     */
-    modifier onlyInvolvedInSubmission(uint256 submissionId_) {
-        require(userInvolvedInSubmission[_msgSender()][submissionId_], "User is not involved in this submission");
-        _;
-    }
-
 
 
 
@@ -296,7 +297,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      */
     function createSubmission(
         Submission calldata submission_
-    ) payable external onlyUserWithBadges(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
+    ) payable external onlyUserWithAtLeastOneBadge(reviewConfiguration.submitterBadges) returns (uint256 submissionId) {
 
         // Require that the user does not have a `PENDING` submission
         require(!userHasPendingSubmission(_msgSender()), "User has a pending submission");
@@ -349,7 +350,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         userInvolvedInSubmission[_msgSender()][submissionId] = true;
 
 
-        // Emit event - fill data later
+        // Emit event
         emit SubmissionCreated(submissionId);
     }
 
@@ -363,7 +364,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         string calldata submissionMetadata_,
         uint256 submissionId_
     ) external 
-        onlyUserWithBadges(reviewConfiguration.submitterBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.submitterBadges) 
         submissionPending(submissionId_)
     {
 
@@ -381,7 +382,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Save the edited submission to the `submissions` mapping
         idToSubmission[submissionId_].submissionMetadata = submissionMetadata_;
 
-        // Emit event - fill data later
+        // Emit event
         emit SubmissionUpdated(submissionId_);
     }
 
@@ -399,7 +400,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ ID of the submission.
      */
     function commitToReview(uint256 submissionId_) external 
-        onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.reviewerBadges) 
         submissionPending(submissionId_)
     {
 
@@ -457,7 +458,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     function createReview(
         Review calldata review_
     ) external
-        onlyUserWithBadges(reviewConfiguration.reviewerBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.reviewerBadges) 
     {
 
         // Fetch the committed review from storage and copy to memory
@@ -557,6 +558,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require that the reviews' deadline has passed
         require(block.timestamp > reviews[reviewId_].deadline, "Review deadline has not passed");
 
+
         // Fetch the review data
         uint256 submissionId = reviews[reviewId_].submissionId;
         address reviewer = reviews[reviewId_].reviewer;
@@ -574,6 +576,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Emit event
         emit PendingReviewDeleted(reviewId_, reviewer, submissionId);
     }
+
+
+    ////////////////////////////////////////////////////////////////////
+    //                 SUBMISSION DECISION FUNCTIONS                  //
+    ////////////////////////////////////////////////////////////////////
 
 
 
@@ -637,7 +644,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param decision_ Decision on the submission.
      */
     function reachDecisionOnSubmissionAsBadge(uint256 submissionId_, Decision decision_) external 
-        onlyUserWithBadges(reviewConfiguration.judgeBadges) 
+        onlyUserWithAtLeastOneBadge(reviewConfiguration.judgeBadges) 
         submissionPending(submissionId_)
     {
 
@@ -671,6 +678,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         emit SubmissionDecisionReachedAsBadge(submissionId_, decision_, _msgSender());
     }
 
+
+    ////////////////////////////////////////////////////////////////////
+    //                 FUNDS MANAGEMENT FUNCTIONS                     //
+    ////////////////////////////////////////////////////////////////////
 
 
     /**
@@ -735,19 +746,21 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @notice Function to raise a dispute on a submission when user does not agree with final decision.
      * @param submissionId_ Submission ID.
      */
-    function raiseDisputeOnSubmission(uint256 submissionId_) external onlyInvolvedInSubmission(submissionId_) {
+    function raiseDisputeOnSubmission(uint256 submissionId_) external {
 
         // Get the submission from storage
         Submission storage submission = idToSubmission[submissionId_];
 
-        // @dev: Do we make sure the submitter raises dispute on rejected submissions and reviewers whose review decision does not match the final decision?
-        // Discuss w Mijo first.
+        // NICE-TO-HAVE: We make sure the submitter can only raise dispute on rejected submissions and reviewers whose review decision does not match the final decision?
         
         // Require that the submission is in "FINALIZED" status
         require(submission.status == SubmissionStatus.FINALIZED, "Submission is not in 'FINALIZED' status");
 
         // Require for the time-limit on disputing for the submission to NOT have passed
         require(block.timestamp <= submission.disputeDeadline, "Dispute deadline has passed");
+
+        // Require that the user is involved in the submission
+        require(userInvolvedInSubmission[_msgSender()][submissionId_], "User is not involved in the submission");
 
 
         // Put submission in "DISPUTED" status
@@ -763,7 +776,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
      */
-    function resolveDisputeOnSubmission(uint256 submissionId_, Decision decision_) external onlyUserWithBadges(reviewConfiguration.disputeResolverBadges) {
+    function resolveDisputeOnSubmission(uint256 submissionId_, Decision decision_) external onlyUserWithAtLeastOneBadge(reviewConfiguration.disputeResolverBadges) {
 
         // Fetch submission from storage
         Submission storage submission = idToSubmission[submissionId_];
@@ -895,7 +908,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
                 }
             }
         }
-
 
 
         // Pay out and update the reserved funds for the submission

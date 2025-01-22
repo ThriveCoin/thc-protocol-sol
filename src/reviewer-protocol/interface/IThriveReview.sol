@@ -36,14 +36,14 @@ interface IThriveReview {
 
         // The maximum number of reviews that can be conducted for a submission.
         uint32 maximumReviewsPerSubmission;
-        // The time until contributor is allowed to submit their work unit submission.
 
+        // The time/date until contributor is allowed to submit their work unit submission. (specified as a date, not period e.g. 25th of January 2025)
         uint32 submissionDeadline;
 
-        // The time allowed for a reviewer to complete their review after commiting to it.
+        // The time period allowed for a reviewer to complete their review after commiting to it. (e.g. 10 days)
         uint32 reviewCommitmentPeriod;
 
-        // Fixed period for reviews after a submission is created.
+        // Fixed period for reviews after a submission is created. (e.g. 10 days)
         uint32 reviewDeadlinePeriod;
 
         // An array of badges required for a user to contribute submissions.
@@ -81,10 +81,10 @@ interface IThriveReview {
         // The number of reviews that have been rejected
         uint32 rejectedReviewsCount;
 
-        // The timestamp until the submission can be reviewed
+        // The timestamp until the submission can be reviewed. (Set on contract)
         uint64 reviewDeadline;
 
-        // The timestamp until the submission decision can be disputed
+        // The timestamp until the submission decision can be disputed. (Set on contract)
         uint64 disputeDeadline;
 
         // The EVM address of the contributor submitting the work unit for review

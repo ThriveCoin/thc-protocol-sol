@@ -17,7 +17,7 @@ import {IThriveWorkerUnitFactory} from "../interface/IThriveWorkerUnitFactory.so
 
 /**
  * @title ThriveReviewFactory
- * @dev Factory contract for creating ThriveReview and/or ThriveWorkUnit contract instances.
+ * @dev Factory contract for creating ThriveReview (and ThriveWorkUnit contract instances).
  */
 contract ThriveReviewFactory is
     OwnableUpgradeable,
@@ -131,16 +131,16 @@ contract ThriveReviewFactory is
 
 
     /**
-     * @notice Creates new WorkerUnit and ThriveReview contracts.
+     * @notice Creates new ThriveWorkerUnit and ThriveReview contracts.
      * @param workUnitArgs_ Struct containing args for properly initializing WorkUnit contract.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
-     * @param owner_ Owner address of the newly created ThriveReview contract.
-     * @return Address of the newly created ThriveReview contract and the newly created WorkUnit contract.
+     * @param thriveReviewOwner_ Owner address of the newly created ThriveReview contract.
+     * @return Address of the newly created ThriveReview contract.
      */
     function createWorkUnitAndReviewContract(
         IThriveWorkerUnitFactory.WorkUnitArgs memory workUnitArgs_,
         IThriveReview.ReviewConfiguration memory reviewConfiguration_,
-        address owner_
+        address thriveReviewOwner_
     ) external payable returns (address, address) {
 
         // Require enough funds are sent to payout the reward for reviewers
@@ -180,13 +180,14 @@ contract ThriveReviewFactory is
             reviewConfiguration_,
             address(this),
             badgeQueryContractAddress,
-            owner_
+            thriveReviewOwner_
         );
 
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool success, ) = thriveReviewContract.call{value: reviewConfiguration_.reviewerRewardsTotalAllocation}("");
-        require(success, "ThriveReviewFactory: Transfer of reviewer rewards failed");
+        (bool success, ) = thriveReviewContract.call{value: msg.value}("");
+        require(success);
+
 
         // Emit event for creation of WorkUnit and Review
         emit WorkUnitAndReviewCreated(thriveReviewContract, workUnitContract);
@@ -194,15 +195,17 @@ contract ThriveReviewFactory is
         return (thriveReviewContract, workUnitContract);
     }
 
+
+
     /**
-     * @notice Creates a new ThriveReview contract without a WorkerUnit connection.
+     * @notice Creates a new ThriveReview contract without a ThriveWorkerUnit connection.
      * @param reviewConfiguration_ Struct containing args for the reviewing process.
-     * @param owner_ Owner address of the newly created ThriveReview contract.
+     * @param thriveReviewOwner_ Owner address of the newly created ThriveReview contract.
      * @return Address of the newly created ThriveReview contract.
      */
     function createReviewContract(
         IThriveReview.ReviewConfiguration memory reviewConfiguration_,
-        address owner_
+        address thriveReviewOwner_
     ) external payable returns (address) {
 
         // The amount of funds sent must be equal or greater to the reward amount for reviewers
@@ -232,7 +235,7 @@ contract ThriveReviewFactory is
             reviewConfiguration_,
             address(this),
             badgeQueryContractAddress,
-            owner_
+            thriveReviewOwner_
         );
 
 

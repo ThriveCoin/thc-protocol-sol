@@ -26,14 +26,14 @@ abstract contract BasicTestConfigs is Test {
         address(uint160(uint256(keccak256(abi.encodePacked("badgeQuery")))));
 
     
-    bytes32[] submitterBadges = new bytes32[](1);
+    bytes32[] dummyBadges = new bytes32[](1);
 
 
     constructor() {
         validators.push(address(0x1));
         validators.push(address(0x2));
 
-        submitterBadges[0] = keccak256(abi.encodePacked("submitterBadge"));
+        dummyBadges[0] = keccak256(abi.encodePacked("dummyBadges"));
 
         // Some data is intentionally wrongly filled because only some fields are written on-chain
         // and we want to prevent users from manipulating this data
@@ -43,7 +43,7 @@ abstract contract BasicTestConfigs is Test {
             rewardAmount: 10,
             maxRewards: 100 ether,
             validationRewardAmount: 0,
-            deadline: 8 days,
+            deadline: 10 days,
             maxCompletionsPerUser: 2,
             validators: validators,
             assignedContributor: address(0),
@@ -62,10 +62,10 @@ abstract contract BasicTestConfigs is Test {
             submissionDeadline: uint32(block.timestamp) + 10 days,
             reviewCommitmentPeriod: 1 days,
             reviewDeadlinePeriod: 7 days,
-            submitterBadges: submitterBadges,
-            reviewerBadges: new bytes32[](0),
-            judgeBadges: new bytes32[](0),
-            disputeResolverBadges: new bytes32[](0),
+            submitterBadges: dummyBadges,
+            reviewerBadges: dummyBadges,
+            judgeBadges: dummyBadges,
+            disputeResolverBadges: dummyBadges,
             reviewMetadata: "reviewMetadata",
             submissionMetadata: "submissionMetadata"
         });
