@@ -446,7 +446,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         }
 
 
-        // Reacka decision on submission automatically IF conditions are met
+        // Reach decision on submission automatically IF conditions are met
         _reachDecisionOnSubmission(committedReview.submissionId);
 
 
