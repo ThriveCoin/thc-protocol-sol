@@ -8,7 +8,6 @@ import {Test} from "forge-std/Test.sol";
 import "../../src/interface/IThriveWorkerUnitFactory.sol";
 import "../../src/reviewer-protocol/interface/IThriveReview.sol";
 
-
 abstract contract BasicTestConfigs is Test {
     IThriveWorkerUnitFactory.WorkUnitArgs workUnitArgs;
     IThriveReview.ReviewConfiguration reviewConfiguration;
@@ -25,9 +24,7 @@ abstract contract BasicTestConfigs is Test {
     address public badgeQueryContractAddress =
         address(uint160(uint256(keccak256(abi.encodePacked("badgeQuery")))));
 
-    
     bytes32[] dummyBadges = new bytes32[](1);
-
 
     constructor() {
         validators.push(address(0x1));
@@ -97,5 +94,3 @@ abstract contract BasicTestConfigs is Test {
         });
     }
 }
-
-

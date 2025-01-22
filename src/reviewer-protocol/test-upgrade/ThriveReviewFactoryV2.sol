@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
+import {OwnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @custom:oz-upgrades-from ThriveReviewFactory
-contract ThriveReviewFactoryV2 is
-    OwnableUpgradeable,
-    UUPSUpgradeable
-{
-
-
+contract ThriveReviewFactoryV2 is OwnableUpgradeable, UUPSUpgradeable {
     /**
      * STORAGE VARIABLES
      */
@@ -25,12 +20,13 @@ contract ThriveReviewFactoryV2 is
 
     // Address of the BadgeQuery contract
     address public badgeQueryContractAddress;
-    
+
     // Leave gap for storage variables to be added in the future
     uint256[50] private __gap;
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner {}
-
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 }

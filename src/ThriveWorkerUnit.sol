@@ -2,9 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {EnumerableSet} from
+    "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from
+    "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./IBadgeQuery.sol";
 
 /**
@@ -130,9 +133,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             );
 
             IERC20(rewardToken).safeTransferFrom(
-                msg.sender,
-                address(this),
-                maxRewards
+                msg.sender, address(this), maxRewards
             );
         }
         ready = true;
@@ -140,13 +141,14 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         emit Initialized();
     }
 
-    function confirm(
-        address contributor,
-        string memory inputValidationMetadata
-    ) external onlyValidator onceReady nonReentrant {
+    function confirm(address contributor, string memory inputValidationMetadata)
+        external
+        onlyValidator
+        onceReady
+        nonReentrant
+    {
         require(
-            block.timestamp <= deadline,
-            "ThriveProtocol: work unit has expired"
+            block.timestamp <= deadline, "ThriveProtocol: work unit has expired"
         );
         require(
             completions[contributor] < maxCompletionsPerUser,
@@ -170,8 +172,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             }
 
             require(
-                hasAtLeastOneBadge,
-                "ThriveProtocol: required badge is missing!"
+                hasAtLeastOneBadge, "ThriveProtocol: required badge is missing!"
             );
         }
 
@@ -179,12 +180,9 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         // contributor
         if (rewardToken == address(0)) {
             // case: native token
-            (bool success, ) = payable(contributor).call{value: rewardAmount}(
-                ""
-            );
+            (bool success,) = payable(contributor).call{value: rewardAmount}("");
             require(
-                success,
-                "ThriveProtocol: Ether transfer to contributor failed"
+                success, "ThriveProtocol: Ether transfer to contributor failed"
             );
         } else {
             // case: ERC20 token
@@ -193,26 +191,22 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
         if (validationRewardAmount > 0) {
             // validator
-            (bool success, ) = payable(msg.sender).call{
-                value: validationRewardAmount
-            }("");
+            (bool success,) =
+                payable(msg.sender).call{value: validationRewardAmount}("");
             require(
-                success,
-                "ThriveProtocol: Ether transfer to validator failed"
+                success, "ThriveProtocol: Ether transfer to validator failed"
             );
         }
 
         emit ConfirmationAdded(
-            contributor,
-            inputValidationMetadata,
-            rewardAmount,
-            msg.sender
+            contributor, inputValidationMetadata, rewardAmount, msg.sender
         );
     }
 
-    function setAssignedContributor(
-        address _assignedContributor
-    ) external onlyModerator {
+    function setAssignedContributor(address _assignedContributor)
+        external
+        onlyModerator
+    {
         require(
             _assignedContributor != address(0),
             "ThriveProtocol: invalid address!"
@@ -232,15 +226,17 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         requiredBadges.remove(badge);
     }
 
-    function setValidationMetadata(
-        string calldata _validationMetadata
-    ) external onlyModerator {
+    function setValidationMetadata(string calldata _validationMetadata)
+        external
+        onlyModerator
+    {
         validationMetadata = _validationMetadata;
     }
 
-    function setMetadataVersion(
-        string calldata _metadataVersion
-    ) external onlyModerator {
+    function setMetadataVersion(string calldata _metadataVersion)
+        external
+        onlyModerator
+    {
         metadataVersion = _metadataVersion;
     }
 
@@ -256,9 +252,10 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         deadline = _deadline;
     }
 
-    function setMaxCompletionsPerUser(
-        uint256 _maxCompletionsPerUser
-    ) external onlyModerator {
+    function setMaxCompletionsPerUser(uint256 _maxCompletionsPerUser)
+        external
+        onlyModerator
+    {
         maxCompletionsPerUser = _maxCompletionsPerUser;
     }
 
@@ -272,9 +269,8 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             // case: native token
             uint256 remainingEther = address(this).balance;
             if (remainingEther > 0) {
-                (bool success, ) = payable(moderator).call{
-                    value: remainingEther
-                }("");
+                (bool success,) =
+                    payable(moderator).call{value: remainingEther}("");
                 require(
                     success,
                     "ThriveProtocol: Ether transfer to validator failed"
@@ -283,9 +279,8 @@ contract ThriveWorkerUnit is ReentrancyGuard {
             }
         } else {
             // case: ERC20 token
-            uint256 remainingERC20 = IERC20(rewardToken).balanceOf(
-                address(this)
-            );
+            uint256 remainingERC20 =
+                IERC20(rewardToken).balanceOf(address(this));
             if (remainingERC20 > 0) {
                 IERC20(rewardToken).safeTransfer(moderator, remainingERC20);
                 emit Withdrawn(rewardToken, remainingERC20);

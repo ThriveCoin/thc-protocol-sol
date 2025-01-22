@@ -6,7 +6,6 @@ pragma solidity ^0.8.24;
  * @dev Interface for ThriveWorkerUnit contract.
  */
 interface IThriveWorkerUnit {
-
     /**
      * @notice Initializes the ThriveWorkerUnit contract.
      */
@@ -50,5 +49,4 @@ interface IThriveWorkerUnit {
 
     // Reward amount on WorkerUnit
     function rewardAmount() external view returns (uint256);
-
 }

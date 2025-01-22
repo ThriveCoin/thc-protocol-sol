@@ -53,7 +53,7 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
     // @inheritdoc IThriveWorkUnitFactory
     function createThriveWorkUnit(
         WorkUnitArgs memory workUnitArgs // @dev Maybe add a restrict method to this call
-        //address thriveReviewFactory
+            //address thriveReviewFactory
     ) external returns (address) {
         ThriveWorkerUnit unit = new ThriveWorkerUnit(
             workUnitArgs.moderator,
