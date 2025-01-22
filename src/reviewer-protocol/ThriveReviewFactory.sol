@@ -38,7 +38,8 @@ contract ThriveReviewFactory is
     // Address of the BadgeQuery contract
     address public badgeQueryContractAddress;
 
-
+    // Leave gap for storage variables to be added in the future
+    uint256[50] private __gap;
 
     /**
      * EVENTS
@@ -90,7 +91,7 @@ contract ThriveReviewFactory is
      * @param newThriveReviewContractImplementation_ Address of the new ThriveReview contract implementation.
      * @param newBadgeQueryContractAddress_ Address of the new BadgeQuery contract.
      */
-    function updateAddresses(
+    function configureSystemContracts(
         address newThriveWorkerUnitFactory_,
         address newThriveReviewContractImplementation_,
         address newBadgeQueryContractAddress_

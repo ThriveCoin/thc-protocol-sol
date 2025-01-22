@@ -25,6 +25,9 @@ contract ThriveReviewFactoryV2 is
 
     // Address of the BadgeQuery contract
     address public badgeQueryContractAddress;
+    
+    // Leave gap for storage variables to be added in the future
+    uint256[50] private __gap;
 
     function _authorizeUpgrade(
         address newImplementation

@@ -137,7 +137,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         address newThriveReviewContractImplementation_ = address(0x2345);
         address newBadgeQueryContractAddress_ = address(0x3456);
 
-        thriveReviewFactory.updateAddresses(
+        thriveReviewFactory.configureSystemContracts(
             newThriveWorkerUnitFactory_,
             newThriveReviewContractImplementation_,
             newBadgeQueryContractAddress_
@@ -157,7 +157,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
         // Test updating addresses by non-owner
         vm.prank(randomUser);
         vm.expectRevert();
-        thriveReviewFactory.updateAddresses(
+        thriveReviewFactory.configureSystemContracts(
             newThriveWorkerUnitFactory_,
             newThriveReviewContractImplementation_,
             newBadgeQueryContractAddress_
