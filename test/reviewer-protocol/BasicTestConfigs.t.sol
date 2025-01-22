@@ -89,7 +89,7 @@ abstract contract BasicTestConfigs is Test {
             // This is not written on-chain
             reviewer: address(this),
             reviewMetadata: "reviewMetadata",
-            deadline: 1 days,
+            commitmentDeadline: 1 days,
             // This is not written on-chain
             decision: IThriveReview.Decision.ACCEPTED,
             // This is not written on-chain

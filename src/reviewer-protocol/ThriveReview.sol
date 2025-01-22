@@ -118,12 +118,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping of reviews per submission: submissionId => reviewId[]
     mapping(uint256 => uint256[]) public submissionReviews;
 
-    // Mapping of user addresses to their submission reviews: userAddress => submissionId => true/false
-    mapping(address => mapping(uint256 => bool)) public  userClaimedRewardForReview;
-
-    // Mapping of review IDs to the reward claimed status
-    mapping(uint256 => bool) public rewardsClaimedForReview;
-
     // Mapping of failed distribution amounts for reviewers so users can claim manually: userAddress => THRIVE amount
     mapping(address => uint256) public failedDistributionAmounts;
 
@@ -431,7 +425,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         review.reviewer = _msgSender();
 
         // Set the deadline for the review
-        review.deadline = block.timestamp + reviewConfiguration.reviewCommitmentPeriod;
+        review.commitmentDeadline = block.timestamp + reviewConfiguration.reviewCommitmentPeriod;
 
         // Change the status of the review to `COMMITTED`
         review.status = ReviewStatus.COMMITTED;
@@ -464,25 +458,28 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the committed review from storage and copy to memory
         Review storage committedReview = reviews[review_.id];
 
+        // Fetch the submission from storage
+        Submission storage submission = idToSubmission[committedReview.submissionId];
+
         // Require user to have committed to the review
         require(committedReview.status == ReviewStatus.COMMITTED, "User has not committed to this review");
 
         // We can not use `submissionPending` modifier because user can commit to one submission ID and then bypass the modifier
         // by sending another one in review_ object. Here we use the submission ID previously committed to and saved in reviews mapping.
         // Require for the submission to be `PENDING`
-        require(idToSubmission[committedReview.submissionId].status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
+        require(submission.status == SubmissionStatus.PENDING, "Submission is not in 'PENDING' status");
 
         // Require user to be the committer to the review
         require(committedReview.reviewer == _msgSender(), "User is not the committer of this review");
 
         // Require that the commitment deadline has not passed
-        require(block.timestamp <= committedReview.deadline, "Review commitment deadline has passed");
+        require(block.timestamp <= committedReview.commitmentDeadline, "Review commitment deadline has passed");
         
         // Require that the review decision is either "ACCEPTED" or "REJECTED"
         require(review_.decision == Decision.ACCEPTED || review_.decision == Decision.REJECTED, "Review decision must be either 'ACCEPTED' or 'REJECTED'");
         
         // Require that the deadline to review this submission has not passed
-        require(block.timestamp <= idToSubmission[committedReview.submissionId].reviewDeadline, "Review deadline has passed");
+        require(block.timestamp <= submission.reviewDeadline, "Review deadline has passed");
 
 
 
@@ -509,9 +506,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
         // HANDLE SUBMISSION OBJECT
-
-        // Fetch the submission from storage
-        Submission storage submission = idToSubmission[committedReview.submissionId];
 
         // Update the review count on submission
         submission.reviewCount++;
@@ -556,7 +550,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(reviews[reviewId_].status == ReviewStatus.COMMITTED, "Review is not in 'COMMITTED' status");
         
         // Require that the reviews' deadline has passed
-        require(block.timestamp > reviews[reviewId_].deadline, "Review deadline has not passed");
+        require(block.timestamp > reviews[reviewId_].commitmentDeadline, "Review deadline has not passed");
 
 
         // Fetch the review data
@@ -696,6 +690,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require that the user has failed distribution funds
         require(amount > 0, "User has no failed distribution funds");
 
+        // Decrease global failed distribution funds variable
+        failedDistributionTotalAmount -= amount;
+
         // Reset the failed distribution funds
         delete failedDistributionAmounts[_msgSender()];
 
@@ -788,7 +785,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Resolve the submission decision based on the resolvers' decision
         submission.decision = decision_;
 
-        // Pay out reviewers
+        // Pay out reviewers and submitter
         _distributeRewardsForSubmission(submissionId_);
 
         // Emit event
@@ -808,11 +805,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Require for this submission to be "DISPUTED"
         require(submission.status == SubmissionStatus.DISPUTED, "Submission is not in 'DISPUTED' status");
 
-        // Require for the time-limit on disputing for the submission to have passed + some buffer time so that owner does not cancel the dispute too early
+        // Require for the time-limit on disputing to have passed + some buffer time so that owner does not cancel the dispute too early
         require(block.timestamp > submission.disputeDeadline + 1 days, "Dispute deadline has not passed");
 
 
-        // Pay out reviewers
+        // Pay out reviewers and submitter
         _distributeRewardsForSubmission(submissionId_);
 
         // Emit event
@@ -849,7 +846,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         require(block.timestamp > submission.disputeDeadline, "Dispute deadline has not passed");
         
 
-        // Pay out reviewers
+        // Pay out reviewers and submitter
         _distributeRewardsForSubmission(submissionId_);
 
         // Emit event
@@ -865,9 +862,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
 
     /**
-    * @notice Distributes rewards to correct reviewers when the submission is finalized.
-    * @param submissionId_ Submission ID.
-    */
+     * @notice Distributes rewards to correct reviewers and submitter if submission is accepted.
+     * @param submissionId_ Submission ID.
+     */
     function _distributeRewardsForSubmission(uint256 submissionId_) internal {
         
         // Fetch the submission from storage
