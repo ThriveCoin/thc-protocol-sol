@@ -10,10 +10,19 @@ import {IThriveWorkerUnit} from "../interface/IThriveWorkerUnit.sol";
 import {IThriveReview} from "./interface/IThriveReview.sol";
 import {IBadgeQuery} from "../IBadgeQuery.sol";
 
-
 /**
- * @title ThriveReview
- * @dev Contract for reviewer protocol.
+ * @title ThriveReview.sol
+ * @dev Contract part of `reviewer protocol`. Aims to serve as a validator on ThriveWorkerUnit submissions.
+ * 
+ * 
+ *    _______  _             _                ______                 _               
+ *   (_______)| |           (_)              (_____ \               (_)              
+ *       _    | |__    ____  _  _   _  _____  _____) ) _____  _   _  _  _____  _ _ _ 
+ *      | |   |  _ \  / ___)| || | | || ___ ||  __  / | ___ || | | || || ___ || | | |
+ *      | |   | | | || |    | | \ V / | ____|| |  \ \ | ____| \ V / | || ____|| | | |
+ *      |_|   |_| |_||_|    |_|  \_/  |_____)|_|   |_||_____)  \_/  |_||_____) \___/ 
+ *
+ *                                                                            
  */
 contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
