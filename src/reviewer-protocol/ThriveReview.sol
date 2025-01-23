@@ -134,13 +134,11 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping of disputes: submissionId => Dispute object
     mapping(uint256 => Dispute) public disputes;
 
-
     // Scaler value for calculating ratios of accepted/rejected reviews
     uint256 constant SCALER = 10_000;
 
     // @dev Buffer time for canceling a dispute - arbitrary value set by dev
     uint256 constant _BUFFER_TIME_FOR_CANCELING_DISPUTE = 1 days;
-
 
     /**
      * Events
@@ -233,8 +231,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         address indexed reviewer,
         uint256 amount
     );
-
-
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -793,7 +789,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @notice Function to raise a dispute on a submission when user does not agree with final decision.
      * @param submissionId_ Submission ID.
      */
-    function raiseDisputeOnSubmission(uint256 submissionId_, string calldata disputeMetadata_) external {
+    function raiseDisputeOnSubmission(
+        uint256 submissionId_,
+        string calldata disputeMetadata_
+    ) external {
         // Get the submission from storage
         Submission storage submission = idToSubmission[submissionId_];
 
@@ -817,7 +816,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             "User is not involved in the submission"
         );
 
-
         // Get dispute object from storage
         Dispute storage dispute = disputes[submissionId_];
 
@@ -829,7 +827,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Save the dispute metadata
         dispute.disputeMetadata = disputeMetadata_;
-
 
         // Put submission in "DISPUTED" status
         submission.status = SubmissionStatus.DISPUTED;
@@ -860,7 +857,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             "Submission is not in 'DISPUTED' status"
         );
 
-        
         // Get dispute object from storage
         Dispute storage dispute = disputes[submissionId_];
 
@@ -869,7 +865,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Save the dispute resolution metadata
         dispute.disputeResolutionMetadata = disputeResolutionMetadata_;
-
 
         // Resolve the submission decision based on the resolvers' decision
         submission.decision = decision_;
@@ -900,7 +895,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Require for the time-limit on disputing to have passed + some buffer time so that owner does not cancel the dispute too early
         require(
-            block.timestamp > submission.disputeDeadline + _BUFFER_TIME_FOR_CANCELING_DISPUTE,
+            block.timestamp
+                > submission.disputeDeadline + _BUFFER_TIME_FOR_CANCELING_DISPUTE,
             "Dispute deadline has not passed"
         );
 
