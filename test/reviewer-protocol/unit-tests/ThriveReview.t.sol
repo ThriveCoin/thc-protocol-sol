@@ -1843,7 +1843,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         vm.expectRevert("Submission is not in 'FINALIZED' status");
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
     }
 
     function test_501_revert_FailToRaiseDisputeAfterDisputeDeadlinePasses()
@@ -1889,7 +1889,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.warp(currentBlockTimestamp + 2 days + 1);
 
         vm.expectRevert("Dispute deadline has passed");
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
     }
 
     function test_502_revert_FailToRaiseDisputeIfNotInvolvedInSubmission()
@@ -1933,7 +1933,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         vm.expectRevert("User is not involved in the submission");
         vm.prank(address(0x3));
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
     }
 
     function test_503_success_RaiseDisputeOnSubmission() public {
@@ -1976,7 +1976,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -2020,7 +2020,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         vm.expectRevert("Submission is not in 'DISPUTED' status");
         thriveReview.resolveDisputeOnSubmission(
-            0, IThriveReview.Decision.ACCEPTED
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
     }
 
@@ -2080,7 +2080,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -2093,7 +2093,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Resolve dispute
         thriveReview.resolveDisputeOnSubmission(
-            0, IThriveReview.Decision.REJECTED
+            0, IThriveReview.Decision.REJECTED, ""
         );
 
         // Check that the submission is resolved
@@ -2187,7 +2187,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.submitReview(review);
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -2238,7 +2238,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.submitReview(review);
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =

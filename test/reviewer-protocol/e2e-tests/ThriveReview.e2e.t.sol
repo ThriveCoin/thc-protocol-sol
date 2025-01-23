@@ -478,7 +478,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
         // Raise dispute for submission 4
         vm.prank(reviewer3);
-        thriveReview.raiseDisputeOnSubmission(3);
+        thriveReview.raiseDisputeOnSubmission(3, "");
 
         // Check submission 4 status
         submissionStatus = thriveReview.getSubmissionStatus(3);
@@ -497,7 +497,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
 
         // Dispute badge resolves dispute
         thriveReview.resolveDisputeOnSubmission(
-            3, IThriveReview.Decision.ACCEPTED
+            3, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that submission 4 is finalized

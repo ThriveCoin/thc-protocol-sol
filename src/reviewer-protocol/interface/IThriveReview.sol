@@ -88,6 +88,20 @@ interface IThriveReview {
         ReviewStatus status;
     }
 
+    // Struct to store the details of a dispute.
+    struct Dispute {
+        // The id of the submission that is being disputed.
+        uint256 submissionId;
+        // The address of the user who is disputing the submission.
+        address disputer;
+        // The address of the user who is resolving the dispute.
+        address resolver;
+        // Metadata submitted by the disputer to explain the dispute.
+        string disputeMetadata;
+        // Metadata submitted by the resolver to explain the resolution.
+        string disputeResolutionMetadata;
+    }
+
     // Status of a ThriveReview submission
     enum SubmissionStatus {
         NONE,
