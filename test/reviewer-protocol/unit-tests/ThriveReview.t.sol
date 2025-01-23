@@ -2427,6 +2427,71 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
     }
 
+    function test_512_success_DisputeStorageObjectCorrectlyStored() public {
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Go to after review deadline so judge can make the decision
+        vm.warp(
+            currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1
+        );
+
+        // Finalize this submission as a judge badge
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0,
+            IThriveReview.Decision.ACCEPTED,
+            "I think this submission should be accepted"
+        );
+
+        // Get submission decision
+        IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
+        assertEq(
+            uint256(decision),
+            uint256(IThriveReview.Decision.ACCEPTED),
+            "Submission decision is not set correctly"
+        );
+
+        // Raise dispute
+        thriveReview.raiseDisputeOnSubmission(
+            0, "I think this submission should be rejected"
+        );
+
+        // Resolve dispute
+        thriveReview.resolveDisputeOnSubmission(
+            0,
+            IThriveReview.Decision.REJECTED,
+            "I think this submission should NOT be rejected"
+        );
+
+        // Get dispute object
+        (
+            uint256 submissionId,
+            address disputer,
+            address resolver,
+            string memory disputeMetadata,
+            string memory disputeResolutionMetadata
+        ) = thriveReview.disputes(0);
+
+        // Assert that the dispute object is stored correctly
+        assertEq(submissionId, 0, "Submission ID is not set correctly");
+        assertEq(
+            disputer, address(this), "Disputer address is not set correctly"
+        );
+        assertEq(
+            resolver, address(this), "Resolver address is not set correctly"
+        );
+        assertEq(
+            disputeMetadata,
+            "I think this submission should be rejected",
+            "Dispute metadata is not set correctly"
+        );
+        assertEq(
+            disputeResolutionMetadata,
+            "I think this submission should NOT be rejected",
+            "Dispute resolution metadata is not set correctly"
+        );
+    }
+
     receive() external payable {}
 }
 
