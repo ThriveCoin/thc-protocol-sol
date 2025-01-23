@@ -672,9 +672,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
      */
-    function reachDecisionOnSubmissionAsBadge(
+    function reachDecisionOnSubmissionAsJudge(
         uint256 submissionId_,
-        Decision decision_
+        Decision decision_,
+        string calldata judgeDecisionMetadata_
     )
         external
         onlyUserWithAtLeastOneBadge(reviewConfiguration.judgeBadges)
@@ -708,6 +709,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Start dispute period
         submission.disputeDeadline = uint64(block.timestamp + 2 days);
+
+        // Save judge decision metadata (should contain reasoning behind the decision)
+        submission.judgeDecisionMetadata = judgeDecisionMetadata_;
 
         // Emit event
         emit SubmissionDecisionReachedAsBadge(

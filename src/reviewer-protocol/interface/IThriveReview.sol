@@ -62,6 +62,8 @@ interface IThriveReview {
         address contributor;
         // JSON object that contains the information shown to reviewers during the review process
         string submissionMetadata;
+        // Metadata containing judge decision on the submission - This is filled when a judge HAS TO finalize a submission.
+        string judgeDecisionMetadata;
         // Review decision on this submission - saved after conditions for reaching a verdict are met.
         Decision decision;
         // The status of the submission

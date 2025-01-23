@@ -438,6 +438,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             ,
             address contributor,
             string memory submissionMetadata,
+            ,
             IThriveReview.Decision decision,
             IThriveReview.SubmissionStatus status
         ) = thriveReview.idToSubmission(0);
@@ -501,6 +502,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             ,
             ,
             string memory submissionMetadata,
+            ,
             IThriveReview.Decision decision,
             IThriveReview.SubmissionStatus status
         ) = thriveReview.idToSubmission(0);
@@ -947,6 +949,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             uint64 reviewCount,
             uint64 acceptedReviewCount,
             uint64 rejectedReviewCount,
+            ,
             ,
             ,
             ,
@@ -1466,8 +1469,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that the submission is still pending because there is no consensus on decision
@@ -1516,8 +1519,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.warp(
             currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1
         );
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.REJECTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.REJECTED, ""
         );
 
         // Go to after dispute deadline
@@ -1572,8 +1575,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that the submission is still pending because there is no consensus on decision
@@ -1618,8 +1621,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.expectRevert(
             "Submission has not reached requirements for a final decision as badge"
         );
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
     }
 
@@ -1652,8 +1655,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Revert to finalize the submission with no proper decision
         vm.expectRevert("Decision must be either 'ACCEPTED' or 'REJECTED'");
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.NONE
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.NONE, ""
         );
     }
 
@@ -1705,8 +1708,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         vm.expectRevert("Submission is not in 'PENDING' status");
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
     }
 
@@ -2346,8 +2349,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that the submission is still pending because there is no consensus on decision
@@ -2402,8 +2405,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Go to after dispute deadline

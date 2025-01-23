@@ -177,6 +177,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
             ,
             ,
             ,
+            ,
             IThriveReview.Decision decision,
             IThriveReview.SubmissionStatus submissionStatus
         ) = thriveReview.idToSubmission(0);
@@ -261,6 +262,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
             reviewCount,
             acceptedReviewsCount,
             rejectedReviewsCount,
+            ,
             ,
             ,
             ,
@@ -366,6 +368,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
             ,
             ,
             ,
+            ,
             decision,
             submissionStatus
         ) = thriveReview.idToSubmission(2);
@@ -461,8 +464,8 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.warp(currentBlockTimestamp + 10 days + 1);
 
         // We can judge the submission as a badge since decision is not reached after max reviews
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            3, IThriveReview.Decision.REJECTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            3, IThriveReview.Decision.REJECTED, ""
         );
 
         // Ensure submission 4 is in the correct state
