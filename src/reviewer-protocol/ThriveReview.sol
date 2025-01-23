@@ -1102,7 +1102,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @return bool True if all submissions are paid out, false otherwise.
      */
     function allSubmissionsPaidOut() public view returns (bool) {
-        if (submissions.length == 0 && block.timestamp <= reviewConfiguration.submissionDeadline) {
+        if (
+            submissions.length == 0
+                && block.timestamp <= reviewConfiguration.submissionDeadline
+        ) {
             return false;
         }
 
