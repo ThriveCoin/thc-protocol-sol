@@ -1102,6 +1102,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @return bool True if all submissions are paid out, false otherwise.
      */
     function allSubmissionsPaidOut() public view returns (bool) {
+        // If there are no submissions and the deadline for submissions has not passed - then there were not any submissions to be paid out and they can still come
         if (
             submissions.length == 0
                 && block.timestamp <= reviewConfiguration.submissionDeadline
