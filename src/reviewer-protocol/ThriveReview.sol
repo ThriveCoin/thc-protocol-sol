@@ -482,7 +482,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @dev Previously created Review object is updated with new passed information.
      * @param review_ Review object containing the review metadata and decision.
      */
-    function createReview(Review calldata review_)
+    function submitReview(Review calldata review_)
         external
         onlyUserWithAtLeastOneBadge(reviewConfiguration.reviewerBadges)
     {

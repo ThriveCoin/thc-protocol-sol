@@ -160,12 +160,12 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer2);
         review.id = 2;
         review.decision = IThriveReview.Decision.REJECTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(reviewer2);
         review.id = 3;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Fetch first submission
         (
@@ -232,18 +232,18 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer3);
         review.id = 6;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 1 creates review for submission 1 and 2
         vm.prank(reviewer1);
         review.id = 0;
         review.decision = IThriveReview.Decision.REJECTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(reviewer1);
         review.id = 1;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 3 commits to review submission 1
         vm.prank(reviewer3);
@@ -253,7 +253,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer3);
         review.id = 7;
         review.decision = IThriveReview.Decision.REJECTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Fetch third submission
         (
@@ -304,7 +304,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer3);
         review.id = 8;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Fetch second submission status
         decision = thriveReview.getSubmissionDecision(1);
@@ -328,13 +328,13 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer4);
         review.id = 9;
         review.decision = IThriveReview.Decision.REJECTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 1 creates review for submission 3
         vm.prank(reviewer1);
         review.id = 4;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 4 commits to review submission 4
         vm.prank(reviewer4);
@@ -348,13 +348,13 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer3);
         review.id = 11;
         review.decision = IThriveReview.Decision.REJECTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 2 creates review for submission 3
         vm.prank(reviewer2);
         review.id = 5;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Fetch submission 3
         (
@@ -428,7 +428,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         review.id = 10;
         review.decision = IThriveReview.Decision.REJECTED;
         vm.expectRevert("Review commitment deadline has passed");
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 1 commits to review submission 4
         vm.prank(reviewer1);
@@ -438,7 +438,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         vm.prank(reviewer1);
         review.id = 12;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Reviewer 2 commits to review submission 4
         vm.prank(reviewer2);
@@ -447,7 +447,7 @@ contract ThriveReviewE2ETests is Test, BasicTestConfigs {
         // Reviewer 2 creates review for submission 4
         vm.prank(reviewer2);
         review.id = 13;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Ensure submission 4 is in the correct state
         decision = thriveReview.getSubmissionDecision(3);
