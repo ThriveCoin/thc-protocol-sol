@@ -788,6 +788,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     /**
      * @notice Function to raise a dispute on a submission when user does not agree with final decision.
      * @param submissionId_ Submission ID.
+     * @param disputeMetadata_ Metadata detailing the reasons for raising dispute.
      */
     function raiseDisputeOnSubmission(
         uint256 submissionId_,
@@ -839,6 +840,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @notice Function for resolving disputes on submissions by user holding dispute badge.
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
+     * @param disputeResolutionMetadata_ Metadata detailing reasons behind resolution decision.
      */
     function resolveDisputeOnSubmission(
         uint256 submissionId_,
