@@ -975,9 +975,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
 
-        // Loop through the reviews for specific submission
+        // Loop through the reviews of a specific submission
         for (uint256 i = 0; i < reviewIds.length; i++) {
-            // Fetch the review from storage
+            // Fetch the review from storage and copy to memory
             Review memory review = reviews[reviewIds[i]];
 
             // Require that the user made the judgement that is the same as the final decision
@@ -1024,13 +1024,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             );
         }
     }
-
-    ////////  Ask Rilind what view functions should be implemented
-    ////////////////
-    ////////////////
-    ////////////////
-    ////////////////
-    ////////////////
 
     /**
      * @notice Pays out the submission reserved funds to the submitter if his submission is ACCEPTED - otherwise return only a fraction of funds.
