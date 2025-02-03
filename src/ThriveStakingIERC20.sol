@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {StakingBase} from "./ThriveStakingBase.sol";
+import {ThriveStakingBase} from "./ThriveStakingBase.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ThriveStakingIERC20 is ThriveStakingBase {
+    /// @notice Initialize with the ERC20 token address and staking parameters.
     function initialize(
         address _erc20Token,
         uint256 _rewardRate,
@@ -21,6 +22,7 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
         );
     }
 
+    /// @notice Stake ERC20 tokens. The user must have approved the contract beforehand.
     function stake(uint256 amount) external nonReentrant {
         require(
             amount >= minStakingAmount, "ThriveProtocol: below minimum stake"
@@ -38,25 +40,11 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
         emit Staked(msg.sender, amount);
     }
 
-    function withdraw() external nonReentrant {
-        StakingDetails storage details = stakers[msg.sender];
-        require(details.amount > 0, "ThriveProtocol: no staked tokens");
+    /// @dev Implements token-specific reward transfer for ERC20.
+    function _transferReward(address user, uint256 amount) internal override {
         require(
-            block.timestamp >= details.stakingTime + MIN_STAKING_PERIOD,
-            "ThriveProtocol: 30-day lockup"
+            IERC20(token).transfer(user, amount),
+            "ThriveProtocol: reward transfer failed"
         );
-
-        uint256 reward = calculateReward(msg.sender);
-        uint256 totalAmount = details.amount + reward;
-
-        require(
-            IERC20(token).transfer(msg.sender, totalAmount),
-            "ThriveProtocol: withdraw failed"
-        );
-        emit Withdrawn(msg.sender, details.amount, reward);
-
-        details.amount = 0;
-        details.stakingTime = 0;
-        details.lastRewardTime = 0;
     }
 }

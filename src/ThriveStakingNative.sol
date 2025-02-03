@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {StakingBase} from "./ThriveStakingBase.sol";
+import {ThriveStakingBase} from "./ThriveStakingBase.sol";
 
 contract ThriveStakingNative is ThriveStakingBase {
+    /// @notice Initialize for native token staking. The token address is set to address(0).
     function initialize(
         uint256 _rewardRate,
         uint256 _minStakingAmount,
@@ -19,6 +20,7 @@ contract ThriveStakingNative is ThriveStakingBase {
         );
     }
 
+    /// @notice Stake native tokens by sending ETH along with the call.
     function stake() external payable nonReentrant {
         require(
             msg.value >= minStakingAmount, "ThriveProtocol: below minimum stake"
@@ -32,23 +34,12 @@ contract ThriveStakingNative is ThriveStakingBase {
         emit Staked(msg.sender, msg.value);
     }
 
-    function withdraw() external nonReentrant {
-        StakingDetails storage details = stakers[msg.sender];
-        require(details.amount > 0, "ThriveProtocol: no staked tokens");
-        require(
-            block.timestamp >= details.stakingTime + MIN_STAKING_PERIOD,
-            "ThriveProtocol: 30-day lockup"
-        );
-
-        uint256 reward = calculateReward(msg.sender);
-        uint256 totalAmount = details.amount + reward;
-
-        (bool success,) = payable(msg.sender).call{value: totalAmount}("");
-        require(success, "ThriveProtocol: withdraw failed");
-        emit Withdrawn(msg.sender, details.amount, reward);
-
-        details.amount = 0;
-        details.stakingTime = 0;
-        details.lastRewardTime = 0;
+    /// @dev Implements token-specific reward transfer for native tokens.
+    function _transferReward(address user, uint256 amount) internal override {
+        (bool success,) = payable(user).call{value: amount}("");
+        require(success, "ThriveProtocol: native reward transfer failed");
     }
+
+    // Accept native token transfers
+    receive() external payable {}
 }

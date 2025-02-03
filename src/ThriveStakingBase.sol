@@ -12,6 +12,26 @@ import {ReentrancyGuard} from
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
+/*
+* @title ThriveStakingBase.sol
+* @dev Core contract for staking opportunities in various communities.
+*
+*
+$$$$$$$$\ $$\                 $$\                       $$$$$$\    $$\               $$\       $$\                     
+\__$$  __|$$ |                \__|                     $$  __$$\   $$ |              $$ |      \__|                    
+   $$ |   $$$$$$$\   $$$$$$\  $$\ $$\    $$\  $$$$$$\  $$ /  \__|$$$$$$\    $$$$$$\  $$ |  $$\ $$\ $$$$$$$\   $$$$$$\  
+   $$ |   $$  __$$\ $$  __$$\ $$ |\$$\  $$  |$$  __$$\ \$$$$$$\  \_$$  _|   \____$$\ $$ | $$  |$$ |$$  __$$\ $$  __$$\ 
+   $$ |   $$ |  $$ |$$ |  \__|$$ | \$$\$$  / $$$$$$$$ | \____$$\   $$ |     $$$$$$$ |$$$$$$  / $$ |$$ |  $$ |$$ /  $$ |
+   $$ |   $$ |  $$ |$$ |      $$ |  \$$$  /  $$   ____|$$\   $$ |  $$ |$$\ $$  __$$ |$$  _$$<  $$ |$$ |  $$ |$$ |  $$ |
+   $$ |   $$ |  $$ |$$ |      $$ |   \$  /   \$$$$$$$\ \$$$$$$  |  \$$$$  |\$$$$$$$ |$$ | \$$\ $$ |$$ |  $$ |\$$$$$$$ |
+   \__|   \__|  \__|\__|      \__|    \_/     \_______| \______/    \____/  \_______|\__|  \__|\__|\__|  \__| \____$$ |
+                                                                                                             $$\   $$ |
+                                                                                                             \$$$$$$  |
+                                                                                                              \______/ 
+                                                                                                                       
+*
+*/
+
 abstract contract ThriveStakingBase is
     OwnableUpgradeable,
     UUPSUpgradeable,
@@ -21,6 +41,7 @@ abstract contract ThriveStakingBase is
 
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount, uint256 reward);
+    event RewardClaimed(address indexed user, uint256 reward);
 
     struct StakingDetails {
         uint256 amount;
@@ -32,6 +53,7 @@ abstract contract ThriveStakingBase is
     uint256 public minStakingAmount;
     uint256 public constant MIN_STAKING_PERIOD = 30 days;
 
+    // For ERC20 staking, token != address(0); for native staking, token == address(0)
     address public token;
     IAccessControlEnumerable public accessControlEnumerable;
     bytes32 public adminRole;
@@ -45,7 +67,7 @@ abstract contract ThriveStakingBase is
         address _accessControlEnumerable,
         bytes32 _role
     ) internal virtual {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
 
         rewardRate = _rewardRate;
@@ -87,9 +109,60 @@ abstract contract ThriveStakingBase is
         minStakingAmount = _minStakingAmount;
     }
 
+    /// @notice Calculates staking reward based on the amount staked and duration since the last reward claim.
     function calculateReward(address staker) public view returns (uint256) {
         StakingDetails storage details = stakers[staker];
         uint256 stakedDuration = block.timestamp - details.lastRewardTime;
         return (details.amount * rewardRate * stakedDuration) / 1e18;
     }
+
+    /// @notice Stub for contribution rewards – replace with your Oracle logic.
+    function getContributionReward(address /*user*/ )
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
+        return 0;
+    }
+
+    /// @notice Claims the yield (staking rewards plus contribution rewards) without unstaking.
+    function claimYield() external nonReentrant {
+        StakingDetails storage details = stakers[msg.sender];
+        require(details.amount > 0, "ThriveProtocol: no staked tokens");
+
+        uint256 reward =
+            calculateReward(msg.sender) + getContributionReward(msg.sender);
+        require(reward > 0, "ThriveProtocol: no rewards to claim");
+
+        // Update lastRewardTime so that subsequent rewards are calculated only after now.
+        details.lastRewardTime = block.timestamp;
+
+        _transferReward(msg.sender, reward);
+        emit RewardClaimed(msg.sender, reward);
+    }
+
+    /// @notice Unstakes the full staked amount, transfers it along with pending rewards, and resets the staking details.
+    function withdraw() external nonReentrant {
+        StakingDetails storage details = stakers[msg.sender];
+        require(details.amount > 0, "ThriveProtocol: no staked tokens");
+        require(
+            block.timestamp >= details.stakingTime + MIN_STAKING_PERIOD,
+            "ThriveProtocol: 30-day lockup"
+        );
+
+        uint256 reward = calculateReward(msg.sender);
+        uint256 totalAmount = details.amount + reward;
+
+        _transferReward(msg.sender, totalAmount);
+
+        emit Withdrawn(msg.sender, details.amount, reward);
+
+        details.amount = 0;
+        details.stakingTime = 0;
+        details.lastRewardTime = 0;
+    }
+
+    /// @dev Token-specific reward transfer function to be implemented in derived contracts.
+    function _transferReward(address user, uint256 amount) internal virtual;
 }
