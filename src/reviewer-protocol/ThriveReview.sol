@@ -131,6 +131,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     // Mapping which describes if the user/address is involved in any submission either as a contributor or reviewer: userAddress => submissionId => true/false
     mapping(address => mapping(uint256 => bool)) public userInvolvedInSubmission;
 
+    // Mapping of disputes: submissionId => Dispute object
+    mapping(uint256 => Dispute) public disputes;
+
+    // Scaler value for calculating ratios of accepted/rejected reviews
+    uint256 constant SCALER = 10_000;
+
+    // @dev Buffer time for canceling a dispute - arbitrary value set by dev
+    uint256 constant _BUFFER_TIME_FOR_CANCELING_DISPUTE = 1 days;
+
     /**
      * Events
      */
@@ -222,9 +231,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         address indexed reviewer,
         uint256 amount
     );
-
-    // Scaler value for calculating ratios of accepted/rejected reviews
-    uint256 constant SCALER = 10_000;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -482,7 +488,7 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @dev Previously created Review object is updated with new passed information.
      * @param review_ Review object containing the review metadata and decision.
      */
-    function createReview(Review calldata review_)
+    function submitReview(Review calldata review_)
         external
         onlyUserWithAtLeastOneBadge(reviewConfiguration.reviewerBadges)
     {
@@ -672,9 +678,10 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
      */
-    function reachDecisionOnSubmissionAsBadge(
+    function reachDecisionOnSubmissionAsJudge(
         uint256 submissionId_,
-        Decision decision_
+        Decision decision_,
+        string calldata judgeDecisionMetadata_
     )
         external
         onlyUserWithAtLeastOneBadge(reviewConfiguration.judgeBadges)
@@ -708,6 +715,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Start dispute period
         submission.disputeDeadline = uint64(block.timestamp + 2 days);
+
+        // Save judge decision metadata (should contain reasoning behind the decision)
+        submission.judgeDecisionMetadata = judgeDecisionMetadata_;
 
         // Emit event
         emit SubmissionDecisionReachedAsBadge(
@@ -778,8 +788,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
     /**
      * @notice Function to raise a dispute on a submission when user does not agree with final decision.
      * @param submissionId_ Submission ID.
+     * @param disputeMetadata_ Metadata detailing the reasons for raising dispute.
      */
-    function raiseDisputeOnSubmission(uint256 submissionId_) external {
+    function raiseDisputeOnSubmission(
+        uint256 submissionId_,
+        string calldata disputeMetadata_
+    ) external {
         // Get the submission from storage
         Submission storage submission = idToSubmission[submissionId_];
 
@@ -803,6 +817,18 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             "User is not involved in the submission"
         );
 
+        // Get dispute object from storage
+        Dispute storage dispute = disputes[submissionId_];
+
+        // Fill the dispute object
+        dispute.submissionId = submissionId_;
+
+        // Save the disputer's address
+        dispute.disputer = _msgSender();
+
+        // Save the dispute metadata
+        dispute.disputeMetadata = disputeMetadata_;
+
         // Put submission in "DISPUTED" status
         submission.status = SubmissionStatus.DISPUTED;
 
@@ -814,10 +840,12 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @notice Function for resolving disputes on submissions by user holding dispute badge.
      * @param submissionId_ Submission ID.
      * @param decision_ Decision on the submission.
+     * @param disputeResolutionMetadata_ Metadata detailing reasons behind resolution decision.
      */
     function resolveDisputeOnSubmission(
         uint256 submissionId_,
-        Decision decision_
+        Decision decision_,
+        string calldata disputeResolutionMetadata_
     )
         external
         onlyUserWithAtLeastOneBadge(reviewConfiguration.disputeResolverBadges)
@@ -830,6 +858,15 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             submission.status == SubmissionStatus.DISPUTED,
             "Submission is not in 'DISPUTED' status"
         );
+
+        // Get dispute object from storage
+        Dispute storage dispute = disputes[submissionId_];
+
+        // Fill resolver data in dispute object
+        dispute.resolver = _msgSender();
+
+        // Save the dispute resolution metadata
+        dispute.disputeResolutionMetadata = disputeResolutionMetadata_;
 
         // Resolve the submission decision based on the resolvers' decision
         submission.decision = decision_;
@@ -860,7 +897,8 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
 
         // Require for the time-limit on disputing to have passed + some buffer time so that owner does not cancel the dispute too early
         require(
-            block.timestamp > submission.disputeDeadline + 1 days,
+            block.timestamp
+                > submission.disputeDeadline + _BUFFER_TIME_FOR_CANCELING_DISPUTE,
             "Dispute deadline has not passed"
         );
 
@@ -937,9 +975,9 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         // Fetch the reviews of the submission
         uint256[] memory reviewIds = submissionReviews[submissionId_];
 
-        // Loop through the reviews for specific submission
+        // Loop through the reviews of a specific submission
         for (uint256 i = 0; i < reviewIds.length; i++) {
-            // Fetch the review from storage
+            // Fetch the review from storage and copy to memory
             Review memory review = reviews[reviewIds[i]];
 
             // Require that the user made the judgement that is the same as the final decision
@@ -986,13 +1024,6 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
             );
         }
     }
-
-    ////////  Ask Rilind what view functions should be implemented
-    ////////////////
-    ////////////////
-    ////////////////
-    ////////////////
-    ////////////////
 
     /**
      * @notice Pays out the submission reserved funds to the submitter if his submission is ACCEPTED - otherwise return only a fraction of funds.
@@ -1102,6 +1133,14 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
      * @return bool True if all submissions are paid out, false otherwise.
      */
     function allSubmissionsPaidOut() public view returns (bool) {
+        // If there are no submissions and the deadline for submissions has not passed - then there were not any submissions to be paid out and they can still come
+        if (
+            submissions.length == 0
+                && block.timestamp <= reviewConfiguration.submissionDeadline
+        ) {
+            return false;
+        }
+
         for (uint256 i = 0; i < submissions.length; i++) {
             if (submissions[i].status != SubmissionStatus.PAID_OUT) {
                 return false;

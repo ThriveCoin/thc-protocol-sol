@@ -76,6 +76,7 @@ abstract contract BasicTestConfigs is Test {
             rejectedReviewsCount: 213,
             reviewDeadline: 1234,
             disputeDeadline: 0,
+            judgeDecisionMetadata: "",
             decision: IThriveReview.Decision.ACCEPTED,
             status: IThriveReview.SubmissionStatus.PENDING
         });

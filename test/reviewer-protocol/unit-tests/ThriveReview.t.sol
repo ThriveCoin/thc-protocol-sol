@@ -257,7 +257,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -266,7 +266,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x2));
         // Commit to a review
@@ -275,7 +275,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
@@ -312,7 +312,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         review.decision = IThriveReview.Decision.REJECTED;
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -321,7 +321,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x2));
         // Commit to a review
@@ -330,7 +330,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -353,7 +353,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         review.id = 3;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -362,7 +362,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 4;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x2));
         // Commit to a review
@@ -371,7 +371,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 5;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         submissionStatus = thriveReview.getSubmissionStatus(0);
@@ -438,6 +438,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             ,
             address contributor,
             string memory submissionMetadata,
+            ,
             IThriveReview.Decision decision,
             IThriveReview.SubmissionStatus status
         ) = thriveReview.idToSubmission(0);
@@ -501,6 +502,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             ,
             ,
             string memory submissionMetadata,
+            ,
             IThriveReview.Decision decision,
             IThriveReview.SubmissionStatus status
         ) = thriveReview.idToSubmission(0);
@@ -556,7 +558,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.expectRevert("Submission has reviews");
         thriveReview.updateSubmission(submission.submissionMetadata, 0);
@@ -574,7 +576,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -583,7 +585,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x2));
         // Commit to a review
@@ -592,7 +594,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -725,7 +727,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -734,7 +736,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x2));
         // Commit to a review
@@ -743,7 +745,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -763,7 +765,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
 
         vm.expectRevert("User has not committed to this review");
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
     }
 
     function test_206_revert_FailToCreateReviewForSubmissionThatIsNotPending()
@@ -778,7 +780,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -787,7 +789,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x3));
@@ -801,7 +803,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x4));
         review.id = 3;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Now submission has enough reviews to be judged on
         // Check that the submission is finalized
@@ -817,7 +819,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x3));
         vm.expectRevert("Submission is not in 'PENDING' status");
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
     }
 
     function test_207_revert_FailToCreateReviewByUserWhoDidNotCommitTheSameReview(
@@ -835,7 +837,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // User can not create review committed by someone else
         vm.expectRevert("User is not the committer of this review");
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
     }
 
     function test_208_revert_FailToCreateReviewAfterReviewCommitmentDeadline()
@@ -854,7 +856,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         vm.expectRevert("Review commitment deadline has passed");
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
     }
 
     function test_209_revert_FailToCreateReviewAfterReviewDeadline() public {
@@ -875,7 +877,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         vm.expectRevert("Review deadline has passed");
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
     }
 
     function test_210_revert_FailToCreateReviewWithNonAcceptedDecision()
@@ -892,7 +894,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.expectRevert(
             "Review decision must be either 'ACCEPTED' or 'REJECTED'"
         );
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
     }
 
     function test_211_success_CreateReviewAfterCommittingToIt() public {
@@ -903,7 +905,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Get the review
         (
@@ -947,6 +949,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             uint64 reviewCount,
             uint64 acceptedReviewCount,
             uint64 rejectedReviewCount,
+            ,
             ,
             ,
             ,
@@ -1068,7 +1071,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         thriveReview.commitToReview(0);
         // Create review by address(0x1)
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.warp(
             currentBlockTimestamp + reviewConfiguration.reviewCommitmentPeriod
@@ -1113,7 +1116,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -1122,7 +1125,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         uint256 balanceBeforeClaimingReward = address(this).balance;
         uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
@@ -1138,7 +1141,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Address 3 makes the right decision
         review.decision = IThriveReview.Decision.ACCEPTED;
@@ -1149,7 +1152,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x3));
         // Create a review
         review.id = 3;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is ACCEPTED
         IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
@@ -1209,7 +1212,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         vm.prank(address(0x1));
         // Commit to a review
@@ -1218,7 +1221,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x1));
         // Create a review
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         uint256 balanceBeforeClaimingReward = address(this).balance;
         uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
@@ -1234,7 +1237,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x2));
         // Create a review
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Address 3 makes the right decision
         review.decision = IThriveReview.Decision.REJECTED;
@@ -1245,7 +1248,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x3));
         // Create a review
         review.id = 3;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
@@ -1350,7 +1353,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReviewWithoutWorkUnit.commitToReview(0);
 
         // Create a review
-        thriveReviewWithoutWorkUnit.createReview(review);
+        thriveReviewWithoutWorkUnit.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -1359,7 +1362,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReviewWithoutWorkUnit.createReview(review);
+        thriveReviewWithoutWorkUnit.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1368,7 +1371,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 2;
-        thriveReviewWithoutWorkUnit.createReview(review);
+        thriveReviewWithoutWorkUnit.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -1418,7 +1421,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1427,7 +1430,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Make following reviews REJECTED
         review.decision = IThriveReview.Decision.REJECTED;
@@ -1439,7 +1442,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x3));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x4));
@@ -1448,7 +1451,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x4));
         review.id = 3;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is still pending because there is no consensus on decision
         IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
@@ -1466,8 +1469,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that the submission is still pending because there is no consensus on decision
@@ -1496,7 +1499,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Change the users decision to REJECTED
         review.decision = IThriveReview.Decision.REJECTED;
@@ -1507,7 +1510,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Users balances before distributing reviewer rewards
         uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
@@ -1516,8 +1519,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.warp(
             currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1
         );
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.REJECTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.REJECTED, ""
         );
 
         // Go to after dispute deadline
@@ -1555,7 +1558,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1564,7 +1567,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Go to right after the review deadline
         vm.warp(
@@ -1572,8 +1575,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that the submission is still pending because there is no consensus on decision
@@ -1603,7 +1606,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1612,14 +1615,14 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Revert on finalizing the submission
         vm.expectRevert(
             "Submission has not reached requirements for a final decision as badge"
         );
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
     }
 
@@ -1634,7 +1637,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1643,7 +1646,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Go to right after the review deadline
         vm.warp(
@@ -1652,8 +1655,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Revert to finalize the submission with no proper decision
         vm.expectRevert("Decision must be either 'ACCEPTED' or 'REJECTED'");
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.NONE
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.NONE, ""
         );
     }
 
@@ -1669,7 +1672,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1678,7 +1681,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x3));
@@ -1687,7 +1690,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x3));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is still finalized
         IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
@@ -1705,8 +1708,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         vm.expectRevert("Submission is not in 'PENDING' status");
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
     }
 
@@ -1720,7 +1723,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1729,7 +1732,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Now review as a contract account
         FailedDistributionExampleContract failedDistributionExampleContract =
@@ -1819,7 +1822,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -1828,7 +1831,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is still pending
         IThriveReview.SubmissionStatus submissionStatus =
@@ -1840,7 +1843,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         vm.expectRevert("Submission is not in 'FINALIZED' status");
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
     }
 
     function test_501_revert_FailToRaiseDisputeAfterDisputeDeadlinePasses()
@@ -1853,7 +1856,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -1862,7 +1865,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1871,7 +1874,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -1886,7 +1889,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.warp(currentBlockTimestamp + 2 days + 1);
 
         vm.expectRevert("Dispute deadline has passed");
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
     }
 
     function test_502_revert_FailToRaiseDisputeIfNotInvolvedInSubmission()
@@ -1899,7 +1902,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -1908,7 +1911,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1917,7 +1920,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -1930,7 +1933,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         vm.expectRevert("User is not involved in the submission");
         vm.prank(address(0x3));
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
     }
 
     function test_503_success_RaiseDisputeOnSubmission() public {
@@ -1943,7 +1946,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -1952,7 +1955,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x3));
@@ -1961,7 +1964,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x3));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is finalized
         IThriveReview.SubmissionStatus submissionStatus =
@@ -1973,7 +1976,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -1995,7 +1998,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -2004,7 +2007,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is still pending
         IThriveReview.SubmissionStatus submissionStatus =
@@ -2017,7 +2020,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         vm.expectRevert("Submission is not in 'DISPUTED' status");
         thriveReview.resolveDisputeOnSubmission(
-            0, IThriveReview.Decision.ACCEPTED
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
     }
 
@@ -2033,7 +2036,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -2042,7 +2045,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x3));
@@ -2052,7 +2055,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x3));
         review.id = 2;
         review.decision = IThriveReview.Decision.REJECTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x4));
@@ -2062,7 +2065,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         vm.prank(address(0x4));
         review.id = 3;
         review.decision = IThriveReview.Decision.ACCEPTED;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // User 0x3 balance before dispute resolution
         uint256 balanceAddress3BeforeDispute = address(0x3).balance;
@@ -2077,7 +2080,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -2090,7 +2093,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Resolve dispute
         thriveReview.resolveDisputeOnSubmission(
-            0, IThriveReview.Decision.REJECTED
+            0, IThriveReview.Decision.REJECTED, ""
         );
 
         // Check that the submission is resolved
@@ -2129,7 +2132,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -2138,7 +2141,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is still pending
         IThriveReview.SubmissionStatus submissionStatus =
@@ -2163,7 +2166,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -2172,7 +2175,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x3));
@@ -2181,10 +2184,10 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x3));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -2214,7 +2217,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Create a review
         vm.prank(address(0x1));
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x2));
@@ -2223,7 +2226,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x2));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x3));
@@ -2232,10 +2235,10 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x3));
         review.id = 2;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Raise dispute
-        thriveReview.raiseDisputeOnSubmission(0);
+        thriveReview.raiseDisputeOnSubmission(0, "");
 
         // Check that the submission is disputed
         IThriveReview.SubmissionStatus submissionStatusAfterDispute =
@@ -2293,7 +2296,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -2302,7 +2305,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Check that the submission is still pending
         IThriveReview.SubmissionStatus submissionStatus =
@@ -2329,7 +2332,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -2338,7 +2341,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Go to right after the review deadline
         vm.warp(
@@ -2346,8 +2349,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Check that the submission is still pending because there is no consensus on decision
@@ -2382,7 +2385,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         thriveReview.commitToReview(0);
 
         // Create a review
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Commit to review
         vm.prank(address(0x1));
@@ -2391,7 +2394,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Create a review
         vm.prank(address(0x1));
         review.id = 1;
-        thriveReview.createReview(review);
+        thriveReview.submitReview(review);
 
         // Balance of address 0x1 before getting reward
         uint256 balanceAddress1BeforeClaimingReward = address(0x1).balance;
@@ -2402,8 +2405,8 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         );
 
         // Finalize this submission as a judge badge
-        thriveReview.reachDecisionOnSubmissionAsBadge(
-            0, IThriveReview.Decision.ACCEPTED
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0, IThriveReview.Decision.ACCEPTED, ""
         );
 
         // Go to after dispute deadline
@@ -2421,6 +2424,71 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
             balanceAddress1BeforeClaimingReward
                 + reviewConfiguration.reviewerReward,
             "Reviewer reward is not claimed correctly"
+        );
+    }
+
+    function test_512_success_DisputeStorageObjectCorrectlyStored() public {
+        // Create a submission
+        thriveReview.createSubmission{value: SUBMITTER_LOCKED_FUNDS}(submission);
+
+        // Go to after review deadline so judge can make the decision
+        vm.warp(
+            currentBlockTimestamp + reviewConfiguration.reviewDeadlinePeriod + 1
+        );
+
+        // Finalize this submission as a judge badge
+        thriveReview.reachDecisionOnSubmissionAsJudge(
+            0,
+            IThriveReview.Decision.ACCEPTED,
+            "I think this submission should be accepted"
+        );
+
+        // Get submission decision
+        IThriveReview.Decision decision = thriveReview.getSubmissionDecision(0);
+        assertEq(
+            uint256(decision),
+            uint256(IThriveReview.Decision.ACCEPTED),
+            "Submission decision is not set correctly"
+        );
+
+        // Raise dispute
+        thriveReview.raiseDisputeOnSubmission(
+            0, "I think this submission should be rejected"
+        );
+
+        // Resolve dispute
+        thriveReview.resolveDisputeOnSubmission(
+            0,
+            IThriveReview.Decision.REJECTED,
+            "I think this submission should NOT be rejected"
+        );
+
+        // Get dispute object
+        (
+            uint256 submissionId,
+            address disputer,
+            address resolver,
+            string memory disputeMetadata,
+            string memory disputeResolutionMetadata
+        ) = thriveReview.disputes(0);
+
+        // Assert that the dispute object is stored correctly
+        assertEq(submissionId, 0, "Submission ID is not set correctly");
+        assertEq(
+            disputer, address(this), "Disputer address is not set correctly"
+        );
+        assertEq(
+            resolver, address(this), "Resolver address is not set correctly"
+        );
+        assertEq(
+            disputeMetadata,
+            "I think this submission should be rejected",
+            "Dispute metadata is not set correctly"
+        );
+        assertEq(
+            disputeResolutionMetadata,
+            "I think this submission should NOT be rejected",
+            "Dispute resolution metadata is not set correctly"
         );
     }
 
@@ -2443,7 +2511,7 @@ contract FailedDistributionExampleContract {
         IThriveReview.Review calldata review_
     ) public {
         thriveReview.commitToReview(submissionId_);
-        thriveReview.createReview(review_);
+        thriveReview.submitReview(review_);
     }
 
     function claimFailedDistributionFunds() public {

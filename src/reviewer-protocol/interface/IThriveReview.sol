@@ -62,6 +62,8 @@ interface IThriveReview {
         address contributor;
         // JSON object that contains the information shown to reviewers during the review process
         string submissionMetadata;
+        // Metadata containing judge decision on the submission - This is filled when a judge HAS TO finalize a submission.
+        string judgeDecisionMetadata;
         // Review decision on this submission - saved after conditions for reaching a verdict are met.
         Decision decision;
         // The status of the submission
@@ -84,6 +86,20 @@ interface IThriveReview {
         Decision decision;
         // The status of the review
         ReviewStatus status;
+    }
+
+    // Struct to store the details of a dispute.
+    struct Dispute {
+        // The id of the submission that is being disputed.
+        uint256 submissionId;
+        // The address of the user who is disputing the submission.
+        address disputer;
+        // The address of the user who is resolving the dispute.
+        address resolver;
+        // Metadata submitted by the disputer to explain the dispute.
+        string disputeMetadata;
+        // Metadata submitted by the resolver to explain the resolution.
+        string disputeResolutionMetadata;
     }
 
     // Status of a ThriveReview submission
