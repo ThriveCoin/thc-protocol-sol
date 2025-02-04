@@ -26,12 +26,7 @@ contract ThriveStakingNative is ThriveStakingBase {
             msg.value >= minStakingAmount, "ThriveProtocol: below minimum stake"
         );
 
-        StakingDetails storage details = stakers[msg.sender];
-        details.amount += msg.value;
-        details.stakingTime = block.timestamp;
-        details.lastRewardTime = block.timestamp;
-
-        emit Staked(msg.sender, msg.value);
+        _stake(msg.value);
     }
 
     /// @dev Implements token-specific reward transfer for native tokens.

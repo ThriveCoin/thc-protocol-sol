@@ -23,7 +23,7 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
     }
 
     /// @notice Stake ERC20 tokens. The user must have approved the contract beforehand.
-    function stake(uint256 amount) external nonReentrant {
+    function _stake(uint256 amount) internal virtual {
         require(
             amount >= minStakingAmount, "ThriveProtocol: below minimum stake"
         );
@@ -32,12 +32,7 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
             "ThriveProtocol: transfer failed"
         );
 
-        StakingDetails storage details = stakers[msg.sender];
-        details.amount += amount;
-        details.stakingTime = block.timestamp;
-        details.lastRewardTime = block.timestamp;
-
-        emit Staked(msg.sender, amount);
+        super._stake(amount);
     }
 
     /// @dev Implements token-specific reward transfer for ERC20.

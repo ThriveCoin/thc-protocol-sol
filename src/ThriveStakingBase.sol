@@ -111,7 +111,7 @@ abstract contract ThriveStakingBase is
 
     /// @notice Calculates staking reward based on the amount staked and duration since the last reward claim.
     function calculateReward(address staker) public view returns (uint256) {
-        StakingDetails storage details = stakers[staker];
+        StakingDetails memory details = stakers[staker];
         uint256 stakedDuration = block.timestamp - details.lastRewardTime;
         return (details.amount * rewardRate * stakedDuration) / 1e18;
     }
@@ -161,6 +161,21 @@ abstract contract ThriveStakingBase is
         details.amount = 0;
         details.stakingTime = 0;
         details.lastRewardTime = 0;
+    }
+
+    /// @notice External stake function that calls the internal _stake; can be overridden.
+    function stake(uint256 amount) external nonReentrant {
+        _stake(amount);
+    }
+
+    /// @dev Common internal function to update staking details and emit the Staked event.
+    function _stake(uint256 amount) internal virtual {
+        StakingDetails storage details = stakers[msg.sender];
+        details.amount += amount;
+        details.stakingTime = block.timestamp;
+        details.lastRewardTime = block.timestamp;
+
+        emit Staked(msg.sender, amount);
     }
 
     /// @dev Token-specific reward transfer function to be implemented in derived contracts.
