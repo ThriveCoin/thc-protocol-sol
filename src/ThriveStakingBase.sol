@@ -170,6 +170,12 @@ abstract contract ThriveStakingBase is
 
     /// @dev Common internal function to update staking details and emit the Staked event.
     function _stake(uint256 amount) internal virtual {
+        uint256 pendingYield = calculateReward(msg.sender);
+        require(
+            pendingYield == 0,
+            "ThriveProtocol: claim yield first and retry stake again"
+        );
+
         StakingDetails storage details = stakers[msg.sender];
         details.amount += amount;
         details.stakingTime = block.timestamp;
