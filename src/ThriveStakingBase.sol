@@ -10,6 +10,8 @@ import {IAccessControlEnumerable} from
 import {ReentrancyGuard} from
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from
+    "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 
 /*
@@ -62,7 +64,9 @@ abstract contract ThriveStakingBase is
 
     mapping(address => StakingDetails) public stakers;
     mapping(uint256 => address) public requestIdToUser;
+    mapping(address => bool) public pendingContributionRequests;
     mapping(address => uint256) public userContributionRewards;
+    mapping(address => uint256) public userContributionPercentage;
     uint256 public requestCounter;
 
     function _initialize(
@@ -118,30 +122,29 @@ abstract contract ThriveStakingBase is
     function calculateReward(address staker) public view returns (uint256) {
         StakingDetails memory details = stakers[staker];
         uint256 stakedDuration = block.timestamp - details.lastRewardTime;
-        return (details.amount * rewardRate * stakedDuration) / 1e18;
-    }
 
-    // request sender contribution reward.
-    function requestContributionData() external payable {
-        require(msg.value >= 0.01 ether, "Insufficient fee"); // Fee paid in native token
-
-        requestCounter++;
-        requestIdToUser[requestCounter] = msg.sender;
-
-        emit ContributionDataRequested(msg.sender, requestCounter);
+        uint256 decimals =
+            token == address(0) ? 18 : IERC20Metadata(token).decimals();
+        return (details.amount * rewardRate * stakedDuration) / (10 ** decimals);
     }
 
     // store the contribution reward
-    function fulfillContributionData(uint256 requestId, uint256 reward)
-        external
-        onlyAdmin
-    {
+    function fulfillContributionData(
+        uint256 requestId,
+        uint256 totalEpochYield,
+        uint256 contributionPercentage
+    ) external onlyAdmin {
         address user = requestIdToUser[requestId];
         require(user != address(0), "Invalid requestId");
 
-        userContributionRewards[user] = reward;
+        userContributionPercentage[user] = contributionPercentage;
+        uint256 contributionReward =
+            (totalEpochYield * contributionPercentage) / 100;
 
-        emit ContributionDataFulfilled(user, reward);
+        userContributionRewards[user] = contributionReward;
+        pendingContributionRequests[user] = false; // Reset pending request flag
+
+        emit ContributionDataFulfilled(user, contributionReward);
     }
 
     // fetches the stored reward
@@ -158,12 +161,28 @@ abstract contract ThriveStakingBase is
         StakingDetails storage details = stakers[msg.sender];
         require(details.amount > 0, "ThriveProtocol: no staked tokens");
 
-        uint256 reward =
-            calculateReward(msg.sender) + getContributionReward(msg.sender);
+        uint256 contributionReward = getContributionReward(msg.sender);
+
+        if (contributionReward == 0 && !pendingContributionRequests[msg.sender])
+        {
+            requestCounter++;
+            requestIdToUser[requestCounter] = msg.sender;
+            pendingContributionRequests[msg.sender] = true;
+
+            emit ContributionDataRequested(msg.sender, requestCounter);
+            return;
+        }
+
+        require(
+            contributionReward > 0, "ThriveProtocol: pending contribution data"
+        );
+
+        uint256 reward = calculateReward(msg.sender) + contributionReward;
         require(reward > 0, "ThriveProtocol: no rewards to claim");
 
-        // Update lastRewardTime so that subsequent rewards are calculated only after now.
         details.lastRewardTime = block.timestamp;
+        userContributionRewards[msg.sender] = 0;
+        pendingContributionRequests[msg.sender] = false; // Reset the pending status
 
         _transferReward(msg.sender, reward);
         emit RewardClaimed(msg.sender, reward);
