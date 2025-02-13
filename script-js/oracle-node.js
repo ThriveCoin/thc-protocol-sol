@@ -1,11 +1,10 @@
-require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const { ethers } = require("ethers");
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const RPC_URL = process.env.RPC_URL;
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
+const CONTRACT_ADDRESS = process.env.PROXY_ADDRESS;
 const API_URL = process.env.API_URL;
 
 const provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -15,7 +14,6 @@ const abi = [
     "function fulfillContributionData(uint256 requestId, uint256 reward) external"
 ];
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
-
 const app = express();
 app.use(express.json());
 
