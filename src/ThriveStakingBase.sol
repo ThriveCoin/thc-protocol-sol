@@ -42,6 +42,8 @@ abstract contract ThriveStakingBase is
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount, uint256 reward);
     event RewardClaimed(address indexed user, uint256 reward);
+    event ContributionDataRequested(address indexed user, uint256 requestId);
+    event ContributionDataFulfilled(address indexed user, uint256 reward);
 
     struct StakingDetails {
         uint256 amount;
@@ -59,6 +61,9 @@ abstract contract ThriveStakingBase is
     bytes32 public adminRole;
 
     mapping(address => StakingDetails) public stakers;
+    mapping(uint256 => address) public requestIdToUser;
+    mapping(address => uint256) public userContributionRewards;
+    uint256 public requestCounter;
 
     function _initialize(
         address _token,
@@ -116,14 +121,36 @@ abstract contract ThriveStakingBase is
         return (details.amount * rewardRate * stakedDuration) / 1e18;
     }
 
-    /// @notice Stub for contribution rewards – replace with your Oracle logic.
-    function getContributionReward(address /*user*/ )
+    // request sender contribution reward.
+    function requestContributionData() external payable {
+        require(msg.value >= 0.01 ether, "Insufficient fee"); // Fee paid in native token
+
+        requestCounter++;
+        requestIdToUser[requestCounter] = msg.sender;
+
+        emit ContributionDataRequested(msg.sender, requestCounter);
+    }
+
+    // store the contribution reward
+    function fulfillContributionData(uint256 requestId, uint256 reward)
+        external
+        onlyAdmin
+    {
+        address user = requestIdToUser[requestId];
+        require(user != address(0), "Invalid requestId");
+
+        userContributionRewards[user] = reward;
+
+        emit ContributionDataFulfilled(user, reward);
+    }
+
+    // fetches the stored reward
+    function getContributionReward(address user)
         internal
         view
-        virtual
         returns (uint256)
     {
-        return 0;
+        return userContributionRewards[user];
     }
 
     /// @notice Claims the yield (staking rewards plus contribution rewards) without unstaking.
