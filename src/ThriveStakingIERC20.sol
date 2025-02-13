@@ -23,7 +23,7 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
     }
 
     /// @notice Stake ERC20 tokens. The user must have approved the contract beforehand.
-    function _stake(uint256 amount) internal override virtual {
+    function _stake(uint256 amount) internal virtual override {
         require(
             amount >= minStakingAmount, "ThriveProtocol: below minimum stake"
         );
