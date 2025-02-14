@@ -42,18 +42,16 @@ abstract contract ThriveStakingBase is
     using AccessControlHelper for IAccessControlEnumerable;
 
     event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount, uint256 reward);
-    event RewardClaimed(address indexed user, uint256 reward);
-    event ContributionDataRequested(address indexed user, uint256 requestId);
-    event ContributionDataFulfilled(address indexed user, uint256 reward);
+    event Withdrawn(address indexed user, uint256 amount, uint256 yield);
+    event YieldClaimed(address indexed user, uint256 yield);
 
     struct StakingDetails {
         uint256 amount;
         uint256 stakingTime;
-        uint256 lastRewardTime;
+        uint256 lastYieldTime;
     }
 
-    uint256 public rewardRate;
+    uint256 public yieldRate;
     uint256 public minStakingAmount;
     uint256 public constant MIN_STAKING_PERIOD = 30 days;
 
@@ -63,15 +61,10 @@ abstract contract ThriveStakingBase is
     bytes32 public adminRole;
 
     mapping(address => StakingDetails) public stakers;
-    mapping(uint256 => address) public requestIdToUser;
-    mapping(address => bool) public pendingContributionRequests;
-    mapping(address => uint256) public userContributionRewards;
-    mapping(address => uint256) public userContributionPercentage;
-    uint256 public requestCounter;
 
     function _initialize(
         address _token,
-        uint256 _rewardRate,
+        uint256 _yieldRate,
         uint256 _minStakingAmount,
         address _accessControlEnumerable,
         bytes32 _role
@@ -79,7 +72,7 @@ abstract contract ThriveStakingBase is
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
 
-        rewardRate = _rewardRate;
+        yieldRate = _yieldRate;
         minStakingAmount = _minStakingAmount;
         token = _token;
         accessControlEnumerable =
@@ -107,8 +100,8 @@ abstract contract ThriveStakingBase is
         adminRole = _role;
     }
 
-    function setRewardRate(uint256 _rewardRate) external onlyAdmin {
-        rewardRate = _rewardRate;
+    function setYieldRate(uint256 _yieldRate) external onlyAdmin {
+        yieldRate = _yieldRate;
     }
 
     function setMinStakingAmount(uint256 _minStakingAmount)
@@ -118,77 +111,31 @@ abstract contract ThriveStakingBase is
         minStakingAmount = _minStakingAmount;
     }
 
-    /// @notice Calculates staking reward based on the amount staked and duration since the last reward claim.
-    function calculateReward(address staker) public view returns (uint256) {
+    /// @notice Calculates staking yield based on the amount staked and duration since the last yield claim.
+    function calculateYield(address staker) public view returns (uint256) {
         StakingDetails memory details = stakers[staker];
-        uint256 stakedDuration = block.timestamp - details.lastRewardTime;
+        uint256 stakedDuration = block.timestamp - details.lastYieldTime;
 
         uint256 decimals =
             token == address(0) ? 18 : IERC20Metadata(token).decimals();
-        return (details.amount * rewardRate * stakedDuration) / (10 ** decimals);
+        return (details.amount * yieldRate * stakedDuration) / (10 ** decimals);
     }
 
-    // store the contribution reward
-    function fulfillContributionData(
-        uint256 requestId,
-        uint256 totalEpochYield,
-        uint256 contributionPercentage
-    ) external onlyAdmin {
-        address user = requestIdToUser[requestId];
-        require(user != address(0), "Invalid requestId");
-
-        userContributionPercentage[user] = contributionPercentage;
-        uint256 contributionReward =
-            (totalEpochYield * contributionPercentage) / 100;
-
-        userContributionRewards[user] = contributionReward;
-        pendingContributionRequests[user] = false; // Reset pending request flag
-
-        emit ContributionDataFulfilled(user, contributionReward);
-    }
-
-    // fetches the stored reward
-    function getContributionReward(address user)
-        internal
-        view
-        returns (uint256)
-    {
-        return userContributionRewards[user];
-    }
-
-    /// @notice Claims the yield (staking rewards plus contribution rewards) without unstaking.
+    /// @notice Claims only the staking yield.
     function claimYield() external nonReentrant {
         StakingDetails storage details = stakers[msg.sender];
         require(details.amount > 0, "ThriveProtocol: no staked tokens");
 
-        uint256 contributionReward = getContributionReward(msg.sender);
+        uint256 yield = calculateYield(msg.sender);
+        require(yield > 0, "ThriveProtocol: no yield to claim");
 
-        if (contributionReward == 0 && !pendingContributionRequests[msg.sender])
-        {
-            requestCounter++;
-            requestIdToUser[requestCounter] = msg.sender;
-            pendingContributionRequests[msg.sender] = true;
+        details.lastYieldTime = block.timestamp; // Reset yield calculation start point
 
-            emit ContributionDataRequested(msg.sender, requestCounter);
-            return;
-        }
-
-        require(
-            contributionReward > 0, "ThriveProtocol: pending contribution data"
-        );
-
-        uint256 reward = calculateReward(msg.sender) + contributionReward;
-        require(reward > 0, "ThriveProtocol: no rewards to claim");
-
-        details.lastRewardTime = block.timestamp;
-        userContributionRewards[msg.sender] = 0;
-        pendingContributionRequests[msg.sender] = false; // Reset the pending status
-
-        _transferReward(msg.sender, reward);
-        emit RewardClaimed(msg.sender, reward);
+        _transferYield(msg.sender, yield);
+        emit YieldClaimed(msg.sender, yield);
     }
 
-    /// @notice Unstakes the full staked amount, transfers it along with pending rewards, and resets the staking details.
+    /// @notice Unstakes the full staked amount, transfers it along with pending yields, and resets the staking details.
     function withdraw() external nonReentrant {
         StakingDetails storage details = stakers[msg.sender];
         require(details.amount > 0, "ThriveProtocol: no staked tokens");
@@ -197,16 +144,16 @@ abstract contract ThriveStakingBase is
             "ThriveProtocol: 30-day lockup"
         );
 
-        uint256 reward = calculateReward(msg.sender);
-        uint256 totalAmount = details.amount + reward;
+        uint256 yield = calculateYield(msg.sender);
+        uint256 totalAmount = details.amount + yield;
 
-        _transferReward(msg.sender, totalAmount);
+        _transferYield(msg.sender, totalAmount);
 
-        emit Withdrawn(msg.sender, details.amount, reward);
+        emit Withdrawn(msg.sender, details.amount, yield);
 
         details.amount = 0;
         details.stakingTime = 0;
-        details.lastRewardTime = 0;
+        details.lastYieldTime = 0;
     }
 
     /// @notice External stake function that calls the internal _stake; can be overridden.
@@ -216,7 +163,7 @@ abstract contract ThriveStakingBase is
 
     /// @dev Common internal function to update staking details and emit the Staked event.
     function _stake(uint256 amount) internal virtual {
-        uint256 pendingYield = calculateReward(msg.sender);
+        uint256 pendingYield = calculateYield(msg.sender);
         require(
             pendingYield == 0,
             "ThriveProtocol: claim yield first and retry stake again"
@@ -225,11 +172,11 @@ abstract contract ThriveStakingBase is
         StakingDetails storage details = stakers[msg.sender];
         details.amount += amount;
         details.stakingTime = block.timestamp;
-        details.lastRewardTime = block.timestamp;
+        details.lastYieldTime = block.timestamp;
 
         emit Staked(msg.sender, amount);
     }
 
-    /// @dev Token-specific reward transfer function to be implemented in derived contracts.
-    function _transferReward(address user, uint256 amount) internal virtual;
+    /// @dev Token-specific yield transfer function to be implemented in derived contracts.
+    function _transferYield(address user, uint256 amount) internal virtual;
 }

@@ -8,14 +8,14 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
     /// @notice Initialize with the ERC20 token address and staking parameters.
     function initialize(
         address _erc20Token,
-        uint256 _rewardRate,
+        uint256 _yieldRate,
         uint256 _minStakingAmount,
         address _accessControlEnumerable,
         bytes32 _role
     ) public initializer {
         _initialize(
             _erc20Token,
-            _rewardRate,
+            _yieldRate,
             _minStakingAmount,
             _accessControlEnumerable,
             _role
@@ -35,11 +35,11 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
         super._stake(amount);
     }
 
-    /// @dev Implements token-specific reward transfer for ERC20.
-    function _transferReward(address user, uint256 amount) internal override {
+    /// @dev Implements yield transfer for ERC20 token.
+    function _transferYield(address user, uint256 amount) internal override {
         require(
             IERC20(token).transfer(user, amount),
-            "ThriveProtocol: reward transfer failed"
+            "ThriveProtocol: yield transfer failed"
         );
     }
 }
