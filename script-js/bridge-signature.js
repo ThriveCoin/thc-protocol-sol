@@ -22,24 +22,24 @@ const main = async () => {
 
   const hash = ethers.keccak256(
     ethers.solidityPacked(
-      ["address", "address", "address", "uint256", "uint256"],
+      ['address', 'address', 'address', 'uint256', 'uint256'],
       [srcContract, sender, receiver, nonce, amount]
     )
   )
   const ethSignedMessageHash = ethers.hashMessage(ethers.getBytes(hash))
   const signature = await wallet.signMessage(ethers.getBytes(hash))
 
-  console.log("Hash:", hash)
-  console.log("Ethereum Signed Message Hash:", ethSignedMessageHash)
-  console.log("Signature:", signature)
+  console.log('Hash:', hash)
+  console.log('Ethereum Signed Message Hash:', ethSignedMessageHash)
+  console.log('Signature:', signature)
 
   const sigBytes = ethers.Signature.from(signature)
-  console.log("r:", sigBytes.r)
-  console.log("s:", sigBytes.s)
-  console.log("v:", sigBytes.v)
+  console.log('r:', sigBytes.r)
+  console.log('s:', sigBytes.s)
+  console.log('v:', sigBytes.v)
 
   const recoveredAddress = ethers.verifyMessage(ethers.getBytes(hash), signature)
-  console.log("Recovered Address:", recoveredAddress)
+  console.log('Recovered Address:', recoveredAddress)
 }
 
 main()
