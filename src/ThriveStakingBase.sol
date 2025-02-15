@@ -157,7 +157,7 @@ abstract contract ThriveStakingBase is
     }
 
     /// @notice External stake function that calls the internal _stake; can be overridden.
-    function stake(uint256 amount) external nonReentrant {
+    function stake(uint256 amount) external payable nonReentrant {
         _stake(amount);
     }
 

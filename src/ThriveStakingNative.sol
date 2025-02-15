@@ -20,13 +20,16 @@ contract ThriveStakingNative is ThriveStakingBase {
         );
     }
 
-    /// @notice Stake native tokens by sending ETH along with the call.
-    function stake() external payable nonReentrant {
+    /// @dev Overrides base `_stake()`
+    function _stake(uint256 amount) internal virtual override {
+        require(
+            amount == msg.value,
+            "ThriveProtocol: Amount mismatch with value sent"
+        );
         require(
             msg.value >= minStakingAmount, "ThriveProtocol: below minimum stake"
         );
-
-        _stake(msg.value);
+        super._stake(amount);
     }
 
     /// @dev Implements token-specific yield transfer for native tokens.

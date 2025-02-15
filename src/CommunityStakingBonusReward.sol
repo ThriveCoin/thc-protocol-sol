@@ -8,7 +8,7 @@ import {UUPSUpgradeable} from
 
 contract CommunityStakingBonusReward is OwnableUpgradeable, UUPSUpgradeable {
     address public thriveStakingContract;
-    uint256 public community_id;
+    uint256 public communityId;
     mapping(address => uint256) public userRewardPercentage;
     mapping(address => uint256) public userClaimed;
 
@@ -23,10 +23,10 @@ contract CommunityStakingBonusReward is OwnableUpgradeable, UUPSUpgradeable {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         thriveStakingContract = _thriveStaking;
-        community_id = _communityId;
+        communityId = _communityId;
     }
 
-    /// @notice Oracle updates contribution percentages based on community_id
+    /// @notice Oracle updates contribution percentages based on communityId
     function fulfillContributionData(address user, uint256 percentage)
         external
         onlyOwner
@@ -38,7 +38,7 @@ contract CommunityStakingBonusReward is OwnableUpgradeable, UUPSUpgradeable {
     /// @notice User claims their reward in native tokens
     function claimReward() external {
         if (userRewardPercentage[msg.sender] == 0) {
-            emit ContributionDataRequested(msg.sender, community_id);
+            emit ContributionDataRequested(msg.sender, communityId);
             return;
         }
 

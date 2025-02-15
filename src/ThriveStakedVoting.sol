@@ -11,18 +11,33 @@ import {IThriveStaking} from "./interface/IThriveStaking.sol";
  */
 contract ThriveStakedVotingUpgradeable is OwnableUpgradeable {
     IThriveStaking public stakingContract;
+    uint256 public voteRate; // Multiplier that determines the voting power per staked token.
 
-    function initialize(address _stakingContractAddress) external initializer {
+    event VoteRateUpdated(uint256 newRate);
+
+    function initialize(address _stakingContractAddress, uint256 _voteRate)
+        external
+        initializer
+    {
         require(
             _stakingContractAddress != address(0),
             "Staking address cannot be zero"
         );
         __Ownable_init(msg.sender);
         stakingContract = IThriveStaking(_stakingContractAddress);
+        voteRate = _voteRate;
+    }
+
+    /// @notice Allows owner to update the voting rate multiplier
+    function setVoteRate(uint256 _newRate) external onlyOwner {
+        require(_newRate > 0, "Vote rate must be greater than zero");
+        voteRate = _newRate;
+
+        emit VoteRateUpdated(_newRate);
     }
 
     function getVotes(address user) external view returns (uint256 votes) {
         (uint256 amount,,) = stakingContract.stakers(user);
-        votes = amount;
+        votes = amount * voteRate;
     }
 }
