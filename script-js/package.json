@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "standard --fix"
   },
   "author": "",
   "license": "ISC",
@@ -11,5 +12,8 @@
   "dependencies": {
     "ethers": "^6.13.4",
     "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "standard": "^17.1.2"
   }
 }
