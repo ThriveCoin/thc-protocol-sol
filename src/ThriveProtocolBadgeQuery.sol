@@ -6,6 +6,7 @@ import "./IBadgeQuery.sol";
 /**
  * @title BadgeQuery
  * @dev Implementation of IBadgeQuery that always returns true.
+ * @notice TODO: need to be implemented, this is initial version
  */
 contract BadgeQuery is IBadgeQuery {
     /**
