@@ -98,6 +98,7 @@ contract ThriveOraclePriceStore is
         returns (uint256, uint256, address)
     {
         PriceData memory data = prices[_pair];
+        require(data.updatedAt != 0, "Price missing");
         return (data.price, data.updatedAt, data.updatedBy);
     }
 

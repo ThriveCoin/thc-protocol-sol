@@ -66,6 +66,13 @@ contract ThriveOraclePriceStoreTest is Test {
         assertEq(updatedBy, owner);
     }
 
+
+    function test_getPrice_missing() public {
+        vm.prank(user);
+        vm.expectRevert();
+        priceStore.getPrice("BTC/USD");
+    }
+
     function test_setAccessControlEnumerable() public {
         vm.prank(owner);
         priceStore.setAccessControlEnumerable(
