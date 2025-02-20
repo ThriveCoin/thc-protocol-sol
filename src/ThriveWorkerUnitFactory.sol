@@ -16,45 +16,15 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
     event ThriveWorkerUnitCreated(address indexed unitAddress);
 
     /**
-     * @notice Creates a new ThriveWorkerUnit contract.
-     * @dev Inherits documentation for arguments from IThriveWorkerUnitFactory.
+     * @notice Creates a new ThriveWorkerUnit contract using a WorkUnitArgs struct.
+     * @dev This function is payable to forward ETH to the worker unit’s initialize function.
      * @return Address of the newly created ThriveWorkerUnit contract.
      */
-    function createThriveWorkerUnit(
-        address _moderator,
-        address _rewardToken,
-        uint256 _rewardAmount,
-        uint256 _maxRewards,
-        uint256 _validationRewardAmount,
-        uint256 _deadline,
-        uint256 _maxCompletionsPerUser,
-        address[] memory _validators,
-        address _assignedContributor,
-        address _badgeQuery
-    ) external returns (address) {
-        ThriveWorkerUnit unit = new ThriveWorkerUnit(
-            _moderator,
-            _rewardToken,
-            _rewardAmount,
-            _maxRewards,
-            _validationRewardAmount,
-            _deadline,
-            _maxCompletionsPerUser,
-            _validators,
-            _assignedContributor,
-            _badgeQuery
-        );
-
-        emit ThriveWorkerUnitCreated(address(unit));
-
-        return address(unit);
-    }
-
-    // @inheritdoc IThriveWorkUnitFactory
-    function createThriveWorkUnit(
-        WorkUnitArgs memory workUnitArgs // @dev Maybe add a restrict method to this call
-            //address thriveReviewFactory
-    ) external returns (address) {
+    function createThriveWorkUnit(WorkUnitArgs memory workUnitArgs)
+        external
+        payable
+        returns (address)
+    {
         ThriveWorkerUnit unit = new ThriveWorkerUnit(
             workUnitArgs.moderator,
             workUnitArgs.rewardToken,
@@ -69,6 +39,8 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
         );
 
         emit ThriveWorkerUnitCreated(address(unit));
+
+        unit.initialize{value: msg.value}();
 
         return address(unit);
     }

@@ -39,5 +39,6 @@ interface IThriveWorkerUnitFactory {
      */
     function createThriveWorkUnit(WorkUnitArgs memory workUnitArgs)
         external
+        payable
         returns (address);
 }

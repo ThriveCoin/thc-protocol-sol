@@ -111,7 +111,7 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         badgeQuery = IBadgeQuery(_badgeQuery);
     }
 
-    function initialize() external payable onlyModerator {
+    function initialize() external payable {
         require(!ready, "ThriveProtocol: already initialized");
         uint256 maxRewardsCounter = maxRewards / rewardAmount;
         uint256 totalRequiredValue = maxRewardsCounter * validationRewardAmount;
