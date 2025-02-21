@@ -30,7 +30,7 @@ contract ThriveOraclePriceStore is
         address updatedBy;
     }
 
-    mapping(string => PriceData) private prices;
+    mapping(string => PriceData) public prices;
 
     event PriceUpdated(
         string pair, uint256 price, uint256 updatedAt, address updatedBy
