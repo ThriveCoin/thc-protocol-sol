@@ -28,7 +28,6 @@ contract ThriveOraclePriceStoreTest is Test {
         accessControl = ThriveProtocolAccessControl(accessControlProxy);
         accessControl.grantRole(ADMIN_ROLE, address(1));
 
-
         priceStore = new ThriveOraclePriceStore();
         priceStore.initialize(address(accessControlProxy), ADMIN_ROLE);
         vm.stopPrank();
@@ -65,7 +64,6 @@ contract ThriveOraclePriceStoreTest is Test {
         assertGt(updatedAt, 0);
         assertEq(updatedBy, owner);
     }
-
 
     function test_getPrice_missing() public {
         vm.prank(user);

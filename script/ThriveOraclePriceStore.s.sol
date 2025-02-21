@@ -15,8 +15,7 @@ contract ThriveOraclePriceStoreScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        ThriveOraclePriceStore implementation =
-            new ThriveOraclePriceStore();
+        ThriveOraclePriceStore implementation = new ThriveOraclePriceStore();
         console2.log("implementation address: ", address(implementation));
 
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
