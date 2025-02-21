@@ -43,23 +43,33 @@ contract ThriveComplianceStoreTest is Test {
 
     function test_setCheckTypeValidityDuration_asAdmin() public {
         vm.prank(owner);
-        complianceStore.setCheckTypeValidityDuration(CHECK_TYPE_KYC, VALIDITY_DURATION);
-        assertEq(complianceStore.checkTypeValidityDurations(CHECK_TYPE_KYC), VALIDITY_DURATION);
+        complianceStore.setCheckTypeValidityDuration(
+            CHECK_TYPE_KYC, VALIDITY_DURATION
+        );
+        assertEq(
+            complianceStore.checkTypeValidityDurations(CHECK_TYPE_KYC),
+            VALIDITY_DURATION
+        );
     }
 
     function test_setCheckTypeValidityDuration_asNonAdmin() public {
         vm.prank(user);
         vm.expectRevert();
-        complianceStore.setCheckTypeValidityDuration(CHECK_TYPE_KYC, VALIDITY_DURATION);
+        complianceStore.setCheckTypeValidityDuration(
+            CHECK_TYPE_KYC, VALIDITY_DURATION
+        );
     }
 
     function test_setComplianceCheck_asAdmin() public {
         vm.startPrank(owner);
-        complianceStore.setCheckTypeValidityDuration(CHECK_TYPE_KYC, VALIDITY_DURATION);
+        complianceStore.setCheckTypeValidityDuration(
+            CHECK_TYPE_KYC, VALIDITY_DURATION
+        );
         complianceStore.setComplianceCheck(CHECK_TYPE_KYC, user, true);
         vm.stopPrank();
 
-        (bool passed, uint256 updatedAt) = complianceStore.complianceChecks(CHECK_TYPE_KYC, user);
+        (bool passed, uint256 updatedAt) =
+            complianceStore.complianceChecks(CHECK_TYPE_KYC, user);
         assertTrue(passed);
         assertGt(updatedAt, 0);
     }
@@ -72,7 +82,9 @@ contract ThriveComplianceStoreTest is Test {
 
     function test_removeComplianceCheck_asAdmin() public {
         vm.startPrank(owner);
-        complianceStore.setCheckTypeValidityDuration(CHECK_TYPE_KYC, VALIDITY_DURATION);
+        complianceStore.setCheckTypeValidityDuration(
+            CHECK_TYPE_KYC, VALIDITY_DURATION
+        );
         complianceStore.setComplianceCheck(CHECK_TYPE_KYC, user, true);
         complianceStore.removeComplianceCheck(CHECK_TYPE_KYC, user);
         vm.stopPrank();
@@ -89,7 +101,9 @@ contract ThriveComplianceStoreTest is Test {
 
     function test_passedComplianceCheck_withValidCheck() public {
         vm.startPrank(owner);
-        complianceStore.setCheckTypeValidityDuration(CHECK_TYPE_KYC, VALIDITY_DURATION);
+        complianceStore.setCheckTypeValidityDuration(
+            CHECK_TYPE_KYC, VALIDITY_DURATION
+        );
         complianceStore.setComplianceCheck(CHECK_TYPE_KYC, user, true);
         vm.stopPrank();
 
