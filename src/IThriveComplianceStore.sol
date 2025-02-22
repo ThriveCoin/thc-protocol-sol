@@ -8,7 +8,7 @@ interface IThriveComplianceStore {
      * @param account The address of the account to check.
      * @return A boolean indicating whether the compliance check is still valid.
      */
-    function passedComplianceCheck(uint256 checkType, address account)
+    function passedComplianceCheck(bytes32 checkType, address account)
         external
         view
         returns (bool);

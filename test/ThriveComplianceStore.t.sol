@@ -15,7 +15,7 @@ contract ThriveComplianceStoreTest is Test {
     address admin = address(2);
     address user = address(3);
     bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    uint256 constant CHECK_TYPE_KYC = 1;
+    bytes32 constant CHECK_TYPE_KYC = keccak256("KYC");
     uint256 constant VALIDITY_DURATION = 7 days;
 
     function setUp() public {

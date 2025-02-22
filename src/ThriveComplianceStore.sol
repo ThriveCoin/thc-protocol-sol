@@ -27,7 +27,7 @@ contract ThriveComplianceStore is
     }
 
     event ComplianceCheckUpdated(
-        uint256 indexed checkType,
+        bytes32 indexed checkType,
         address indexed account,
         bool passed,
         uint256 updatedAt,
@@ -35,17 +35,17 @@ contract ThriveComplianceStore is
     );
 
     event CheckTypeValidityDurationUpdated(
-        uint256 indexed checkType, uint256 duration, address updatedBy
+        bytes32 indexed checkType, uint256 duration, address updatedBy
     );
 
     IAccessControlEnumerable public accessControlEnumerable;
     bytes32 public role;
 
     // Mapping from check type to account's compliance status
-    mapping(uint256 => mapping(address => ComplianceCheck)) public
+    mapping(bytes32 => mapping(address => ComplianceCheck)) public
         complianceChecks;
     // Mapping from check type to validity duration
-    mapping(uint256 => uint256) public checkTypeValidityDurations;
+    mapping(bytes32 => uint256) public checkTypeValidityDurations;
 
     /**
      * @dev Initializes the contract with an access control contract and a role.
@@ -100,7 +100,7 @@ contract ThriveComplianceStore is
      * @param checkType The compliance check type.
      * @param duration The duration (in seconds) for which the check remains valid.
      */
-    function setCheckTypeValidityDuration(uint256 checkType, uint256 duration)
+    function setCheckTypeValidityDuration(bytes32 checkType, uint256 duration)
         external
         onlyAdmin
     {
@@ -115,7 +115,7 @@ contract ThriveComplianceStore is
      * @param account The address of the account being checked.
      * @param passed Whether the compliance check was passed.
      */
-    function setComplianceCheck(uint256 checkType, address account, bool passed)
+    function setComplianceCheck(bytes32 checkType, address account, bool passed)
         external
         onlyAdmin
     {
@@ -136,7 +136,7 @@ contract ThriveComplianceStore is
      * @param checkType The compliance check type.
      * @param account The address of the account whose compliance check is being removed.
      */
-    function removeComplianceCheck(uint256 checkType, address account)
+    function removeComplianceCheck(bytes32 checkType, address account)
         external
         onlyAdmin
     {
@@ -156,7 +156,7 @@ contract ThriveComplianceStore is
      * @param account The address of the account to check.
      * @return A boolean indicating whether the compliance check is still valid.
      */
-    function passedComplianceCheck(uint256 checkType, address account)
+    function passedComplianceCheck(bytes32 checkType, address account)
         external
         view
         returns (bool)
