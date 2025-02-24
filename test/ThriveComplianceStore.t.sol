@@ -110,6 +110,17 @@ contract ThriveComplianceStoreTest is Test {
         assertTrue(complianceStore.passedComplianceCheck(CHECK_TYPE_KYC, user));
     }
 
+    function test_passedComplianceCheck_withRejectedCheck() public {
+        vm.startPrank(owner);
+        complianceStore.setCheckTypeValidityDuration(
+            CHECK_TYPE_KYC, VALIDITY_DURATION
+        );
+        complianceStore.setComplianceCheck(CHECK_TYPE_KYC, user, false);
+        vm.stopPrank();
+
+        assertFalse(complianceStore.passedComplianceCheck(CHECK_TYPE_KYC, user));
+    }
+
     function test_passedComplianceCheck_withExpiredCheck() public {
         vm.startPrank(owner);
         complianceStore.setCheckTypeValidityDuration(CHECK_TYPE_KYC, 1);

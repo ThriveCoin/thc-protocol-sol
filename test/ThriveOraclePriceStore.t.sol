@@ -29,7 +29,7 @@ contract ThriveOraclePriceStoreTest is Test {
         accessControl.grantRole(ADMIN_ROLE, address(1));
 
         priceStore = new ThriveOraclePriceStore();
-        priceStore.initialize(address(accessControlProxy), ADMIN_ROLE);
+        priceStore.initialize(address(accessControlProxy), ADMIN_ROLE, 18);
         vm.stopPrank();
     }
 
