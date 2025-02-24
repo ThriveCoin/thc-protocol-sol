@@ -76,10 +76,11 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Instantiate the ThriveReviewFactory contract
         thriveReviewFactory = ThriveReviewFactory(thriveReviewFactoryAddress);
-
+        mockToken.transfer(address(thriveWorkerUnitFactory), 9000 ether);
+        mockToken.approve(address(thriveWorkerUnitFactory), 9000 ether);
         // Create a ThriveWorkUnit and ThriveReview contract
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
-            .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            .createWorkUnitAndReviewContract{value: 9000 ether}(
             workUnitArgs, reviewConfiguration, address(this)
         );
 
@@ -89,7 +90,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         mockToken.approve(address(thriveWorkerUnitAddress), 1_000 ether);
 
         // Initialize the ThriveWorkerUnit contract
-        IThriveWorkerUnit(thriveWorkerUnitAddress).initialize();
+        // IThriveWorkerUnit(thriveWorkerUnitAddress).initialize();
 
         // Add required badge to ThriveWorkerUnit
         IThriveWorkerUnit(thriveWorkerUnitAddress).addRequiredBadge(

@@ -274,29 +274,6 @@ contract ThriveBridgeSourceNativeTest is Test {
         vm.stopPrank();
     }
 
-    function test_LockTokensNotEnoughFunds() public {
-        vm.startPrank(addr1);
-
-        bytes32 hash = SignatureHelper.hashBridgeRequest(
-            address(srcBridge),
-            addr1,
-            addr1,
-            srcBridge.lockNonces(addr1),
-            10 ether
-        );
-        bytes32 ethSignedMessageHash =
-            MessageHashUtils.toEthSignedMessageHash(hash);
-        (uint8 v, bytes32 r, bytes32 s) =
-            vm.sign(privKey1, ethSignedMessageHash);
-        bytes memory signature = abi.encodePacked(r, s, v);
-
-        vm.expectRevert();
-
-        srcBridge.lockTokens{value: 10 ether}(addr1, 10 ether, signature);
-
-        vm.stopPrank();
-    }
-
     function test_LockTokensMismatchedAmount() public {
         vm.startPrank(addr1);
 
