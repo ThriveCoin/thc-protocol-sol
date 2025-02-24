@@ -36,7 +36,7 @@ contract ThriveStakingNativeTest is Test {
         );
     }
 
-    function testInitialize() public {
+    function testInitialize() public view {
         assertEq(staking.yieldRate(), yieldRate);
         assertEq(staking.minStakingAmount(), minStakingAmount);
         assertEq(staking.token(), address(0));
@@ -105,6 +105,7 @@ contract ThriveStakingNativeTest is Test {
 
         vm.warp(startTime + 86400);
         uint256 yieldCalculated = staking.calculateYield(user);
+        assertGt(yieldCalculated, 0);
 
         vm.prank(user);
         staking.claimYield();
@@ -164,6 +165,41 @@ contract ThriveStakingNativeTest is Test {
         vm.expectRevert();
         staking.setMinStakingAmount(3 ether);
     }
+
+    function testStakeRevertsIfPendingYieldExists() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        uint256 startTime = block.timestamp;
+
+        vm.warp(startTime + 1000);
+        vm.prank(user);
+        vm.expectRevert(
+            "ThriveProtocol: claim yield first and retry stake again"
+        );
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+    }
+
+    function testSetAccessControlEnumerableRevertsForNonOwnerNative() public {
+        vm.prank(user);
+        vm.expectRevert();
+
+        staking.setAccessControlEnumerable(address(0), bytes32("NEW_ROLE"));
+    }
+
+    function testSetAccessControlEnumerableSuccessNative() public {
+        ThriveProtocolAccessControl newAccessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory data = abi.encodeCall(newAccessControlImpl.initialize, ());
+        address newProxy =
+            address(new ERC1967Proxy(address(newAccessControlImpl), data));
+        bytes32 newAdminRole = keccak256("NEW_ROLE");
+
+        staking.setAccessControlEnumerable(newProxy, newAdminRole);
+
+        assertEq(staking.adminRole(), newAdminRole);
+        assertEq(address(staking.accessControlEnumerable()), newProxy);
+    }
 }
 
 /// @dev Test suite for ERC20 token staking.
@@ -192,7 +228,6 @@ contract ThriveStakingERC20Test is Test {
         accessControl.grantRole(ADMIN_ROLE, admin);
 
         mockToken.transfer(address(user), 10 ether);
-        mockToken.approve(address(user), 10 ether);
 
         staking = new ThriveStakingIERC20();
         staking.initialize(
@@ -204,7 +239,7 @@ contract ThriveStakingERC20Test is Test {
         );
     }
 
-    function testInitialize() public {
+    function testInitialize() public view {
         assertEq(staking.yieldRate(), yieldRate);
         assertEq(staking.minStakingAmount(), minStakingAmount);
         assertEq(staking.token(), address(mockToken));
@@ -212,7 +247,6 @@ contract ThriveStakingERC20Test is Test {
 
     function testStakeRevertsIfNativeSent() public {
         vm.prank(user);
-
         mockToken.transfer(user, 10 ether);
         mockToken.approve(user, 10 ether);
 
@@ -315,8 +349,6 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         mockToken.transfer(address(staking), 10 ether);
         mockToken.approve(address(staking), 10 ether);
-        mockToken.approve(user, 100 ether);
-
         staking.stake(minStakingAmount);
         uint256 startTime = block.timestamp;
 
@@ -349,5 +381,47 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         vm.expectRevert();
         staking.setMinStakingAmount(3 ether);
+    }
+
+    function testStakeRevertsIfPendingYieldExists() public {
+        vm.prank(user);
+        mockToken.approve(address(staking), minStakingAmount);
+        mockToken.approve(user, minStakingAmount);
+
+        vm.prank(user);
+        staking.stake(minStakingAmount);
+
+        uint256 startTime = block.timestamp;
+        vm.warp(startTime + 1000);
+
+        vm.prank(user);
+        mockToken.approve(address(staking), minStakingAmount);
+        mockToken.approve(user, minStakingAmount);
+
+        vm.prank(user);
+        vm.expectRevert(
+            "ThriveProtocol: claim yield first and retry stake again"
+        );
+        staking.stake(minStakingAmount);
+    }
+
+    function testSetAccessControlEnumerableRevertsForNonOwnerERC20() public {
+        vm.prank(user);
+        vm.expectRevert();
+        staking.setAccessControlEnumerable(address(0), bytes32("NEW_ROLE"));
+    }
+
+    function testSetAccessControlEnumerableSuccessERC20() public {
+        ThriveProtocolAccessControl newAccessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory data = abi.encodeCall(newAccessControlImpl.initialize, ());
+        address newProxy =
+            address(new ERC1967Proxy(address(newAccessControlImpl), data));
+        bytes32 newAdminRole = keccak256("NEW_ROLE");
+
+        staking.setAccessControlEnumerable(newProxy, newAdminRole);
+
+        assertEq(staking.adminRole(), newAdminRole);
+        assertEq(address(staking.accessControlEnumerable()), newProxy);
     }
 }

@@ -9,7 +9,7 @@ import {IThriveStaking} from "./interface/IThriveStaking.sol";
  * @title Staked Thrive's Voting Contract
  * @notice Provides a comprehensive vote count across the pool in the ThriveStaking contract
  */
-contract ThriveStakedVotingUpgradeable is OwnableUpgradeable {
+contract ThriveStakedVoting is OwnableUpgradeable {
     IThriveStaking public stakingContract;
     uint256 public voteRate; // Multiplier that determines the voting power per staked token.
 
