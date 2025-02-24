@@ -31,6 +31,7 @@ contract ThriveOraclePriceStore is
     }
 
     mapping(string => PriceData) public prices;
+    uint256 public decimals;
 
     event PriceUpdated(
         string pair, uint256 price, uint256 updatedAt, address updatedBy
@@ -40,16 +41,19 @@ contract ThriveOraclePriceStore is
      * @dev Initializes the contract.
      * @param _accessControlEnumerable The address of the AccessControlEnumerable contract.
      * @param _role The access control role.
+     * @param _decimals Decimal precision of prices.
      */
-    function initialize(address _accessControlEnumerable, bytes32 _role)
-        public
-        initializer
-    {
+    function initialize(
+        address _accessControlEnumerable,
+        bytes32 _role,
+        uint256 _decimals
+    ) public initializer {
         __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         role = _role;
+        decimals = _decimals;
     }
 
     /**

@@ -11,7 +11,9 @@ import {ERC1967Proxy} from
 contract ThriveOraclePriceStoreScript is Script {
     function setUp() public {}
 
-    function run(address accessControl, bytes32 role) public {
+    function run(address accessControl, bytes32 role, uint256 decimals)
+        public
+    {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
@@ -21,7 +23,7 @@ contract ThriveOraclePriceStoreScript is Script {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
         implementation = ThriveOraclePriceStore(address(proxy));
-        implementation.initialize(accessControl, role);
+        implementation.initialize(accessControl, role, decimals);
         vm.stopBroadcast();
 
         console2.log("proxy address: ", address(proxy));
