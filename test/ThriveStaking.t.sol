@@ -68,6 +68,16 @@ contract ThriveStakingNativeTest is Test {
         assertGt(lastYieldTime, 0);
     }
 
+    function testGetStakedAmount() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        staking.stake{value: 1 ether}(1 ether);
+
+        uint256 staked = staking.getStakedAmount(user);
+        assertEq(staked, 1 ether);
+    }
+
     function testCalculateYield() public {
         vm.deal(user, 10 ether);
         vm.prank(user);
@@ -277,6 +287,17 @@ contract ThriveStakingERC20Test is Test {
         assertEq(amount, minStakingAmount);
         assertGt(stakingTime, 0);
         assertGt(lastYieldTime, 0);
+    }
+
+    function testGetStakedAmount() public {
+        vm.prank(user);
+        mockToken.approve(address(staking), 2 ether);
+
+        vm.prank(user);
+        staking.stake(2 ether);
+
+        uint256 staked = staking.getStakedAmount(user);
+        assertEq(staked, 2 ether);
     }
 
     function testCalculateYield() public {
