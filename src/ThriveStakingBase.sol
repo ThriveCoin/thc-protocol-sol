@@ -165,7 +165,7 @@ abstract contract ThriveStakingBase is
     function _stake(uint256 amount) internal virtual {
         uint256 pendingYield = calculateYield(msg.sender);
         require(
-            pendingYield == 0,
+            pendingYield <= 1,
             "ThriveProtocol: claim yield first and retry stake again"
         );
 
@@ -175,6 +175,11 @@ abstract contract ThriveStakingBase is
         details.lastYieldTime = block.timestamp;
 
         emit Staked(msg.sender, amount);
+    }
+
+    /// @notice Returns the amount a user has staked.
+    function getStakedAmount(address user) external view returns (uint256) {
+        return stakers[user].amount;
     }
 
     /// @dev Token-specific yield transfer function to be implemented in derived contracts.

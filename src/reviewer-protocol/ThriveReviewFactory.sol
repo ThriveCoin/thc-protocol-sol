@@ -150,6 +150,10 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
             "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
         );
 
+        uint256 reviewContractAllocation =
+            reviewConfiguration_.reviewerRewardsTotalAllocation;
+        uint256 workUnitAllocation = msg.value - reviewContractAllocation;
+
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract =
             Clones.clone(thriveReviewContractImplementation);
@@ -161,7 +165,7 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
         address workUnitContract = IThriveWorkerUnitFactory(
             thriveWorkerUnitFactory
-        ).createThriveWorkUnit(workUnitArgs_);
+        ).createThriveWorkUnit{value: workUnitAllocation}(workUnitArgs_);
 
         // Save work unit contract address in review configuration argumentation
         reviewConfiguration_.workUnit = workUnitContract;
@@ -175,7 +179,8 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
         );
 
         // Transfer funds allocated as rewards for reviewers immediately to the ThriveReview Contract.
-        (bool success,) = thriveReviewContract.call{value: msg.value}("");
+        (bool success,) =
+            thriveReviewContract.call{value: reviewContractAllocation}("");
         require(success);
 
         // Emit event for creation of WorkUnit and Review

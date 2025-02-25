@@ -56,9 +56,9 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
     function test01_success_CreateReviewContractAndWorkUnit() public {
         // Test creating a ThriveWorkUnit and ThriveReview contract
         (address thriveReviewContract, address thriveWorkUnitContract) =
-        thriveReviewFactory.createWorkUnitAndReviewContract{
-            value: REVIEW_CONTRACT_ALLOCATION
-        }(workUnitArgs, reviewConfiguration, address(this));
+        thriveReviewFactory.createWorkUnitAndReviewContract{value: 9000 ether}(
+            workUnitArgs, reviewConfiguration, address(this)
+        );
 
         assertNotEq(
             thriveReviewContract,
@@ -130,7 +130,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
     {
         // Test creating a ThriveWorkUnit and ThriveReview contract
         (address thriveReviewContract,) = thriveReviewFactory
-            .createWorkUnitAndReviewContract{value: REVIEW_CONTRACT_ALLOCATION}(
+            .createWorkUnitAndReviewContract{value: 9000 ether}(
             workUnitArgs, reviewConfiguration, address(this)
         );
 

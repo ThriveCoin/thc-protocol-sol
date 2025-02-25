@@ -40,6 +40,11 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
 
         emit ThriveWorkerUnitCreated(address(unit));
 
+        if (workUnitArgs.rewardToken != address(0)) {
+            IERC20(workUnitArgs.rewardToken).approve(
+                address(unit), workUnitArgs.maxRewards
+            );
+        }
         unit.initialize{value: msg.value}();
 
         return address(unit);
