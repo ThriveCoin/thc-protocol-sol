@@ -20,7 +20,13 @@ contract ThriveIERC20Wrapper is IThriveIERC20Wrapper, ERC20Burnable, Ownable {
         minter = _msgSender();
     }
 
-    function decimals() public view virtual override returns (uint8) {
+    function decimals()
+        public
+        view
+        virtual
+        override(ERC20, IThriveIERC20Wrapper)
+        returns (uint8)
+    {
         return _decimals;
     }
 
