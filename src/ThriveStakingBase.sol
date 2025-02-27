@@ -182,6 +182,18 @@ abstract contract ThriveStakingBase is
         return stakers[user].amount;
     }
 
+    /// @notice Returns the timestamp when the user can withdraw their stake and earned yield.
+    function getWithdrawalTimestamp(address user)
+        external
+        view
+        returns (uint256)
+    {
+        StakingDetails memory details = stakers[user];
+        require(details.amount > 0, "ThriveProtocol: no staked tokens");
+
+        return details.stakingTime + MIN_STAKING_PERIOD;
+    }
+
     /// @dev Token-specific yield transfer function to be implemented in derived contracts.
     function _transferYield(address user, uint256 amount) internal virtual;
 }

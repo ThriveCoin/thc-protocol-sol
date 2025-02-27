@@ -124,6 +124,22 @@ contract ThriveStakingNativeTest is Test {
         assertEq(yieldAfter, 0);
     }
 
+    function testGetWithdrawalTimestampRevertsForNoStake() public {
+        vm.prank(user);
+        vm.expectRevert("ThriveProtocol: no staked tokens");
+        staking.getWithdrawalTimestamp(user);
+    }
+
+    function testGetWithdrawalTimestampReturnsCorrectTimestamp() public {
+        vm.deal(user, 10 ether);
+        uint256 startTime = block.timestamp;
+        vm.prank(user);
+        staking.stake{value: 1 ether}(1 ether);
+
+        uint256 withdrawalTimestamp = staking.getWithdrawalTimestamp(user);
+        assertEq(withdrawalTimestamp, startTime + 1 minutes);
+    }
+
     function testWithdrawRevertsBeforeLockup() public {
         vm.deal(user, 10 ether);
         vm.prank(user);
@@ -352,6 +368,25 @@ contract ThriveStakingERC20Test is Test {
 
         assertEq(yieldAfter, 0);
         assertEq(balanceAfter, balanceBefore + yieldCalculated);
+    }
+
+    function testGetWithdrawalTimestampRevertsForNoStake() public {
+        vm.prank(user);
+        vm.expectRevert("ThriveProtocol: no staked tokens");
+        staking.getWithdrawalTimestamp(user);
+    }
+
+    function testGetWithdrawalTimestampReturnsCorrectTimestamp() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        mockToken.approve(address(staking), 10 ether);
+
+        uint256 startTime = block.timestamp;
+        vm.prank(user);
+        staking.stake(minStakingAmount);
+
+        uint256 withdrawalTimestamp = staking.getWithdrawalTimestamp(user);
+        assertEq(withdrawalTimestamp, startTime + 1 minutes);
     }
 
     function testWithdrawRevertsBeforeLockup() public {
