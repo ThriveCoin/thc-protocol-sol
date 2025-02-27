@@ -14,6 +14,9 @@ interface IThriveWorkerUnitFactory {
      * @param maxRewards Total reward pool for the work unit.
      * @param validationRewardAmount Reward amount for validation.
      * @param deadline Timestamp after which the work unit expires.
+     * @param validationMetadata Metadata for validation.
+     * @param metadataVersion Version of worker unit metadata.
+     * @param metadata Worker unit metadata.
      * @param maxCompletionsPerUser Maximum completions allowed per user.
      * @param validators Array of addresses responsible for validation.
      * @param assignedContributor Address of the assigned contributor.
@@ -27,6 +30,9 @@ interface IThriveWorkerUnitFactory {
         uint256 maxRewards;
         uint256 validationRewardAmount;
         uint256 deadline;
+        string validationMetadata;
+        string metadataVersion;
+        string metadata;
         uint256 maxCompletionsPerUser;
         address[] validators;
         address assignedContributor;

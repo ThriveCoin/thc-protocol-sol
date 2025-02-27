@@ -31,6 +31,22 @@ contract ThriveWorkerUnit is ReentrancyGuard {
     string public metadataVersion;
     string public metadata;
 
+    struct WorkerUnitArgs {
+        address moderator;
+        address rewardToken;
+        uint256 rewardAmount;
+        uint256 maxRewards;
+        uint256 validationRewardAmount;
+        uint256 deadline;
+        string validationMetadata;
+        string metadataVersion;
+        string metadata;
+        uint256 maxCompletionsPerUser;
+        address[] validators;
+        address assignedContributor;
+        address badgeQuery;
+    }
+
     EnumerableSet.AddressSet private validators;
     EnumerableSet.Bytes32Set private requiredBadges;
 
@@ -69,46 +85,36 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         _;
     }
 
-    constructor(
-        address _moderator,
-        address _rewardToken,
-        uint256 _rewardAmount,
-        uint256 _maxRewards,
-        uint256 _validationRewardAmount,
-        uint256 _deadline,
-        uint256 _maxCompletionsPerUser,
-        address[] memory _validators,
-        address _assignedContributor,
-        address _badgeQuery
-    ) {
+    constructor(WorkerUnitArgs memory args) {
         require(
-            _moderator != address(0),
+            args.moderator != address(0),
             "ThriveProtocol: moderator address is required"
         );
         require(
-            _badgeQuery != address(0),
+            args.badgeQuery != address(0),
             "ThriveProtocol: badgeQuery address is required"
         );
         require(
-            _deadline > block.timestamp,
+            args.deadline > block.timestamp,
             "ThriveProtocol: deadline must be in the future"
         );
-        require(_rewardAmount > 0, "ThriveProtocol: invalid reward amount!");
+        require(args.rewardAmount > 0, "ThriveProtocol: invalid reward amount!");
 
-        moderator = _moderator;
-        rewardToken = _rewardToken;
-        rewardAmount = _rewardAmount;
-        maxRewards = _maxRewards;
-        validationRewardAmount = _validationRewardAmount;
-        deadline = _deadline;
-        maxCompletionsPerUser = _maxCompletionsPerUser;
-
-        for (uint256 i = 0; i < _validators.length; i++) {
-            validators.add(_validators[i]);
+        moderator = args.moderator;
+        rewardToken = args.rewardToken;
+        rewardAmount = args.rewardAmount;
+        maxRewards = args.maxRewards;
+        validationRewardAmount = args.validationRewardAmount;
+        deadline = args.deadline;
+        validationMetadata = args.validationMetadata;
+        metadataVersion = args.metadataVersion;
+        metadata = args.metadata;
+        maxCompletionsPerUser = args.maxCompletionsPerUser;
+        for (uint256 i = 0; i < args.validators.length; i++) {
+            validators.add(args.validators[i]);
         }
-
-        assignedContributor = _assignedContributor;
-        badgeQuery = IBadgeQuery(_badgeQuery);
+        assignedContributor = args.assignedContributor;
+        badgeQuery = IBadgeQuery(args.badgeQuery);
     }
 
     function initialize() external payable {
@@ -294,6 +300,19 @@ contract ThriveWorkerUnit is ReentrancyGuard {
 
     function getRequiredBadges() external view returns (bytes32[] memory) {
         return requiredBadges.values();
+    }
+
+    function getRequiredNativeFunds(
+        uint256 _rewardAmount,
+        uint256 _maxRewards,
+        uint256 _validationRewardAmount,
+        address _rewardToken
+    ) external pure returns (uint256) {
+        uint256 maxRewardsCounter = _maxRewards / _rewardAmount;
+        uint256 totalValidatorCost = maxRewardsCounter * _validationRewardAmount;
+        return _rewardToken == address(0)
+            ? totalValidatorCost + _maxRewards
+            : totalValidatorCost;
     }
 
     function status() external view returns (string memory) {
