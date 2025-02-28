@@ -137,7 +137,7 @@ contract ThriveStakingNativeTest is Test {
         staking.stake{value: 1 ether}(1 ether);
 
         uint256 withdrawalTimestamp = staking.getWithdrawalTimestamp(user);
-        assertEq(withdrawalTimestamp, startTime + 1 minutes);
+        assertEq(withdrawalTimestamp, startTime + 30 days);
     }
 
     function testWithdrawRevertsBeforeLockup() public {
@@ -386,7 +386,7 @@ contract ThriveStakingERC20Test is Test {
         staking.stake(minStakingAmount);
 
         uint256 withdrawalTimestamp = staking.getWithdrawalTimestamp(user);
-        assertEq(withdrawalTimestamp, startTime + 1 minutes);
+        assertEq(withdrawalTimestamp, startTime + 30 days);
     }
 
     function testWithdrawRevertsBeforeLockup() public {

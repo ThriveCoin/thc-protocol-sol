@@ -55,4 +55,17 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
 
         return address(unit);
     }
+
+    function getRequiredNativeFunds(
+        uint256 _rewardAmount,
+        uint256 _maxRewards,
+        uint256 _validationRewardAmount,
+        address _rewardToken
+    ) external pure returns (uint256) {
+        uint256 maxRewardsCounter = _maxRewards / _rewardAmount;
+        uint256 totalValidatorCost = maxRewardsCounter * _validationRewardAmount;
+        return _rewardToken == address(0)
+            ? totalValidatorCost + _maxRewards
+            : totalValidatorCost;
+    }
 }
