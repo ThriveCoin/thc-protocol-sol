@@ -17,7 +17,7 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
 
     /**
      * @notice Creates a new ThriveWorkerUnit contract using a WorkUnitArgs struct.
-     * @dev This function is payable to forward ETH to the worker unit’s initialize function.
+     * @dev This function is payable to forward ETH to the worker unit's initialize function.
      * @return Address of the newly created ThriveWorkerUnit contract.
      */
     function createThriveWorkUnit(WorkUnitArgs memory workUnitArgs)
@@ -25,18 +25,24 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
         payable
         returns (address)
     {
-        ThriveWorkerUnit unit = new ThriveWorkerUnit(
-            workUnitArgs.moderator,
-            workUnitArgs.rewardToken,
-            workUnitArgs.rewardAmount,
-            workUnitArgs.maxRewards,
-            workUnitArgs.validationRewardAmount,
-            workUnitArgs.deadline,
-            workUnitArgs.maxCompletionsPerUser,
-            workUnitArgs.validators,
-            workUnitArgs.assignedContributor,
-            workUnitArgs.badgeQuery
-        );
+        ThriveWorkerUnit.WorkerUnitArgs memory convertedArgs = ThriveWorkerUnit
+            .WorkerUnitArgs({
+            moderator: workUnitArgs.moderator,
+            rewardToken: workUnitArgs.rewardToken,
+            rewardAmount: workUnitArgs.rewardAmount,
+            maxRewards: workUnitArgs.maxRewards,
+            validationRewardAmount: workUnitArgs.validationRewardAmount,
+            deadline: workUnitArgs.deadline,
+            validationMetadata: workUnitArgs.validationMetadata,
+            metadataVersion: workUnitArgs.metadataVersion,
+            metadata: workUnitArgs.metadata,
+            maxCompletionsPerUser: workUnitArgs.maxCompletionsPerUser,
+            validators: workUnitArgs.validators,
+            assignedContributor: workUnitArgs.assignedContributor,
+            badgeQuery: workUnitArgs.badgeQuery
+        });
+
+        ThriveWorkerUnit unit = new ThriveWorkerUnit(convertedArgs);
 
         emit ThriveWorkerUnitCreated(address(unit));
 

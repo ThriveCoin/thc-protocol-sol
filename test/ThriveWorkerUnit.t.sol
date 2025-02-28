@@ -20,18 +20,9 @@ contract ThriveWorkerUnitTest is Test {
         mockToken = new MockERC20("MockToken", "MKT");
         mockToken.mint(address(this), 1_000_000 ether);
 
-        thriveWorkerUnit = new ThriveWorkerUnit(
-            moderator, // Moderator address
-            address(mockToken), // Reward token address
-            10, // Reward amount per user
-            100 ether, // Max rewards
-            1,
-            block.timestamp + 1 days, // Deadline
-            2, // Max completions per user
-            validators, // Validators
-            address(0),
-            badgeQuery // Badge query address
-        );
+        ThriveWorkerUnit.WorkerUnitArgs memory args = getDefaultArgs();
+
+        thriveWorkerUnit = new ThriveWorkerUnit(args);
 
         mockToken.transfer(address(thriveWorkerUnit), 1_000 ether);
         mockToken.approve(address(thriveWorkerUnit), 1_000 ether);
@@ -40,62 +31,26 @@ contract ThriveWorkerUnitTest is Test {
     }
 
     function testConstructorRequirements() public {
+        ThriveWorkerUnit.WorkerUnitArgs memory args1 = getDefaultArgs();
+        args1.moderator = address(0);
         vm.expectRevert("ThriveProtocol: moderator address is required");
-        new ThriveWorkerUnit(
-            address(0),
-            address(mockToken),
-            10,
-            100 ether,
-            1,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0),
-            badgeQuery
-        );
+        new ThriveWorkerUnit(args1);
 
+        ThriveWorkerUnit.WorkerUnitArgs memory args2 = getDefaultArgs();
+        args2.badgeQuery = address(0);
         vm.expectRevert("ThriveProtocol: badgeQuery address is required");
-        new ThriveWorkerUnit(
-            moderator,
-            address(mockToken),
-            10,
-            100 ether,
-            1,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0x123), // assginedContributor
-            address(0) // badgeQuery
-        );
+        new ThriveWorkerUnit(args2);
 
+        // Test for invalid rewardAmount
+        ThriveWorkerUnit.WorkerUnitArgs memory args3 = getDefaultArgs();
+        args3.rewardAmount = 0;
         vm.expectRevert("ThriveProtocol: invalid reward amount!");
-        new ThriveWorkerUnit(
-            moderator,
-            address(mockToken),
-            0,
-            100 ether,
-            1,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0),
-            badgeQuery
-        );
+        new ThriveWorkerUnit(args3);
     }
 
     function testInitializeRequirements() public {
-        ThriveWorkerUnit newWorkerUnit = new ThriveWorkerUnit(
-            moderator,
-            address(mockToken),
-            10,
-            100 ether,
-            1,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0),
-            badgeQuery
-        );
+        ThriveWorkerUnit.WorkerUnitArgs memory args = getDefaultArgs();
+        ThriveWorkerUnit newWorkerUnit = new ThriveWorkerUnit(args);
 
         mockToken.approve(address(newWorkerUnit), 1_000 ether);
 
@@ -104,19 +59,7 @@ contract ThriveWorkerUnitTest is Test {
         vm.expectRevert("ThriveProtocol: already initialized");
         newWorkerUnit.initialize{value: 110 ether}();
 
-        // case: validation reward amount not set
-        ThriveWorkerUnit uninitializedWorkerUnit = new ThriveWorkerUnit(
-            moderator,
-            address(mockToken),
-            10,
-            100 ether,
-            1,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0),
-            badgeQuery
-        );
+        ThriveWorkerUnit uninitializedWorkerUnit = new ThriveWorkerUnit(args);
 
         mockToken.approve(address(uninitializedWorkerUnit), 1_000 ether);
 
@@ -272,18 +215,8 @@ contract ThriveWorkerUnitTest is Test {
     }
 
     function testUnReadyContract() public {
-        ThriveWorkerUnit newWorkerUnit = new ThriveWorkerUnit(
-            moderator,
-            address(mockToken),
-            10,
-            100 ether,
-            1,
-            block.timestamp + 1 days,
-            2,
-            validators,
-            address(0),
-            badgeQuery
-        );
+        ThriveWorkerUnit.WorkerUnitArgs memory args = getDefaultArgs();
+        ThriveWorkerUnit newWorkerUnit = new ThriveWorkerUnit(args);
         address contributor = address(0xdead);
 
         // only validator error
@@ -396,6 +329,28 @@ contract ThriveWorkerUnitTest is Test {
 
         uint256 remainingEtherBalance = address(thriveWorkerUnit).balance;
         assertNotEq(remainingEtherBalance, 0);
+    }
+
+    function getDefaultArgs()
+        internal
+        view
+        returns (ThriveWorkerUnit.WorkerUnitArgs memory)
+    {
+        return ThriveWorkerUnit.WorkerUnitArgs({
+            moderator: moderator,
+            rewardToken: address(mockToken),
+            rewardAmount: 10,
+            maxRewards: 100 ether,
+            validationRewardAmount: 1,
+            deadline: block.timestamp + 1 days,
+            validationMetadata: "validationMetadataTest",
+            metadataVersion: "metadataVersion - 1.0",
+            metadata: "metadataTest",
+            maxCompletionsPerUser: 2,
+            validators: validators,
+            assignedContributor: address(0),
+            badgeQuery: badgeQuery
+        });
     }
 
     receive() external payable {}
