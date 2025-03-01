@@ -121,29 +121,26 @@ contract ThriveWorkerUnit is ReentrancyGuard {
         require(!ready, "ThriveProtocol: already initialized");
         uint256 maxRewardsCounter = maxRewards / rewardAmount;
         uint256 totalRequiredValue = maxRewardsCounter * validationRewardAmount;
+
         if (rewardToken == address(0)) {
-            // native token case
+            // Native token case
             require(
                 msg.value >= totalRequiredValue + maxRewards,
                 "ThriveProtocol: insufficient value for validators and rewards"
             );
         } else {
-            // ERC20 token case: msg.value must cover totalRequiredValue
+            // ERC20 token case
             require(
                 msg.value >= totalRequiredValue,
                 "ThriveProtocol: insufficient value for validators"
             );
             require(
-                IERC20(rewardToken).balanceOf(msg.sender) >= maxRewards,
+                IERC20(rewardToken).balanceOf(address(this)) >= maxRewards,
                 "ThriveProtocol: insufficient token balance for rewards"
             );
-
-            IERC20(rewardToken).safeTransferFrom(
-                msg.sender, address(this), maxRewards
-            );
         }
-        ready = true;
 
+        ready = true;
         emit Initialized();
     }
 
