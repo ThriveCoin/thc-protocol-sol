@@ -57,6 +57,7 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
         // Mock token for paying successful submissions
         mockToken = new MockERC20("MockToken", "MKT");
         mockToken.mint(address(this), 1_000_000 ether);
+        mockToken.approve(address(thriveWorkerUnitFactory), type(uint256).max);
 
         workUnitArgs.rewardToken = address(mockToken);
 
@@ -76,8 +77,16 @@ contract ThriveReviewUnitTests is Test, BasicTestConfigs {
 
         // Instantiate the ThriveReviewFactory contract
         thriveReviewFactory = ThriveReviewFactory(thriveReviewFactoryAddress);
+        mockToken.approve(address(thriveReviewFactory), type(uint256).max);
+        mockToken.approve(address(thriveWorkerUnitFactory), type(uint256).max);
+
+        vm.prank(address(thriveReviewFactory));
+        mockToken.approve(address(thriveWorkerUnitFactory), type(uint256).max);
+
+        // Transfer tokens to review factory and worker unit factory
+        mockToken.transfer(address(thriveReviewFactory), 9000 ether);
         mockToken.transfer(address(thriveWorkerUnitFactory), 9000 ether);
-        mockToken.approve(address(thriveWorkerUnitFactory), 9000 ether);
+
         // Create a ThriveWorkUnit and ThriveReview contract
         (thriveReviewAddress, thriveWorkerUnitAddress) = thriveReviewFactory
             .createWorkUnitAndReviewContract{value: 9000 ether}(
