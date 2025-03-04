@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 import "./ThriveWorkerUnit.sol";
 import "./interface/IThriveWorkerUnitFactory.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -26,7 +27,8 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
         payable
         returns (address)
     {
-        ThriveWorkerUnit.WorkerUnitArgs memory convertedArgs = ThriveWorkerUnit.WorkerUnitArgs({
+        ThriveWorkerUnit.WorkerUnitArgs memory convertedArgs = ThriveWorkerUnit
+            .WorkerUnitArgs({
             moderator: workUnitArgs.moderator,
             rewardToken: workUnitArgs.rewardToken,
             rewardAmount: workUnitArgs.rewardAmount,
@@ -47,13 +49,12 @@ contract ThriveWorkerUnitFactory is IThriveWorkerUnitFactory {
 
         if (workUnitArgs.rewardToken != address(0)) {
             require(
-                IERC20(workUnitArgs.rewardToken).balanceOf(msg.sender) >= workUnitArgs.maxRewards,
+                IERC20(workUnitArgs.rewardToken).balanceOf(msg.sender)
+                    >= workUnitArgs.maxRewards,
                 "Factory: insufficient token balance"
             );
             IERC20(workUnitArgs.rewardToken).safeTransferFrom(
-                msg.sender,
-                address(unit),
-                workUnitArgs.maxRewards
+                msg.sender, address(unit), workUnitArgs.maxRewards
             );
         }
 

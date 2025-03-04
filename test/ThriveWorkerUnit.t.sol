@@ -52,6 +52,7 @@ contract ThriveWorkerUnitTest is Test {
         ThriveWorkerUnit.WorkerUnitArgs memory args = getDefaultArgs();
         ThriveWorkerUnit newWorkerUnit = new ThriveWorkerUnit(args);
 
+        mockToken.transfer(address(newWorkerUnit), 1_000 ether);
         mockToken.approve(address(newWorkerUnit), 1_000 ether);
 
         // case: already initialized
@@ -156,7 +157,7 @@ contract ThriveWorkerUnitTest is Test {
         );
         assertEq(
             mockToken.balanceOf(address(thriveWorkerUnit)),
-            1_100 ether - thriveWorkerUnit.rewardAmount()
+            1_000 ether - thriveWorkerUnit.rewardAmount()
         );
     }
 
