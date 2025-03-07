@@ -40,8 +40,13 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
         super._stake(amount);
     }
 
-    /// @dev Implements yield transfer for ERC20 token.
-    function _transferYield(address user, uint256 amount) internal override {
+    /**
+     * @dev Transfers the staked amount using SafeERC20.
+     */
+    function _transferAmountStaked(address user, uint256 amount)
+        internal
+        override
+    {
         IERC20(token).safeTransfer(user, amount);
     }
 }

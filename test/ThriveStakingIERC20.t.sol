@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveStakingIERC20} from "../src/ThriveStakingIERC20.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 
@@ -22,16 +23,26 @@ contract ThriveStakingERC20Test is Test {
         mockToken = new MockERC20("MockToken", "MKT");
         mockToken.mint(address(this), 100 ether);
 
-        ThriveProtocolAccessControl accessControlImpl = new ThriveProtocolAccessControl();
-        bytes memory accessControlData = abi.encodeCall(accessControlImpl.initialize, ());
-        address accessControlProxy = address(new ERC1967Proxy(address(accessControlImpl), accessControlData));
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
         accessControl = ThriveProtocolAccessControl(accessControlProxy);
         accessControl.grantRole(ADMIN_ROLE, admin);
 
         mockToken.transfer(user, 10 ether);
 
         staking = new ThriveStakingIERC20();
-        staking.initialize(address(mockToken), yieldRate, minStakingAmount, address(accessControl), ADMIN_ROLE);
+        staking.initialize(
+            address(mockToken),
+            yieldRate,
+            minStakingAmount,
+            address(accessControl),
+            ADMIN_ROLE
+        );
     }
 
     function testInitialize() public view {
@@ -45,7 +56,9 @@ contract ThriveStakingERC20Test is Test {
         mockToken.transfer(user, 10 ether);
         mockToken.approve(user, 10 ether);
 
-        vm.expectRevert("ThriveProtocol: native should not be sent for ERC20 staking");
+        vm.expectRevert(
+            "ThriveProtocol: native should not be sent for ERC20 staking"
+        );
         staking.stake{value: 1 ether}(minStakingAmount);
     }
 
@@ -64,7 +77,8 @@ contract ThriveStakingERC20Test is Test {
 
         vm.prank(user);
         staking.stake(minStakingAmount);
-        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) =
+            staking.stakers(user);
         uint256 currentEpoch = staking.currentEpoch();
 
         assertEq(firstHalf, minStakingAmount);
@@ -102,7 +116,8 @@ contract ThriveStakingERC20Test is Test {
 
     function testCalculateYield_SecondHalfStake() public {
         uint256 currentEpoch = staking.currentEpoch();
-        uint256 epochPhaseStart = staking.epochStart() + (currentEpoch * 30 days);
+        uint256 epochPhaseStart =
+            staking.epochStart() + (currentEpoch * 30 days);
         vm.warp(epochPhaseStart + 16 days);
         vm.prank(user);
         mockToken.approve(address(staking), minStakingAmount);
@@ -147,21 +162,22 @@ contract ThriveStakingERC20Test is Test {
         vm.warp(epochEnd + 1);
 
         uint256 yieldCalculated = staking.calculateYield(user);
-        uint256 balanceBefore = mockToken.balanceOf(user);
 
         vm.prank(user);
+        vm.deal(address(staking), 10 ether);
         staking.claimYield();
 
         uint256 yieldAfter = staking.calculateYield(user);
         assertEq(yieldAfter, 0);
 
-        (uint256 firstHalf, uint256 secondHalf, uint256 newEpoch) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 newEpoch) =
+            staking.stakers(user);
         uint256 totalStaked = firstHalf + secondHalf;
-        uint256 balanceAfter = mockToken.balanceOf(user);
+        uint256 balanceAfter = address(user).balance;
 
         assertEq(totalStaked, 10 ether);
         assertEq(newEpoch, staking.currentEpoch());
-        assertEq(balanceAfter, balanceBefore + yieldCalculated);
+        assertEq(balanceAfter, yieldCalculated);
     }
 
     function testGetEpochEndTimestampRevertsForNoStake() public {
@@ -174,7 +190,8 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         mockToken.approve(address(staking), 10 ether);
         uint256 currentEpoch = staking.currentEpoch();
-        uint256 expectedEpochEnd = staking.epochStart() + ((currentEpoch + 1) * 30 days);
+        uint256 expectedEpochEnd =
+            staking.epochStart() + ((currentEpoch + 1) * 30 days);
 
         vm.prank(user);
         staking.stake(minStakingAmount);
@@ -191,8 +208,10 @@ contract ThriveStakingERC20Test is Test {
         staking.stake(10 ether);
 
         vm.prank(user);
+        vm.deal(address(staking), 10 ether);
         staking.withdraw();
-        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) =
+            staking.stakers(user);
 
         assertEq(firstHalf, 0);
         assertEq(secondHalf, 0);
@@ -201,31 +220,31 @@ contract ThriveStakingERC20Test is Test {
 
     function testWithdrawSuccessWithYield() public {
         vm.prank(user);
-        mockToken.transfer(user, 10 ether);
         mockToken.approve(address(staking), minStakingAmount);
-        mockToken.transfer(address(staking), 10 ether);
-        mockToken.approve(address(staking), 10 ether);
+        uint256 balanceBefore = mockToken.balanceOf(user);
 
+        vm.prank(user);
         staking.stake(minStakingAmount);
         uint256 initialEpoch = staking.currentEpoch();
         uint256 epochEnd = staking.epochStart() + ((initialEpoch + 1) * 30 days);
         vm.warp(epochEnd + 1);
 
-        uint256 balanceBefore = mockToken.balanceOf(user);
+        vm.prank(user);
+        vm.deal(address(staking), 10 ether);
         staking.withdraw();
-        (uint256 firstHalf, uint256 secondHalf, uint256 epochAfter) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 epochAfter) =
+            staking.stakers(user);
 
         assertEq(firstHalf, 0);
         assertEq(secondHalf, 0);
         assertEq(epochAfter, 0);
 
         uint256 balanceAfter = mockToken.balanceOf(user);
-        // TODO: this need to be rechecked with rilind
-        // uint256 nativeBalanceAfterYield = address(user).balance;
-        // uint256 expectedYield = (minStakingAmount * yieldRate) / 1e18;
+        uint256 nativeBalanceAfterYield = address(user).balance;
+        uint256 expectedYield = (minStakingAmount * yieldRate) / 1e18;
 
         assertEq(balanceAfter, balanceBefore);
-        // assertEq(nativeBalanceAfterYield, expectedYield);
+        assertEq(nativeBalanceAfterYield, expectedYield);
     }
 
     function testAdminFunctions() public {
@@ -273,9 +292,11 @@ contract ThriveStakingERC20Test is Test {
     }
 
     function testSetAccessControlEnumerableSuccessERC20() public {
-        ThriveProtocolAccessControl newAccessControlImpl = new ThriveProtocolAccessControl();
+        ThriveProtocolAccessControl newAccessControlImpl =
+            new ThriveProtocolAccessControl();
         bytes memory data = abi.encodeCall(newAccessControlImpl.initialize, ());
-        address newProxy = address(new ERC1967Proxy(address(newAccessControlImpl), data));
+        address newProxy =
+            address(new ERC1967Proxy(address(newAccessControlImpl), data));
         bytes32 newAdminRole = keccak256("NEW_ROLE");
 
         staking.setAccessControlEnumerable(newProxy, newAdminRole);

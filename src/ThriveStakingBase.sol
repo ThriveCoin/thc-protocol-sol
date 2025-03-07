@@ -10,6 +10,8 @@ import {IAccessControlEnumerable} from
 import {ReentrancyGuard} from
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from
     "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
@@ -40,6 +42,7 @@ abstract contract ThriveStakingBase is
     ReentrancyGuard
 {
     using AccessControlHelper for IAccessControlEnumerable;
+    using SafeERC20 for IERC20;
 
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 principal, uint256 yield);
@@ -136,7 +139,11 @@ abstract contract ThriveStakingBase is
      * @param staker The address of the staker.
      * @return yieldAmount The total yield earned.
      */
-    function calculateYield(address staker) public view returns (uint256 yieldAmount) {
+    function calculateYield(address staker)
+        public
+        view
+        returns (uint256 yieldAmount)
+    {
         StakingDetails memory details = stakers[staker];
         if (currentEpoch() <= details.epoch) {
             return 0;
@@ -154,20 +161,28 @@ abstract contract ThriveStakingBase is
     function withdraw() external nonReentrant {
         StakingDetails storage details = stakers[msg.sender];
         uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
-        require(totalStaked >= minStakingAmount, "ThriveProtocol: stake below minimum");
+        require(
+            totalStaked >= minStakingAmount,
+            "ThriveProtocol: stake below minimum"
+        );
         require(totalStaked > 0, "ThriveProtocol: no staked tokens");
 
         uint256 yieldAmount = 0;
         if (currentEpoch() > details.epoch) {
             yieldAmount = calculateYield(msg.sender);
         }
-        uint256 totalAmount = totalStaked + yieldAmount;
 
         details.firstHalfAmount = 0;
         details.secondHalfAmount = 0;
         details.epoch = 0;
 
-        _transferYield(msg.sender, totalAmount);
+        if (token == address(0)) {
+            _transferAmountStaked(msg.sender, totalStaked + yieldAmount);
+        } else {
+            _transferNative(msg.sender, yieldAmount);
+            _transferAmountStaked(msg.sender, totalStaked);
+        }
+
         emit Withdrawn(msg.sender, totalStaked, yieldAmount);
     }
 
@@ -179,13 +194,18 @@ abstract contract ThriveStakingBase is
         StakingDetails storage details = stakers[msg.sender];
         uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
         require(totalStaked > 0, "ThriveProtocol: no staked tokens");
-        require(totalStaked >= minStakingAmount, "ThriveProtocol: stake below minimum");
-        require(currentEpoch() > details.epoch, "ThriveProtocol: epoch not finished");
+        require(
+            totalStaked >= minStakingAmount,
+            "ThriveProtocol: stake below minimum"
+        );
+        require(
+            currentEpoch() > details.epoch, "ThriveProtocol: epoch not finished"
+        );
 
         uint256 yieldAmount = calculateYield(msg.sender);
         require(yieldAmount > 0, "ThriveProtocol: no yield to claim");
 
-        _transferYield(msg.sender, yieldAmount);
+        _transferNative(msg.sender, yieldAmount);
         emit YieldClaimed(msg.sender, yieldAmount);
 
         details.epoch = currentEpoch();
@@ -210,8 +230,12 @@ abstract contract ThriveStakingBase is
     function _stake(uint256 amount) internal virtual {
         uint256 epochIndex = currentEpoch();
         StakingDetails storage details = stakers[msg.sender];
-        uint256 currentTotal = details.firstHalfAmount + details.secondHalfAmount;
-        require(currentTotal == 0 || details.epoch == epochIndex, "ThriveProtocol: finalize previous epoch first");
+        uint256 currentTotal =
+            details.firstHalfAmount + details.secondHalfAmount;
+        require(
+            currentTotal == 0 || details.epoch == epochIndex,
+            "ThriveProtocol: finalize previous epoch first"
+        );
 
         uint256 epochPhaseStart = epochStart + (epochIndex * EPOCH_DURATION);
         if (block.timestamp < epochPhaseStart + HALF_EPOCH_DURATION) {
@@ -235,13 +259,35 @@ abstract contract ThriveStakingBase is
     /**
      * @notice Returns the timestamp when the current epoch (for the user's stake) ends.
      */
-    function getEpochEndTimestamp(address user) external view returns (uint256) {
+    function getEpochEndTimestamp(address user)
+        external
+        view
+        returns (uint256)
+    {
         StakingDetails memory details = stakers[user];
-        require(details.firstHalfAmount + details.secondHalfAmount > 0, "ThriveProtocol: no staked tokens");
+        require(
+            details.firstHalfAmount + details.secondHalfAmount > 0,
+            "ThriveProtocol: no staked tokens"
+        );
         uint256 epochIndex = details.epoch;
         return epochStart + ((epochIndex + 1) * EPOCH_DURATION);
     }
 
-    /// @dev Token-specific yield transfer function to be implemented in derived contracts.
-    function _transferYield(address user, uint256 amount) internal virtual;
+    /**
+     * @dev Transfers native tokens including yield and native staked tokens.
+     */
+    function _transferNative(address user, uint256 amount) internal {
+        if (amount > 0) {
+            (bool success,) = user.call{value: amount}("");
+            require(success, "Native yield transfer failed");
+        }
+    }
+
+    /**
+     * @dev Transfers the staked amount to the user when token is not native.
+     * This function is abstract and must be implemented by derived erc20 contracts.
+     */
+    function _transferAmountStaked(address user, uint256 amount)
+        internal
+        virtual;
 }

@@ -32,10 +32,15 @@ contract ThriveStakingNative is ThriveStakingBase {
         super._stake(amount);
     }
 
-    /// @dev Implements token-specific yield transfer for native tokens.
-    function _transferYield(address user, uint256 amount) internal override {
-        (bool success,) = payable(user).call{value: amount}("");
-        require(success, "ThriveProtocol: yield transfer failed");
+    /**
+     * @dev Transfers the staked principal as native tokens.
+     */
+    function _transferAmountStaked(address user, uint256 amount)
+        internal
+        override
+    {
+        (bool success,) = user.call{value: amount}("");
+        require(success, "Native staked amount transfer failed");
     }
 
     // Accept native token transfers

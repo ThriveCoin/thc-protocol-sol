@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {ThriveStakingNative} from "../src/ThriveStakingNative.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 
 /// @dev Test suite for native token staking logic.
@@ -17,14 +18,20 @@ contract ThriveStakingNativeTest is Test {
     bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     function setUp() public {
-        ThriveProtocolAccessControl accessControlImpl = new ThriveProtocolAccessControl();
-        bytes memory accessControlData = abi.encodeCall(accessControlImpl.initialize, ());
-        address accessControlProxy = address(new ERC1967Proxy(address(accessControlImpl), accessControlData));
+        ThriveProtocolAccessControl accessControlImpl =
+            new ThriveProtocolAccessControl();
+        bytes memory accessControlData =
+            abi.encodeCall(accessControlImpl.initialize, ());
+        address accessControlProxy = address(
+            new ERC1967Proxy(address(accessControlImpl), accessControlData)
+        );
         accessControl = ThriveProtocolAccessControl(accessControlProxy);
         accessControl.grantRole(ADMIN_ROLE, admin);
 
         staking = new ThriveStakingNative();
-        staking.initialize(yieldRate, minStakingAmount, address(accessControl), ADMIN_ROLE);
+        staking.initialize(
+            yieldRate, minStakingAmount, address(accessControl), ADMIN_ROLE
+        );
     }
 
     function testInitialize() public view {
@@ -51,7 +58,8 @@ contract ThriveStakingNativeTest is Test {
         vm.deal(user, 10 ether);
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
-        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) =
+            staking.stakers(user);
         uint256 currentEpoch = staking.currentEpoch();
 
         assertEq(firstHalf, minStakingAmount);
@@ -86,7 +94,8 @@ contract ThriveStakingNativeTest is Test {
     function testCalculateYield_SecondHalfStake() public {
         vm.deal(user, 10 ether);
         uint256 currentEpoch = staking.currentEpoch();
-        uint256 epochPhaseStart = staking.epochStart() + (currentEpoch * 30 days);
+        uint256 epochPhaseStart =
+            staking.epochStart() + (currentEpoch * 30 days);
         vm.warp(epochPhaseStart + 16 days); // ensure we're in the second half (>15 days)
 
         vm.prank(user);
@@ -137,7 +146,8 @@ contract ThriveStakingNativeTest is Test {
         uint256 yieldAfter = staking.calculateYield(user);
         assertEq(yieldAfter, 0);
 
-        (uint256 firstHalf, uint256 secondHalf, uint256 newEpoch) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 newEpoch) =
+            staking.stakers(user);
         uint256 totalStaked = firstHalf + secondHalf;
         uint256 balanceAfter = address(user).balance;
 
@@ -155,7 +165,8 @@ contract ThriveStakingNativeTest is Test {
     function testGetEpochEndTimestampReturnsCorrectTimestamp() public {
         vm.deal(user, 10 ether);
         uint256 currentEpoch = staking.currentEpoch();
-        uint256 expectedEpochEnd = staking.epochStart() + ((currentEpoch + 1) * 30 days);
+        uint256 expectedEpochEnd =
+            staking.epochStart() + ((currentEpoch + 1) * 30 days);
 
         vm.prank(user);
         staking.stake{value: 1 ether}(1 ether);
@@ -171,7 +182,8 @@ contract ThriveStakingNativeTest is Test {
 
         vm.prank(user);
         staking.withdraw();
-        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) =
+            staking.stakers(user);
 
         assertEq(firstHalf, 0);
         assertEq(secondHalf, 0);
@@ -191,7 +203,8 @@ contract ThriveStakingNativeTest is Test {
         uint256 stakedAmount = staking.getStakedAmount(user);
         vm.prank(user);
         staking.withdraw();
-        (uint256 firstHalf, uint256 secondHalf, uint256 epochAfter) = staking.stakers(user);
+        (uint256 firstHalf, uint256 secondHalf, uint256 epochAfter) =
+            staking.stakers(user);
 
         assertEq(firstHalf, 0);
         assertEq(secondHalf, 0);
@@ -206,14 +219,14 @@ contract ThriveStakingNativeTest is Test {
     function testAdminFunctions() public {
         uint256 newYield = 200;
         vm.prank(admin);
-        
+
         staking.setYieldRate(newYield);
-        
+
         assertEq(staking.yieldRate(), newYield);
 
         uint256 newMin = 2 ether;
         vm.prank(admin);
-        
+
         staking.setMinStakingAmount(newMin);
 
         assertEq(staking.minStakingAmount(), newMin);
@@ -249,9 +262,11 @@ contract ThriveStakingNativeTest is Test {
     }
 
     function testSetAccessControlEnumerableSuccessNative() public {
-        ThriveProtocolAccessControl newAccessControlImpl = new ThriveProtocolAccessControl();
+        ThriveProtocolAccessControl newAccessControlImpl =
+            new ThriveProtocolAccessControl();
         bytes memory data = abi.encodeCall(newAccessControlImpl.initialize, ());
-        address newProxy = address(new ERC1967Proxy(address(newAccessControlImpl), data));
+        address newProxy =
+            address(new ERC1967Proxy(address(newAccessControlImpl), data));
         bytes32 newAdminRole = keccak256("NEW_ROLE");
 
         staking.setAccessControlEnumerable(newProxy, newAdminRole);
