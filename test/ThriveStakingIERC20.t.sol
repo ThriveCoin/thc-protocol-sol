@@ -77,12 +77,20 @@ contract ThriveStakingERC20Test is Test {
 
         vm.prank(user);
         staking.stake(minStakingAmount);
-        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) =
-            staking.stakers(user);
+        (
+            uint256 firstHalf,
+            uint256 firstHalfTimestamp,
+            uint256 secondHalf,
+            uint256 secondHalfTimestamp,
+            uint256 epoch
+        ) = staking.stakers(user);
+
         uint256 currentEpoch = staking.currentEpoch();
 
         assertEq(firstHalf, minStakingAmount);
+        assertGt(firstHalfTimestamp, 0);
         assertEq(secondHalf, 0);
+        assertEq(secondHalfTimestamp, 0);
         assertEq(epoch, currentEpoch);
     }
 
@@ -104,12 +112,14 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         staking.stake(minStakingAmount);
         uint256 staked = minStakingAmount;
-
+        (, uint256 firstHalfTimestamp,,,) = staking.stakers(user);
         uint256 currentEpoch = staking.currentEpoch();
         uint256 epochEnd = staking.epochStart() + ((currentEpoch + 1) * 30 days);
         vm.warp(epochEnd + 1);
-        uint256 expectedYield = (staked * yieldRate) / 1e18;
-        uint256 yieldCalculated = staking.calculateYield(user);
+        uint256 expectedYield = (
+            staked * yieldRate * (epochEnd - firstHalfTimestamp)
+        ) / 10 ** mockToken.decimals();
+        (uint256 yieldCalculated,) = staking.calculateYield(user);
 
         assertEq(yieldCalculated, expectedYield);
     }
@@ -124,14 +134,16 @@ contract ThriveStakingERC20Test is Test {
 
         vm.prank(user);
         staking.stake(minStakingAmount);
+        (,,, uint256 secondHalfTimestamp,) = staking.stakers(user);
         uint256 staked = minStakingAmount;
 
-        uint256 epochEnd = staking.epochStart() + ((currentEpoch + 1) * 30 days);
-        vm.warp(epochEnd + 1);
-        uint256 expectedYield = (staked * yieldRate) / (2 * 1e18);
-        uint256 yieldCalculated = staking.calculateYield(user);
+        vm.warp(block.timestamp + 4 days);
+        uint256 expectedYield = (
+            staked * yieldRate * (block.timestamp - secondHalfTimestamp)
+        ) / (2 * (10 ** mockToken.decimals()));
+        (, uint256 yieldOngoing) = staking.calculateYield(user);
 
-        assertEq(yieldCalculated, expectedYield);
+        assertEq(yieldOngoing, expectedYield);
     }
 
     function testClaimYieldRevertsIfNoStake() public {
@@ -161,16 +173,16 @@ contract ThriveStakingERC20Test is Test {
         uint256 epochEnd = staking.epochStart() + ((initialEpoch + 1) * 30 days);
         vm.warp(epochEnd + 1);
 
-        uint256 yieldCalculated = staking.calculateYield(user);
+        (uint256 yieldCalculated,) = staking.calculateYield(user);
 
         vm.prank(user);
         vm.deal(address(staking), 10 ether);
         staking.claimYield();
 
-        uint256 yieldAfter = staking.calculateYield(user);
+        (uint256 yieldAfter,) = staking.calculateYield(user);
         assertEq(yieldAfter, 0);
 
-        (uint256 firstHalf, uint256 secondHalf, uint256 newEpoch) =
+        (uint256 firstHalf,, uint256 secondHalf,, uint256 newEpoch) =
             staking.stakers(user);
         uint256 totalStaked = firstHalf + secondHalf;
         uint256 balanceAfter = address(user).balance;
@@ -210,11 +222,8 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         vm.deal(address(staking), 10 ether);
         staking.withdraw();
-        (uint256 firstHalf, uint256 secondHalf, uint256 epoch) =
-            staking.stakers(user);
+        (,,,, uint256 epoch) = staking.stakers(user);
 
-        assertEq(firstHalf, 0);
-        assertEq(secondHalf, 0);
         assertEq(epoch, 0);
     }
 
@@ -225,6 +234,7 @@ contract ThriveStakingERC20Test is Test {
 
         vm.prank(user);
         staking.stake(minStakingAmount);
+        uint256 staked = minStakingAmount;
         uint256 initialEpoch = staking.currentEpoch();
         uint256 epochEnd = staking.epochStart() + ((initialEpoch + 1) * 30 days);
         vm.warp(epochEnd + 1);
@@ -232,8 +242,13 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         vm.deal(address(staking), 10 ether);
         staking.withdraw();
-        (uint256 firstHalf, uint256 secondHalf, uint256 epochAfter) =
-            staking.stakers(user);
+        (
+            uint256 firstHalf,
+            uint256 firstHalfTimestamp,
+            uint256 secondHalf,
+            ,
+            uint256 epochAfter
+        ) = staking.stakers(user);
 
         assertEq(firstHalf, 0);
         assertEq(secondHalf, 0);
@@ -241,7 +256,9 @@ contract ThriveStakingERC20Test is Test {
 
         uint256 balanceAfter = mockToken.balanceOf(user);
         uint256 nativeBalanceAfterYield = address(user).balance;
-        uint256 expectedYield = (minStakingAmount * yieldRate) / 1e18;
+        uint256 expectedYield = (
+            staked * yieldRate * (epochEnd - firstHalfTimestamp)
+        ) / 10 ** mockToken.decimals();
 
         assertEq(balanceAfter, balanceBefore);
         assertEq(nativeBalanceAfterYield, expectedYield);
