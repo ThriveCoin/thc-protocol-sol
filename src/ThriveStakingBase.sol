@@ -10,6 +10,8 @@ import {IAccessControlEnumerable} from
 import {ReentrancyGuard} from
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from
     "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
@@ -40,32 +42,43 @@ abstract contract ThriveStakingBase is
     ReentrancyGuard
 {
     using AccessControlHelper for IAccessControlEnumerable;
+    using SafeERC20 for IERC20;
 
     event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount, uint256 yield);
-    event YieldClaimed(address indexed user, uint256 yield);
+    event Withdrawn(address indexed user, uint256 principal, uint256 yield);
+    event YieldClaimed(address indexed user, uint256 yield, uint256 epoch);
 
     struct StakingDetails {
-        uint256 amount;
-        uint256 stakingTime;
-        uint256 lastYieldTime;
+        uint256 firstHalfAmount;
+        uint256 firstHalfTimestamp;
+        uint256 secondHalfAmount;
+        uint256 secondHalfTimestamp;
+        uint256 epoch;
     }
 
+    // Yield rate is the yield per second (scaled by 1e18).
+    // For example, to achieve 10% yield per epoch (30 days), set yieldRate = (0.1 * 1e18) / 2,592,000 ≈ 38,580,246,913,580.
+    // Stakes in the second half of the epoch earn half the yield rate.
     uint256 public yieldRate;
     uint256 public minStakingAmount;
-    uint256 public constant MIN_STAKING_PERIOD = 30 days;
 
-    // For ERC20 staking, token != address(0); for native staking, token == address(0)
+    uint256 public epochStart;
+    uint256 public EPOCH_DURATION;
+    uint256 public HALF_EPOCH_DURATION;
+
     address public token;
     IAccessControlEnumerable public accessControlEnumerable;
     bytes32 public adminRole;
 
     mapping(address => StakingDetails) public stakers;
+    mapping(address => mapping(uint256 => bool)) public claimedEpoch;
 
     function _initialize(
         address _token,
         uint256 _yieldRate,
         uint256 _minStakingAmount,
+        uint256 _epochDuration,
+        uint256 _halfEpochDuration,
         address _accessControlEnumerable,
         bytes32 _role
     ) internal virtual {
@@ -75,9 +88,12 @@ abstract contract ThriveStakingBase is
         yieldRate = _yieldRate;
         minStakingAmount = _minStakingAmount;
         token = _token;
+        EPOCH_DURATION = _epochDuration;
+        HALF_EPOCH_DURATION = _halfEpochDuration;
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _role;
+        epochStart = block.timestamp;
     }
 
     function _authorizeUpgrade(address newImplementation)
@@ -111,89 +127,200 @@ abstract contract ThriveStakingBase is
         minStakingAmount = _minStakingAmount;
     }
 
-    /// @notice Calculates staking yield based on the amount staked and duration since the last yield claim.
-    function calculateYield(address staker) public view returns (uint256) {
+    function currentEpoch() public view returns (uint256) {
+        return (block.timestamp - epochStart) / EPOCH_DURATION;
+    }
+
+    function calculateYield(address staker)
+        public
+        view
+        returns (uint256 claimableYield, uint256 ongoingYield)
+    {
         StakingDetails memory details = stakers[staker];
-        uint256 stakedDuration = block.timestamp - details.lastYieldTime;
+        uint256 currentEpochIndex = currentEpoch();
+        uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
 
-        uint256 decimals =
-            token == address(0) ? 18 : IERC20Metadata(token).decimals();
-        return (details.amount * yieldRate * stakedDuration) / (10 ** decimals);
+        if (totalStaked < minStakingAmount) {
+            return (0, 0);
+        }
+
+        uint256 epochStartTimestamp =
+            epochStart + (details.epoch * EPOCH_DURATION);
+        uint256 epochEndTimestamp = epochStartTimestamp + EPOCH_DURATION;
+        uint256 effectiveTime = block.timestamp < epochEndTimestamp
+            ? block.timestamp
+            : epochEndTimestamp;
+
+        uint256 yieldFirst = 0;
+        uint256 yieldSecond = 0;
+
+        if (
+            details.firstHalfAmount > 0
+                && effectiveTime > details.firstHalfTimestamp
+        ) {
+            yieldFirst = (
+                details.firstHalfAmount * yieldRate
+                    * (effectiveTime - details.firstHalfTimestamp)
+            ) / 1e18;
+        }
+
+        if (
+            details.secondHalfAmount > 0
+                && effectiveTime > details.secondHalfTimestamp
+        ) {
+            yieldSecond = (
+                details.secondHalfAmount * yieldRate
+                    * (effectiveTime - details.secondHalfTimestamp)
+            ) / (2 * 1e18);
+        }
+
+        uint256 totalYield = yieldFirst + yieldSecond;
+
+        if (details.epoch == currentEpochIndex) {
+            ongoingYield = totalYield;
+        }
+
+        if (
+            currentEpochIndex > details.epoch && currentEpochIndex > 0
+                && details.epoch == currentEpochIndex - 1
+                && !claimedEpoch[staker][details.epoch]
+        ) {
+            claimableYield = totalYield;
+        }
+
+        return (claimableYield, ongoingYield);
     }
 
-    /// @notice Claims only the staking yield.
-    function claimYield() external nonReentrant {
-        StakingDetails storage details = stakers[msg.sender];
-        require(details.amount > 0, "ThriveProtocol: no staked tokens");
-
-        uint256 yield = calculateYield(msg.sender);
-        require(yield > 0, "ThriveProtocol: no yield to claim");
-
-        details.lastYieldTime = block.timestamp; // Reset yield calculation start point
-
-        _transferYield(msg.sender, yield);
-        emit YieldClaimed(msg.sender, yield);
-    }
-
-    /// @notice Unstakes the full staked amount, transfers it along with pending yields, and resets the staking details.
     function withdraw() external nonReentrant {
         StakingDetails storage details = stakers[msg.sender];
-        require(details.amount > 0, "ThriveProtocol: no staked tokens");
+        uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
         require(
-            block.timestamp >= details.stakingTime + MIN_STAKING_PERIOD,
-            "ThriveProtocol: 30-day lockup"
+            totalStaked >= minStakingAmount,
+            "ThriveProtocol: stake below minimum"
         );
+        require(totalStaked > 0, "ThriveProtocol: no staked tokens");
 
-        uint256 yield = calculateYield(msg.sender);
-        uint256 totalAmount = details.amount + yield;
+        uint256 claimableYield = 0;
+        if (currentEpoch() > details.epoch) {
+            (claimableYield,) = calculateYield(msg.sender);
+        }
 
-        _transferYield(msg.sender, totalAmount);
+        details.firstHalfAmount = 0;
+        details.secondHalfAmount = 0;
+        details.epoch = 0;
 
-        emit Withdrawn(msg.sender, details.amount, yield);
+        if (token == address(0)) {
+            _transferAmountStaked(msg.sender, totalStaked + claimableYield);
+        } else {
+            _transferNative(msg.sender, claimableYield);
+            _transferAmountStaked(msg.sender, totalStaked);
+        }
 
-        details.amount = 0;
-        details.stakingTime = 0;
-        details.lastYieldTime = 0;
+        emit Withdrawn(msg.sender, totalStaked, claimableYield);
     }
 
-    /// @notice External stake function that calls the internal _stake; can be overridden.
+    function claimYield() external nonReentrant {
+        StakingDetails storage details = stakers[msg.sender];
+        uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
+
+        require(
+            !claimedEpoch[msg.sender][details.epoch],
+            "ThriveProtocol: yield already claimed"
+        );
+        require(totalStaked > 0, "ThriveProtocol: no staked tokens");
+        require(
+            totalStaked >= minStakingAmount,
+            "ThriveProtocol: stake below minimum"
+        );
+        require(
+            currentEpoch() > details.epoch, "ThriveProtocol: epoch not finished"
+        );
+
+        (uint256 claimableYield,) = calculateYield(msg.sender);
+        require(claimableYield > 0, "ThriveProtocol: no yield to claim");
+
+        claimedEpoch[msg.sender][details.epoch] = true;
+
+        _transferNative(msg.sender, claimableYield);
+        emit YieldClaimed(msg.sender, claimableYield, details.epoch);
+
+        details.epoch = currentEpoch();
+        details.firstHalfAmount = totalStaked;
+        details.secondHalfAmount = 0;
+    }
+
     function stake(uint256 amount) external payable nonReentrant {
         _stake(amount);
     }
 
-    /// @dev Common internal function to update staking details and emit the Staked event.
     function _stake(uint256 amount) internal virtual {
-        uint256 pendingYield = calculateYield(msg.sender);
+        uint256 epochIndex = currentEpoch();
+        StakingDetails storage details = stakers[msg.sender];
+        uint256 currentTotal =
+            details.firstHalfAmount + details.secondHalfAmount;
         require(
-            pendingYield <= 1,
-            "ThriveProtocol: claim yield first and retry stake again"
+            currentTotal == 0 || details.epoch == epochIndex,
+            "ThriveProtocol: finalize previous epoch first"
         );
 
-        StakingDetails storage details = stakers[msg.sender];
-        details.amount += amount;
-        details.stakingTime = block.timestamp;
-        details.lastYieldTime = block.timestamp;
+        uint256 epochPhaseStart = epochStart + (epochIndex * EPOCH_DURATION);
+        if (block.timestamp < epochPhaseStart + HALF_EPOCH_DURATION) {
+            if (details.firstHalfAmount == 0) {
+                details.firstHalfTimestamp = block.timestamp;
+            } else {
+                details.firstHalfTimestamp = (
+                    details.firstHalfAmount * details.firstHalfTimestamp
+                        + amount * block.timestamp
+                ) / (details.firstHalfAmount + amount);
+            }
+            details.firstHalfAmount += amount;
+        } else {
+            if (details.secondHalfAmount == 0) {
+                details.secondHalfTimestamp = block.timestamp;
+            } else {
+                details.secondHalfTimestamp = (
+                    details.secondHalfAmount * details.secondHalfTimestamp
+                        + amount * block.timestamp
+                ) / (details.secondHalfAmount + amount);
+            }
+            details.secondHalfAmount += amount;
+        }
+        details.epoch = epochIndex;
 
         emit Staked(msg.sender, amount);
     }
 
-    /// @notice Returns the amount a user has staked.
     function getStakedAmount(address user) external view returns (uint256) {
-        return stakers[user].amount;
+        StakingDetails memory details = stakers[user];
+        return details.firstHalfAmount + details.secondHalfAmount;
     }
 
-    /// @notice Returns the timestamp when the user can withdraw their stake and earned yield.
-    function getWithdrawalTimestamp(address user)
+    function getEpochEndTimestamp(address user)
         external
         view
         returns (uint256)
     {
         StakingDetails memory details = stakers[user];
-        require(details.amount > 0, "ThriveProtocol: no staked tokens");
-
-        return details.stakingTime + MIN_STAKING_PERIOD;
+        require(
+            details.firstHalfAmount + details.secondHalfAmount > 0,
+            "ThriveProtocol: no staked tokens"
+        );
+        uint256 epochIndex = details.epoch;
+        return epochStart + ((epochIndex + 1) * EPOCH_DURATION);
     }
 
-    /// @dev Token-specific yield transfer function to be implemented in derived contracts.
-    function _transferYield(address user, uint256 amount) internal virtual;
+    function _transferNative(address user, uint256 amount) internal {
+        if (amount > 0) {
+            (bool success,) = user.call{value: amount}("");
+            require(success, "Native yield transfer failed");
+        }
+    }
+
+    /**
+     * @dev Transfers the staked amount to the user when token is not native.
+     * This function is abstract and must be implemented by derived erc20 contracts.
+     */
+    function _transferAmountStaked(address user, uint256 amount)
+        internal
+        virtual;
 }

@@ -14,6 +14,8 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
         address _erc20Token,
         uint256 _yieldRate,
         uint256 _minStakingAmount,
+        uint256 _epochDuration,
+        uint256 _halfEpochDuration,
         address _accessControlEnumerable,
         bytes32 _role
     ) public initializer {
@@ -21,6 +23,8 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
             _erc20Token,
             _yieldRate,
             _minStakingAmount,
+            _epochDuration,
+            _halfEpochDuration,
             _accessControlEnumerable,
             _role
         );
@@ -40,8 +44,13 @@ contract ThriveStakingIERC20 is ThriveStakingBase {
         super._stake(amount);
     }
 
-    /// @dev Implements yield transfer for ERC20 token.
-    function _transferYield(address user, uint256 amount) internal override {
+    /**
+     * @dev Transfers the staked amount using SafeERC20.
+     */
+    function _transferAmountStaked(address user, uint256 amount)
+        internal
+        override
+    {
         IERC20(token).safeTransfer(user, amount);
     }
 }
