@@ -63,8 +63,8 @@ abstract contract ThriveStakingBase is
     uint256 public minStakingAmount;
 
     uint256 public epochStart;
-    uint256 public constant EPOCH_DURATION = 30 days;
-    uint256 public constant HALF_EPOCH_DURATION = 15 days;
+    uint256 public EPOCH_DURATION;
+    uint256 public HALF_EPOCH_DURATION;
 
     address public token;
     IAccessControlEnumerable public accessControlEnumerable;
@@ -77,6 +77,8 @@ abstract contract ThriveStakingBase is
         address _token,
         uint256 _yieldRate,
         uint256 _minStakingAmount,
+        uint256 _epochDuration,
+        uint256 _halfEpochDuration,
         address _accessControlEnumerable,
         bytes32 _role
     ) internal virtual {
@@ -86,6 +88,8 @@ abstract contract ThriveStakingBase is
         yieldRate = _yieldRate;
         minStakingAmount = _minStakingAmount;
         token = _token;
+        EPOCH_DURATION = _epochDuration;
+        HALF_EPOCH_DURATION = _halfEpochDuration;
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
         adminRole = _role;

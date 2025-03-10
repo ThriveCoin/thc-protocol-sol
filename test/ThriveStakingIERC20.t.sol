@@ -17,6 +17,8 @@ contract ThriveStakingERC20Test is Test {
     address user = address(0xBEEF);
     uint256 yieldRate = 100;
     uint256 minStakingAmount = 1 ether;
+    uint256 EPOCH_DURATION = 30 days;
+    uint256 HALF_EPOCH_DURATION = 15 days;
     bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     function setUp() public {
@@ -40,6 +42,8 @@ contract ThriveStakingERC20Test is Test {
             address(mockToken),
             yieldRate,
             minStakingAmount,
+            EPOCH_DURATION,
+            HALF_EPOCH_DURATION,
             address(accessControl),
             ADMIN_ROLE
         );

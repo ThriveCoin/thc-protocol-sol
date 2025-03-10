@@ -8,6 +8,8 @@ contract ThriveStakingNative is ThriveStakingBase {
     function initialize(
         uint256 _yieldRate,
         uint256 _minStakingAmount,
+        uint256 _epochDuration,
+        uint256 _halfEpochDuration,
         address _accessControlEnumerable,
         bytes32 _role
     ) public initializer {
@@ -15,6 +17,8 @@ contract ThriveStakingNative is ThriveStakingBase {
             address(0),
             _yieldRate,
             _minStakingAmount,
+            _epochDuration,
+            _halfEpochDuration,
             _accessControlEnumerable,
             _role
         );
