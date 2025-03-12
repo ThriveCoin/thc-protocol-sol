@@ -135,6 +135,28 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
         IThriveReview.ReviewConfiguration memory reviewConfiguration_,
         address thriveReviewOwner_
     ) external payable returns (address, address) {
+        // Calculate required amount for the worker unit
+        uint256 requiredNativeFundsForWorkerUnit = IThriveWorkerUnitFactory(
+            thriveWorkerUnitFactory
+        ).getRequiredNativeFunds(
+            workUnitArgs_.rewardAmount,
+            workUnitArgs_.maxRewards,
+            workUnitArgs_.validationRewardAmount,
+            workUnitArgs_.rewardToken
+        );
+
+        // Total required amount
+        uint256 totalRequired = reviewConfiguration_
+            .reviewerRewardsTotalAllocation + requiredNativeFundsForWorkerUnit;
+        require(
+            msg.value >= totalRequired,
+            "ThriveReviewFactory: Insufficient funds for review and worker unit"
+        );
+
+        // Allocations
+        uint256 reviewContractAllocation =
+            reviewConfiguration_.reviewerRewardsTotalAllocation;
+        uint256 workUnitAllocation = requiredNativeFundsForWorkerUnit;
         // Require enough funds are sent to payout the reward for reviewers
         require(
             msg.value >= reviewConfiguration_.reviewerRewardsTotalAllocation,
@@ -149,10 +171,6 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
                     * reviewConfiguration_.maximumSubmissions,
             "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
         );
-
-        uint256 reviewContractAllocation =
-            reviewConfiguration_.reviewerRewardsTotalAllocation;
-        uint256 workUnitAllocation = msg.value - reviewContractAllocation;
 
         // Create a new ThriveReview contract by cloning existing implementation.
         address thriveReviewContract =
