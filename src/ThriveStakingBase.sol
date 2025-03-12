@@ -47,6 +47,7 @@ abstract contract ThriveStakingBase is
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 principal, uint256 yield);
     event YieldClaimed(address indexed user, uint256 yield, uint256 epoch);
+    event YieldStaked(address indexed user, uint256 amount, uint256 epoch);
 
     struct StakingDetails {
         uint256 firstHalfAmount;
@@ -72,6 +73,7 @@ abstract contract ThriveStakingBase is
 
     mapping(address => StakingDetails) public stakers;
     mapping(address => mapping(uint256 => bool)) public claimedEpoch;
+    mapping(address => uint256) public claimableYield;
 
     function _initialize(
         address _token,
@@ -134,7 +136,7 @@ abstract contract ThriveStakingBase is
     function calculateYield(address staker)
         public
         view
-        returns (uint256 claimableYield, uint256 ongoingYield)
+        returns (uint256 totalClaimableYield, uint256 ongoingYield)
     {
         StakingDetails memory details = stakers[staker];
         uint256 currentEpochIndex = currentEpoch();
@@ -144,54 +146,78 @@ abstract contract ThriveStakingBase is
             return (0, 0);
         }
 
-        uint256 epochStartTimestamp =
-            epochStart + (details.epoch * EPOCH_DURATION);
-        uint256 epochEndTimestamp = epochStartTimestamp + EPOCH_DURATION;
-        uint256 effectiveTime = block.timestamp < epochEndTimestamp
-            ? block.timestamp
-            : epochEndTimestamp;
+        totalClaimableYield = claimableYield[staker];
+        uint256 epochsElapsed = currentEpochIndex > details.epoch
+            ? currentEpochIndex - details.epoch
+            : 0;
 
-        uint256 yieldFirst = 0;
-        uint256 yieldSecond = 0;
+        if (epochsElapsed > 0) {
+            uint256 yieldPerEpochFirst =
+                details.firstHalfAmount * yieldRate * EPOCH_DURATION / 1e18;
+            uint256 yieldPerEpochSecond = details.secondHalfAmount * yieldRate
+                * EPOCH_DURATION / (2 * 1e18);
+            uint256 totalYieldPerEpoch =
+                yieldPerEpochFirst + yieldPerEpochSecond;
+
+            totalClaimableYield += totalYieldPerEpoch * epochsElapsed;
+
+            uint256 firstEpochStart = details.firstHalfTimestamp;
+            uint256 firstEpochEnd =
+                epochStart + ((details.epoch + 1) * EPOCH_DURATION);
+            uint256 firstEpochYieldFirst = details.firstHalfAmount * yieldRate
+                * (firstEpochEnd - firstEpochStart) / 1e18;
+            uint256 firstEpochYieldSecond = details.secondHalfAmount * yieldRate
+                * (firstEpochEnd - details.secondHalfTimestamp) / (2 * 1e18);
+
+            totalClaimableYield -= (
+                totalYieldPerEpoch
+                    - (firstEpochYieldFirst + firstEpochYieldSecond)
+            );
+        }
+
+        if (totalStaked > 0) {
+            uint256 currentEpochStart =
+                epochStart + (currentEpochIndex * EPOCH_DURATION);
+            uint256 effectiveTime = block.timestamp - currentEpochStart;
+
+            if (epochsElapsed == 0) {
+                effectiveTime = block.timestamp - details.firstHalfTimestamp;
+                ongoingYield +=
+                    details.firstHalfAmount * yieldRate * effectiveTime / 1e18;
+                ongoingYield += details.secondHalfAmount * yieldRate
+                    * effectiveTime / (2 * 1e18);
+            } else {
+                ongoingYield += totalStaked * yieldRate * effectiveTime / 1e18;
+            }
+        }
+
+        return (totalClaimableYield, ongoingYield);
+    }
+
+    function _updateStakeAndYield(address user) internal {
+        StakingDetails storage details = stakers[user];
+        uint256 currentEpochIndex = currentEpoch();
+        uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
 
         if (
-            details.firstHalfAmount > 0
-                && effectiveTime > details.firstHalfTimestamp
+            totalStaked < minStakingAmount || details.epoch >= currentEpochIndex
         ) {
-            yieldFirst = (
-                details.firstHalfAmount * yieldRate
-                    * (effectiveTime - details.firstHalfTimestamp)
-            ) / 1e18;
+            return;
         }
 
-        if (
-            details.secondHalfAmount > 0
-                && effectiveTime > details.secondHalfTimestamp
-        ) {
-            yieldSecond = (
-                details.secondHalfAmount * yieldRate
-                    * (effectiveTime - details.secondHalfTimestamp)
-            ) / (2 * 1e18);
-        }
+        (uint256 newClaimableYield,) = calculateYield(user);
+        claimableYield[user] = newClaimableYield;
 
-        uint256 totalYield = yieldFirst + yieldSecond;
-
-        if (details.epoch == currentEpochIndex) {
-            ongoingYield = totalYield;
-        }
-
-        if (
-            currentEpochIndex > details.epoch && currentEpochIndex > 0
-                && details.epoch == currentEpochIndex - 1
-                && !claimedEpoch[staker][details.epoch]
-        ) {
-            claimableYield = totalYield;
-        }
-
-        return (claimableYield, ongoingYield);
+        details.firstHalfAmount = totalStaked;
+        details.secondHalfAmount = 0;
+        details.firstHalfTimestamp =
+            epochStart + (currentEpochIndex * EPOCH_DURATION);
+        details.epoch = currentEpochIndex;
     }
 
     function withdraw() external nonReentrant {
+        _updateStakeAndYield(msg.sender);
+
         StakingDetails storage details = stakers[msg.sender];
         uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
         require(
@@ -200,9 +226,10 @@ abstract contract ThriveStakingBase is
         );
         require(totalStaked > 0, "ThriveProtocol: no staked tokens");
 
-        uint256 claimableYield = 0;
-        if (currentEpoch() > details.epoch) {
-            (claimableYield,) = calculateYield(msg.sender);
+        uint256 amountToWithdraw = claimableYield[msg.sender];
+
+        if (amountToWithdraw > 0) {
+            claimableYield[msg.sender] = 0;
         }
 
         details.firstHalfAmount = 0;
@@ -210,43 +237,72 @@ abstract contract ThriveStakingBase is
         details.epoch = 0;
 
         if (token == address(0)) {
-            _transferAmountStaked(msg.sender, totalStaked + claimableYield);
+            _transferAmountStaked(msg.sender, totalStaked + amountToWithdraw);
         } else {
-            _transferNative(msg.sender, claimableYield);
+            if (amountToWithdraw > 0) {
+                _transferNative(msg.sender, amountToWithdraw);
+            }
             _transferAmountStaked(msg.sender, totalStaked);
         }
 
-        emit Withdrawn(msg.sender, totalStaked, claimableYield);
+        emit Withdrawn(msg.sender, totalStaked, amountToWithdraw);
     }
 
     function claimYield() external nonReentrant {
+        _updateStakeAndYield(msg.sender);
+
         StakingDetails storage details = stakers[msg.sender];
         uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
-
-        require(
-            !claimedEpoch[msg.sender][details.epoch],
-            "ThriveProtocol: yield already claimed"
-        );
         require(totalStaked > 0, "ThriveProtocol: no staked tokens");
         require(
             totalStaked >= minStakingAmount,
             "ThriveProtocol: stake below minimum"
         );
+
+        uint256 amountToClaim = claimableYield[msg.sender];
+        require(amountToClaim > 0, "ThriveProtocol: no yield to claim");
+
+        claimableYield[msg.sender] = 0;
+        _transferNative(msg.sender, amountToClaim);
+        emit YieldClaimed(msg.sender, amountToClaim, currentEpoch() - 1);
+    }
+
+    function stakeYield() external nonReentrant {
+        _updateStakeAndYield(msg.sender);
+
+        StakingDetails storage details = stakers[msg.sender];
+        uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
+        require(totalStaked > 0, "ThriveProtocol: no staked tokens");
         require(
-            currentEpoch() > details.epoch, "ThriveProtocol: epoch not finished"
+            totalStaked >= minStakingAmount,
+            "ThriveProtocol: stake below minimum"
         );
 
-        (uint256 claimableYield,) = calculateYield(msg.sender);
-        require(claimableYield > 0, "ThriveProtocol: no yield to claim");
+        uint256 amountToStake = claimableYield[msg.sender];
+        require(amountToStake > 0, "ThriveProtocol: no yield to stake");
 
-        claimedEpoch[msg.sender][details.epoch] = true;
+        claimableYield[msg.sender] = 0;
 
-        _transferNative(msg.sender, claimableYield);
-        emit YieldClaimed(msg.sender, claimableYield, details.epoch);
+        uint256 epochPhaseStart = epochStart + (details.epoch * EPOCH_DURATION);
+        if (block.timestamp < epochPhaseStart + HALF_EPOCH_DURATION) {
+            details.firstHalfTimestamp = (
+                details.firstHalfAmount * details.firstHalfTimestamp
+                    + amountToStake * block.timestamp
+            ) / (details.firstHalfAmount + amountToStake);
+            details.firstHalfAmount += amountToStake;
+        } else {
+            if (details.secondHalfAmount == 0) {
+                details.secondHalfTimestamp = block.timestamp;
+            } else {
+                details.secondHalfTimestamp = (
+                    details.secondHalfAmount * details.secondHalfTimestamp
+                        + amountToStake * block.timestamp
+                ) / (details.secondHalfAmount + amountToStake);
+            }
+            details.secondHalfAmount += amountToStake;
+        }
 
-        details.epoch = currentEpoch();
-        details.firstHalfAmount = totalStaked;
-        details.secondHalfAmount = 0;
+        emit YieldStaked(msg.sender, amountToStake, details.epoch);
     }
 
     function stake(uint256 amount) external payable nonReentrant {
@@ -254,16 +310,12 @@ abstract contract ThriveStakingBase is
     }
 
     function _stake(uint256 amount) internal virtual {
-        uint256 epochIndex = currentEpoch();
-        StakingDetails storage details = stakers[msg.sender];
-        uint256 currentTotal =
-            details.firstHalfAmount + details.secondHalfAmount;
-        require(
-            currentTotal == 0 || details.epoch == epochIndex,
-            "ThriveProtocol: finalize previous epoch first"
-        );
+        _updateStakeAndYield(msg.sender);
 
+        StakingDetails storage details = stakers[msg.sender];
+        uint256 epochIndex = currentEpoch();
         uint256 epochPhaseStart = epochStart + (epochIndex * EPOCH_DURATION);
+
         if (block.timestamp < epochPhaseStart + HALF_EPOCH_DURATION) {
             if (details.firstHalfAmount == 0) {
                 details.firstHalfTimestamp = block.timestamp;
