@@ -8,7 +8,7 @@ import {ERC1967Proxy} from
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 
-/// @dev Test suite for ERC20 token staking logic with automatic rollover.
+/// @dev Test suite for ERC20 token staking logic
 contract ThriveStakingERC20Test is Test {
     ThriveStakingIERC20 staking;
     MockERC20 public mockToken;
@@ -129,7 +129,7 @@ contract ThriveStakingERC20Test is Test {
     }
 
     function testCalculateYield_SecondHalfStake_SingleEpoch() public {
-        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION + 1); // Second half
+        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION + 1);
         vm.prank(user);
         mockToken.approve(address(staking), minStakingAmount);
         vm.prank(user);
@@ -158,7 +158,6 @@ contract ThriveStakingERC20Test is Test {
         staking.stake(minStakingAmount);
         (, uint256 firstHalfTimestamp,,,) = staking.stakers(user);
 
-        // Warp to start of Epoch 3 (90 days)
         uint256 epoch3Start = staking.epochStart() + (3 * EPOCH_DURATION);
         vm.warp(epoch3Start);
 
@@ -168,7 +167,7 @@ contract ThriveStakingERC20Test is Test {
             (minStakingAmount * yieldRate * firstEpochTime) / 1e18;
         uint256 fullEpochYield =
             (minStakingAmount * yieldRate * EPOCH_DURATION) / 1e18;
-        uint256 expectedYield = firstEpochYield + (2 * fullEpochYield); // 0.3 ETH total
+        uint256 expectedYield = firstEpochYield + (2 * fullEpochYield);
 
         (uint256 claimableYield, uint256 ongoingYield) =
             staking.calculateYield(user);
@@ -191,7 +190,7 @@ contract ThriveStakingERC20Test is Test {
         staking.stake(minStakingAmount);
 
         vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
-        vm.deal(address(staking), 0); // No native funds for yield
+        vm.deal(address(staking), 0);
 
         vm.prank(user);
         vm.expectRevert("Native yield transfer failed");
@@ -235,7 +234,6 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         staking.stake(minStakingAmount);
 
-        // Warp to Epoch 3 start
         uint256 epoch3Start = staking.epochStart() + (3 * EPOCH_DURATION);
         vm.warp(epoch3Start);
         vm.deal(address(staking), 10 ether);
@@ -282,7 +280,6 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         staking.stake(minStakingAmount);
 
-        // Warp to Epoch 3 start
         uint256 epoch3Start = staking.epochStart() + (3 * EPOCH_DURATION);
         vm.warp(epoch3Start);
         vm.deal(address(staking), 10 ether);
@@ -330,7 +327,6 @@ contract ThriveStakingERC20Test is Test {
         vm.prank(user);
         staking.stake(minStakingAmount);
 
-        // Warp to Epoch 1 and stake again
         vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
         vm.prank(user);
         staking.stake(minStakingAmount);
