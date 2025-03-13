@@ -120,8 +120,7 @@ contract ThriveStakingERC20Test is Test {
         uint256 expectedYield =
             (minStakingAmount * yieldRate * timeStaked) / 1e18;
 
-        (uint256 claimableYield, uint256 ongoingYield) =
-            staking.calculateYield(user);
+        (uint256 claimableYield,) = staking.calculateYield(user);
         assertEq(
             claimableYield,
             expectedYield,
@@ -144,8 +143,7 @@ contract ThriveStakingERC20Test is Test {
         uint256 expectedYield =
             (minStakingAmount * yieldRate * timeStaked) / (2 * 1e18);
 
-        (uint256 claimableYield, uint256 ongoingYield) =
-            staking.calculateYield(user);
+        (uint256 claimableYield,) = staking.calculateYield(user);
         assertEq(
             claimableYield,
             expectedYield,

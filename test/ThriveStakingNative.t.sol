@@ -7,7 +7,7 @@ import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ThriveProtocolAccessControl} from "src/ThriveProtocolAccessControl.sol";
 
-/// @dev Test suite for native token staking logic with automatic rollover.
+/// @dev Test suite for native token staking logic
 contract ThriveStakingNativeTest is Test {
     ThriveStakingNative staking;
     ThriveProtocolAccessControl public accessControl;
@@ -84,11 +84,9 @@ contract ThriveStakingNativeTest is Test {
     function testMultipleStakesInEpoch() public {
         vm.deal(user, 10 ether);
 
-        // First stake
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
 
-        // Second stake in the same epoch
         vm.warp(block.timestamp + 5 days);
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
@@ -117,7 +115,7 @@ contract ThriveStakingNativeTest is Test {
         (, uint256 firstHalfTimestamp,,,) = staking.stakers(user);
 
         uint256 epochEnd = staking.epochStart() + EPOCH_DURATION;
-        vm.warp(epochEnd + 1); // Warp to after first epoch ends
+        vm.warp(epochEnd + 1);
 
         uint256 timeStaked = epochEnd - firstHalfTimestamp;
         uint256 expectedYield =
@@ -130,11 +128,12 @@ contract ThriveStakingNativeTest is Test {
             expectedYield,
             "Claimable yield should match expected"
         );
+        assertGt(ongoingYield, 0, "ongoing yield should be calculated");
     }
 
     function testCalculateYield_SecondHalfStake_SingleEpoch() public {
         vm.deal(user, 10 ether);
-        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION + 1); // Warp to second half
+        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION + 1);
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
         (,,, uint256 secondHalfTimestamp,) = staking.stakers(user);
@@ -146,8 +145,7 @@ contract ThriveStakingNativeTest is Test {
         uint256 expectedYield =
             (minStakingAmount * yieldRate * timeStaked) / (2 * 1e18);
 
-        (uint256 claimableYield, uint256 ongoingYield) =
-            staking.calculateYield(user);
+        (uint256 claimableYield,) = staking.calculateYield(user);
         assertEq(
             claimableYield,
             expectedYield,
@@ -161,18 +159,16 @@ contract ThriveStakingNativeTest is Test {
         staking.stake{value: minStakingAmount}(minStakingAmount);
         (, uint256 firstHalfTimestamp,,,) = staking.stakers(user);
 
-        // Warp to start of Epoch 3 (90 days)
         uint256 epoch3Start = staking.epochStart() + (3 * EPOCH_DURATION);
         vm.warp(epoch3Start);
 
-        // Expected yield: 0.1 ETH per epoch, 3 epochs completed
         uint256 firstEpochTime =
             staking.epochStart() + EPOCH_DURATION - firstHalfTimestamp;
         uint256 firstEpochYield =
             (minStakingAmount * yieldRate * firstEpochTime) / 1e18;
         uint256 fullEpochYield =
             (minStakingAmount * yieldRate * EPOCH_DURATION) / 1e18;
-        uint256 expectedYield = firstEpochYield + (2 * fullEpochYield); // 0.3 ETH total
+        uint256 expectedYield = firstEpochYield + (2 * fullEpochYield);
 
         (uint256 claimableYield, uint256 ongoingYield) =
             staking.calculateYield(user);
@@ -194,7 +190,7 @@ contract ThriveStakingNativeTest is Test {
         staking.stake{value: minStakingAmount}(minStakingAmount);
 
         vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
-        vm.deal(address(staking), 0); // No funds in contract
+        vm.deal(address(staking), 0);
 
         vm.prank(user);
         vm.expectRevert("Native yield transfer failed");
@@ -236,7 +232,6 @@ contract ThriveStakingNativeTest is Test {
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
 
-        // Warp to Epoch 3 start
         uint256 epoch3Start = staking.epochStart() + (3 * EPOCH_DURATION);
         vm.warp(epoch3Start);
         vm.deal(address(staking), 1_000 ether);
@@ -254,6 +249,32 @@ contract ThriveStakingNativeTest is Test {
         );
         (uint256 yieldAfter,) = staking.calculateYield(user);
         assertEq(yieldAfter, 0, "Claimable yield resets after claim");
+    }
+
+    function testYieldWithMixedStakes() public {
+        vm.deal(user, 10 ether);
+
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+
+        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+
+        vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
+        (uint256 claimableYield,) = staking.calculateYield(user);
+
+        uint256 firstYield =
+            (minStakingAmount * yieldRate * EPOCH_DURATION) / 1e18;
+        uint256 secondYield =
+            (minStakingAmount * yieldRate * HALF_EPOCH_DURATION) / (2 * 1e18);
+        uint256 expectedYield = firstYield + secondYield;
+
+        assertEq(
+            claimableYield,
+            expectedYield,
+            "Yield should match mixed stake calculation"
+        );
     }
 
     function testWithdrawBeforeEpochEnds() public {
@@ -276,12 +297,22 @@ contract ThriveStakingNativeTest is Test {
         assertEq(staking.claimableYield(user), 0, "Claimable yield remains 0");
     }
 
+    function testWithdrawNoContractFunds() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
+        vm.deal(address(staking), 0);
+        vm.prank(user);
+        vm.expectRevert("Native staked amount transfer failed");
+        staking.withdraw();
+    }
+
     function testWithdrawMultipleEpochs() public {
         vm.deal(user, 10 ether);
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
 
-        // Warp to Epoch 3 start
         uint256 epoch3Start = staking.epochStart() + (3 * EPOCH_DURATION);
         vm.warp(epoch3Start);
         vm.deal(address(staking), 1_000 ether);
@@ -300,6 +331,49 @@ contract ThriveStakingNativeTest is Test {
         );
         assertEq(staking.getStakedAmount(user), 0, "Stake should be 0");
         assertEq(staking.claimableYield(user), 0, "Claimable yield resets");
+    }
+
+    function testWithdrawMidEpochWithPartialYield() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+
+        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION);
+        vm.deal(address(staking), 1_000 ether);
+
+        vm.warp(staking.epochStart() + EPOCH_DURATION);
+        (uint256 partialYield,) = staking.calculateYield(user);
+        assertGt(partialYield, 0, "Partial yield should accumulate");
+
+        uint256 balanceBefore = user.balance;
+        vm.prank(user);
+        staking.withdraw();
+
+        assertEq(
+            user.balance,
+            balanceBefore + minStakingAmount + partialYield,
+            "Should withdraw principal plus partial yield"
+        );
+        assertEq(staking.getStakedAmount(user), 0, "Stake should be 0");
+    }
+
+    function testWithdrawWithNoStake() public {
+        vm.prank(user);
+        vm.expectRevert("ThriveProtocol: no staked tokens");
+        staking.withdraw();
+    }
+
+    function testWithdrawInsufficientContractBalance() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+
+        vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
+        vm.deal(address(staking), 0);
+
+        vm.prank(user);
+        vm.expectRevert("Native staked amount transfer failed");
+        staking.withdraw();
     }
 
     function testAdminFunctions() public {
@@ -331,7 +405,6 @@ contract ThriveStakingNativeTest is Test {
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
 
-        // Warp to Epoch 1 and stake again
         vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
         vm.prank(user);
         staking.stake{value: minStakingAmount}(minStakingAmount);
@@ -341,6 +414,83 @@ contract ThriveStakingNativeTest is Test {
             2 ether,
             "Total stake should be 2 ETH"
         );
+    }
+
+    function testStakeYieldSecondHalf() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        vm.warp(staking.epochStart() + EPOCH_DURATION + HALF_EPOCH_DURATION + 1);
+        vm.deal(address(staking), 1 ether);
+        vm.prank(user);
+        staking.stakeYield();
+        (,, uint256 secondHalf,,) = staking.stakers(user);
+        assertGt(secondHalf, 0);
+    }
+
+    function testStakeAtEpochStart() public {
+        vm.deal(user, 10 ether);
+        vm.warp(staking.epochStart());
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        (uint256 firstHalf, uint256 firstHalfTimestamp,,,) =
+            staking.stakers(user);
+        assertEq(firstHalf, minStakingAmount, "Stake should be in first half");
+        assertEq(
+            firstHalfTimestamp,
+            staking.epochStart(),
+            "Timestamp should match epoch start"
+        );
+    }
+
+    function testStakeJustBeforeEpochEnd() public {
+        vm.deal(user, 10 ether);
+        vm.warp(staking.epochStart() + EPOCH_DURATION - 1);
+
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        (,, uint256 secondHalf, uint256 secondHalfTimestamp,) =
+            staking.stakers(user);
+
+        assertEq(secondHalf, minStakingAmount, "Stake should be in second half");
+        assertEq(
+            secondHalfTimestamp,
+            block.timestamp,
+            "Timestamp should match stake time"
+        );
+    }
+
+    function testStakeAtHalfEpochBoundary() public {
+        vm.deal(user, 10 ether);
+        vm.warp(staking.epochStart() + HALF_EPOCH_DURATION);
+
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        (,, uint256 secondHalf,,) = staking.stakers(user);
+
+        assertEq(secondHalf, minStakingAmount);
+    }
+
+    function testStakeWithPendingYield() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+
+        vm.warp(staking.epochStart() + (2 * EPOCH_DURATION));
+        (uint256 pendingYield,) = staking.calculateYield(user);
+        assertGt(pendingYield, 0, "Should have pending yield");
+
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        assertEq(
+            staking.getStakedAmount(user),
+            2 ether,
+            "Total stake should be 2 ETH"
+        );
+        (uint256 firstHalf,, uint256 secondHalf,,) = staking.stakers(user);
+
+        assertEq(firstHalf, 2 ether, "First half should accumulate both stakes");
+        assertEq(secondHalf, 0, "Second half should be 0");
     }
 
     function testClaimableYieldStorageBeforeInteraction() public {
@@ -360,5 +510,52 @@ contract ThriveStakingNativeTest is Test {
             0.25 ether,
             "Total claimable yield shows correctly"
         );
+    }
+
+    function testGetEpochEndTimestamp() public {
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        uint256 epochEnd = staking.getEpochEndTimestamp(user);
+
+        assertEq(
+            epochEnd,
+            staking.epochStart() + EPOCH_DURATION,
+            "Epoch end timestamp should match expected"
+        );
+    }
+
+    function testSetYieldRateToZero() public {
+        vm.prank(admin);
+        staking.setYieldRate(0);
+
+        assertEq(staking.yieldRate(), 0, "Yield rate should be 0");
+
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        staking.stake{value: minStakingAmount}(minStakingAmount);
+        vm.warp(staking.epochStart() + EPOCH_DURATION + 1);
+        (uint256 claimableYield,) = staking.calculateYield(user);
+
+        assertEq(claimableYield, 0, "Yield should be 0 with zero rate");
+    }
+
+    function testSetAccessControlEnumerableSuccess() public {
+        address newAccessControl = address(0x1234);
+        bytes32 newRole = keccak256("NEW_ROLE");
+        vm.prank(address(this));
+        staking.setAccessControlEnumerable(newAccessControl, newRole);
+
+        assertEq(address(staking.accessControlEnumerable()), newAccessControl);
+        assertEq(staking.adminRole(), newRole);
+    }
+
+    function testSetAccessControlEnumerableNonOwner() public {
+        address newAccessControl = address(0x1234);
+        bytes32 newRole = keccak256("NEW_ROLE");
+
+        vm.prank(admin);
+        vm.expectRevert();
+        staking.setAccessControlEnumerable(newAccessControl, newRole);
     }
 }

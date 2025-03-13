@@ -220,10 +220,6 @@ abstract contract ThriveStakingBase is
 
         StakingDetails storage details = stakers[msg.sender];
         uint256 totalStaked = details.firstHalfAmount + details.secondHalfAmount;
-        require(
-            totalStaked >= minStakingAmount,
-            "ThriveProtocol: stake below minimum"
-        );
         require(totalStaked > 0, "ThriveProtocol: no staked tokens");
 
         uint256 amountToWithdraw = claimableYield[msg.sender];
