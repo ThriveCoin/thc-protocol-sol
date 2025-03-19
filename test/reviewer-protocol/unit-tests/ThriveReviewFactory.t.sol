@@ -88,7 +88,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
     function test03_revert_ToCreateContractsWithInsufficientFunds() public {
         // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
         vm.expectRevert(
-            "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers sent"
+            "ThriveReviewFactory: Insufficient funds for review and worker unit"
         );
         thriveReviewFactory.createWorkUnitAndReviewContract{
             value: REVIEW_CONTRACT_ALLOCATION - 1
@@ -110,7 +110,7 @@ contract ThriveReviewFactoryUnitTests is Test, BasicTestConfigs {
 
         // Test creating a ThriveWorkUnit and ThriveReview contract with insufficient funds
         vm.expectRevert(
-            "ThriveReviewFactory: Insufficient funds to allocate rewards for reviewers"
+            "ThriveReviewFactory: Insufficient funds for review and worker unit"
         );
         thriveReviewFactory.createWorkUnitAndReviewContract{
             value: REVIEW_CONTRACT_ALLOCATION

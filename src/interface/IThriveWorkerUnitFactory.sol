@@ -47,4 +47,11 @@ interface IThriveWorkerUnitFactory {
         external
         payable
         returns (address);
+
+    function getRequiredNativeFunds(
+        uint256 _rewardAmount,
+        uint256 _maxRewards,
+        uint256 _validationRewardAmount,
+        address _rewardToken
+    ) external pure returns (uint256);
 }
