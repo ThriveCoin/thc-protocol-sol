@@ -1182,6 +1182,22 @@ contract ThriveReview is OwnableUpgradeable, IThriveReview {
         return workerUnitAddress != address(0);
     }
 
+    function getUserSubmissionsArrayLength(address user)
+        public
+        view
+        returns (uint256)
+    {
+        return userSubmissions[user].length;
+    }
+
+    function getSubmissionReviewsArrayLength(uint256 submissionId)
+        public
+        view
+        returns (uint256)
+    {
+        return submissionReviews[submissionId].length;
+    }
+
     /**
      * @notice MUST HAVE this function in order to receive THRIVE rewards for reviewers.
      */
