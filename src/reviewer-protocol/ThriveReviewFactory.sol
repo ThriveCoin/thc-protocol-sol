@@ -7,6 +7,8 @@ import {OwnableUpgradeable} from
 import {UUPSUpgradeable} from
     "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {SafeERC20} from
+    "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // ThriveProtocol imports
@@ -20,6 +22,7 @@ import {IThriveWorkerUnitFactory} from
  * @dev Factory contract for creating ThriveReview (and ThriveWorkUnit contract instances).
  */
 contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
+    using SafeERC20 for IERC20;
     /**
      * STORAGE VARIABLES
      */
@@ -179,6 +182,19 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
         // ThriveReview contract should be the ONLY validator on the ThriveWorkUnit contract
         workUnitArgs_.validators = new address[](1);
         workUnitArgs_.validators[0] = thriveReviewContract;
+
+        if (workUnitArgs_.rewardToken != address(0)) {
+            require(
+                IERC20(workUnitArgs_.rewardToken).balanceOf(msg.sender)
+                    >= workUnitArgs_.maxRewards,
+                "Factory: insufficient token balance"
+            );
+            IERC20(workUnitArgs_.rewardToken).safeTransferFrom(
+                msg.sender, address(this), workUnitArgs_.maxRewards
+            );
+
+            IERC20(workUnitArgs_.rewardToken).approve(address(thriveWorkerUnitFactory), workUnitArgs_.maxRewards);
+        }
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
         address workUnitContract = IThriveWorkerUnitFactory(
