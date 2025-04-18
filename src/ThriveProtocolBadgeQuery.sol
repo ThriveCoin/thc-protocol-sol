@@ -69,6 +69,7 @@ contract BadgeQuery is OwnableUpgradeable, IBadgeQuery {
      * @notice Grants a badge to a user.
      */
     function grantBadge(address account, bytes32 badgeId) external onlyAdmin {
+        _validateBadgeInputs(account, badgeId);
         _badges[account][badgeId] = true;
 
         emit BadgeGranted(account, badgeId);
@@ -78,6 +79,7 @@ contract BadgeQuery is OwnableUpgradeable, IBadgeQuery {
      * @notice Revokes a badge from a user.
      */
     function revokeBadge(address account, bytes32 badgeId) external onlyAdmin {
+        _validateBadgeInputs(account, badgeId);
         _badges[account][badgeId] = false;
 
         emit BadgeRevoked(account, badgeId);
@@ -90,6 +92,7 @@ contract BadgeQuery is OwnableUpgradeable, IBadgeQuery {
         external
         onlyAdmin
     {
+        _validateBadgeInputs(account, badgeId);
         _badges[account][badgeId] = status;
 
         emit BadgeUpdated(account, badgeId, status);
@@ -104,14 +107,20 @@ contract BadgeQuery is OwnableUpgradeable, IBadgeQuery {
         override
         returns (bool)
     {
+        _validateBadgeInputs(account, badgeId);
+        return _badges[account][badgeId];
+    }
+
+    function _validateBadgeInputs(address account, bytes32 badgeId)
+        internal
+        pure
+    {
         require(
             account != address(0),
-            "Invalid account: The provided address cannot be the zero address."
+            "ThriveProtocol: address cannot be the zero address."
         );
         require(
-            badgeId != "",
-            "Invalid badge ID: The badge identifier must not be empty."
+            badgeId != "", "ThriveProtocol: badge identifier must not be empty."
         );
-        return _badges[account][badgeId];
     }
 }
