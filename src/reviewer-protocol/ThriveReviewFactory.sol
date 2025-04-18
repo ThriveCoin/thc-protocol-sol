@@ -193,7 +193,9 @@ contract ThriveReviewFactory is OwnableUpgradeable, UUPSUpgradeable {
                 msg.sender, address(this), workUnitArgs_.maxRewards
             );
 
-            IERC20(workUnitArgs_.rewardToken).approve(address(thriveWorkerUnitFactory), workUnitArgs_.maxRewards);
+            IERC20(workUnitArgs_.rewardToken).approve(
+                address(thriveWorkerUnitFactory), workUnitArgs_.maxRewards
+            );
         }
 
         // Create a new WorkUnit contract that is to be validated by the ThriveReview contract
