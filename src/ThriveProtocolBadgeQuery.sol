@@ -9,10 +9,10 @@ import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
- * @title BadgeQuery
+ * @title ThriveProtocolBadgeQuery
  * @notice Badge manager using external ThriveProtocolAccessControl and modular access pattern.
  */
-contract BadgeQuery is OwnableUpgradeable, IBadgeQuery {
+contract ThriveProtocolBadgeQuery is OwnableUpgradeable, IBadgeQuery {
     using AccessControlHelper for IAccessControlEnumerable;
 
     IAccessControlEnumerable public accessControlEnumerable;
@@ -83,19 +83,6 @@ contract BadgeQuery is OwnableUpgradeable, IBadgeQuery {
         _badges[account][badgeId] = false;
 
         emit BadgeRevoked(account, badgeId);
-    }
-
-    /**
-     * @notice Updates badge status for a user.
-     */
-    function updateBadge(address account, bytes32 badgeId, bool status)
-        external
-        onlyAdmin
-    {
-        _validateBadgeInputs(account, badgeId);
-        _badges[account][badgeId] = status;
-
-        emit BadgeUpdated(account, badgeId, status);
     }
 
     /**
