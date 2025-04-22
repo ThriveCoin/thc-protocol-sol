@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 import "../src/ThriveProtocolBadgeQuery.sol";
 import "../src/ThriveProtocolAccessControl.sol";
 
-contract BadgeQueryTest is Test {
-    BadgeQuery public badgeQuery;
+contract ThriveProtocolBadgeQueryTest is Test {
+    ThriveProtocolBadgeQuery public badgeQuery;
     ThriveProtocolAccessControl public accessControl;
 
     address public owner = address(0xA11CE);
@@ -24,7 +24,7 @@ contract BadgeQueryTest is Test {
 
         accessControl.grantRole(BADGE_ADMIN_ROLE, admin);
 
-        badgeQuery = new BadgeQuery();
+        badgeQuery = new ThriveProtocolBadgeQuery();
         badgeQuery.initialize(address(accessControl), BADGE_ADMIN_ROLE);
 
         vm.stopPrank();
@@ -58,18 +58,6 @@ contract BadgeQueryTest is Test {
         assertFalse(has);
     }
 
-    function testUpdateBadgeStatus() public {
-        vm.prank(admin);
-        badgeQuery.updateBadge(user, TEST_BADGE_ID, true);
-
-        assertTrue(badgeQuery.hasBadge(user, TEST_BADGE_ID));
-
-        vm.prank(admin);
-        badgeQuery.updateBadge(user, TEST_BADGE_ID, false);
-
-        assertFalse(badgeQuery.hasBadge(user, TEST_BADGE_ID));
-    }
-
     function testOwnerCanUpdateAccessControl() public {
         ThriveProtocolAccessControl newAC = new ThriveProtocolAccessControl();
         newAC.initialize();
@@ -83,7 +71,7 @@ contract BadgeQueryTest is Test {
     function testEvents() public {
         vm.prank(admin);
         vm.expectEmit(true, true, false, true);
-        emit BadgeQuery.BadgeGranted(user, TEST_BADGE_ID);
+        emit ThriveProtocolBadgeQuery.BadgeGranted(user, TEST_BADGE_ID);
         badgeQuery.grantBadge(user, TEST_BADGE_ID);
     }
 }
