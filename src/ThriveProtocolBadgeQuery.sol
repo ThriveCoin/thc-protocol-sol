@@ -7,12 +7,18 @@ import {IAccessControlEnumerable} from
 import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
 import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @title ThriveProtocolBadgeQuery
  * @notice Badge manager using external ThriveProtocolAccessControl and modular access pattern.
  */
-contract ThriveProtocolBadgeQuery is OwnableUpgradeable, IBadgeQuery {
+contract ThriveProtocolBadgeQuery is
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    IBadgeQuery
+{
     using AccessControlHelper for IAccessControlEnumerable;
 
     IAccessControlEnumerable public accessControlEnumerable;
@@ -22,9 +28,6 @@ contract ThriveProtocolBadgeQuery is OwnableUpgradeable, IBadgeQuery {
 
     event BadgeGranted(address indexed account, bytes32 indexed badgeId);
     event BadgeRevoked(address indexed account, bytes32 indexed badgeId);
-    event BadgeUpdated(
-        address indexed account, bytes32 indexed badgeId, bool status
-    );
     event AccessControlUpdated(
         address indexed accessControl, bytes32 adminRole
     );
@@ -43,6 +46,7 @@ contract ThriveProtocolBadgeQuery is OwnableUpgradeable, IBadgeQuery {
         initializer
     {
         __Ownable_init(_msgSender());
+        __UUPSUpgradeable_init();
 
         accessControlEnumerable =
             IAccessControlEnumerable(_accessControlEnumerable);
@@ -50,6 +54,12 @@ contract ThriveProtocolBadgeQuery is OwnableUpgradeable, IBadgeQuery {
 
         emit AccessControlUpdated(_accessControlEnumerable, _adminRole);
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyOwner
+    {}
 
     /**
      * @notice Allows owner to update access control contract and admin role.
