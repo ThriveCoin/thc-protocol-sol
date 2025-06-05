@@ -16,6 +16,7 @@ import {AccessControlHelper} from "src/libraries/AccessControlHelper.sol";
  * @title ThriveProtocolIERC20Reward
  * @notice Contract for managing rewards related to ERC20 token.
  * This contract allows admins to deposit tokens, give rewards, and users to withdraw their rewards.
+ * It also allows admins to remove rewards when necessary.
  */
 contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
@@ -27,13 +28,19 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => uint256) public balanceOf;
 
     /**
-     * @dev Emitted when an admin rewads a user with tokens.
+     * @dev Emitted when an admin rewards a user with tokens.
      */
     event Reward(address indexed recipient, uint256 amount, string reason);
     /**
      * @dev Emitted when a user withdraws tokens from the contract.
      */
     event Withdrawal(address indexed user, uint256 amount);
+    /**
+     * @dev Emitted when an admin removes a reward from a user.
+     */
+    event RewardRemoved(
+        address indexed recipient, uint256 amount, string reason
+    );
 
     /**
      * @dev Initializes the contract.
@@ -140,6 +147,46 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /**
+     * @notice Removes a reward from a single recipient.
+     * @dev This can be used to correct errors or claw back rewards.
+     * The amount cannot exceed the recipient's current balance.
+     * @param _recipient The address of the recipient.
+     * @param _amount The amount to remove.
+     * @param _reason The reason for removing the reward.
+     */
+    function removeReward(
+        address _recipient,
+        uint256 _amount,
+        string calldata _reason
+    ) external onlyAdmin {
+        _removeReward(_recipient, _amount, _reason);
+    }
+
+    /**
+     * @notice Removes rewards from multiple recipients in bulk.
+     * @dev This can be used to correct errors or claw back rewards for multiple users at once.
+     * The amounts cannot exceed the respective recipients' current balances.
+     * @param _recipients The addresses of the recipients.
+     * @param _amounts The amounts to remove.
+     * @param _reasons The reasons for removing the rewards.
+     */
+    function removeRewardBulk(
+        address[] calldata _recipients,
+        uint256[] calldata _amounts,
+        string[] calldata _reasons
+    ) external onlyAdmin {
+        require(
+            _recipients.length == _amounts.length
+                && _recipients.length == _reasons.length,
+            "ThriveProtocol: array lengths mismatch!"
+        );
+
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            _removeReward(_recipients[i], _amounts[i], _reasons[i]);
+        }
+    }
+
+    /**
      * @dev Internal function to give a reward to a single recipient.
      * @param _recipient The address of the recipient.
      * @param _amount The amount of the reward.
@@ -152,6 +199,25 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
     ) internal {
         balanceOf[_recipient] += _amount;
         emit Reward(_recipient, _amount, _reason);
+    }
+
+    /**
+     * @dev Internal function to remove a reward from a single recipient.
+     * @param _recipient The address of the recipient.
+     * @param _amount The amount to remove from the reward.
+     * @param _reason The reason for the removal.
+     */
+    function _removeReward(
+        address _recipient,
+        uint256 _amount,
+        string calldata _reason
+    ) internal {
+        require(
+            balanceOf[_recipient] >= _amount,
+            "ThriveProtocol: amount exceeds balance!"
+        );
+        balanceOf[_recipient] -= _amount;
+        emit RewardRemoved(_recipient, _amount, _reason);
     }
 
     /**
