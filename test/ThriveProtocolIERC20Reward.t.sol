@@ -19,10 +19,19 @@ contract ThriveProtocolIERC20RewardTest is Test {
 
     event Reward(address indexed recipient, uint256 amount, string reason);
     event Withdrawal(address indexed user, uint256 amount);
+    event RewardRemoved(
+        address indexed recipient, uint256 amount, string reason
+    );
 
     address[] public recipients;
     uint256[] public amounts;
     string[] public reasons;
+
+    address internal constant ADMIN_ADDRESS = address(1);
+    address internal constant USER_A_ADDRESS = address(2);
+    address internal constant USER_B_ADDRESS = address(3);
+    address internal constant NON_ADMIN_ADDRESS = address(4);
+    address internal constant ARBITRARY_SENDER = address(5);
 
     function setUp() public {
         token = new MockERC20("test token", "TST");
@@ -53,6 +62,16 @@ contract ThriveProtocolIERC20RewardTest is Test {
         recipients = [address(2), address(3)];
         amounts = [0.001 ether, 0.1 ether];
         reasons = ["deposited", "test"];
+    }
+
+    // Helper function to give rewards using ADMIN_ADDRESS
+    function _giveRewardAdmin(
+        address recipient,
+        uint256 amount,
+        string memory reason
+    ) internal {
+        vm.prank(ADMIN_ADDRESS);
+        reward.reward(recipient, amount, reason);
     }
 
     /////////////
@@ -221,5 +240,180 @@ contract ThriveProtocolIERC20RewardTest is Test {
             address(newAccessControl), OTHER_ADMIN_ROLE
         );
         vm.stopPrank();
+    }
+
+    //////////////////////
+    // removeRewardBulk //
+    //////////////////////
+
+    function test_RemoveRewardBulk_Success() public {
+        uint256 rewardUserA = 1 ether;
+        uint256 rewardUserB = 2 ether;
+        _giveRewardAdmin(USER_A_ADDRESS, rewardUserA, "Reward A for bulk");
+        _giveRewardAdmin(USER_B_ADDRESS, rewardUserB, "Reward B for bulk");
+
+        address[] memory localRecipients = new address[](2);
+        localRecipients[0] = USER_A_ADDRESS;
+        localRecipients[1] = USER_B_ADDRESS;
+
+        uint256[] memory localAmounts = new uint256[](2);
+        localAmounts[0] = 0.2 ether;
+        localAmounts[1] = 0.5 ether;
+
+        string[] memory localReasons = new string[](2);
+        localReasons[0] = "Bulk remove A";
+        localReasons[1] = "Bulk remove B";
+
+        vm.prank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true, address(reward));
+        emit RewardRemoved(USER_A_ADDRESS, localAmounts[0], localReasons[0]);
+        vm.expectEmit(true, true, true, true, address(reward));
+        emit RewardRemoved(USER_B_ADDRESS, localAmounts[1], localReasons[1]);
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+
+        assertEq(
+            reward.balanceOf(USER_A_ADDRESS), rewardUserA - localAmounts[0]
+        );
+        assertEq(
+            reward.balanceOf(USER_B_ADDRESS), rewardUserB - localAmounts[1]
+        );
+    }
+
+    function test_RemoveRewardBulk_Success_MixFullAndPartialAndZero() public {
+        address USER_C_ADDRESS = address(5);
+        vm.deal(USER_C_ADDRESS, 1 ether);
+
+        _giveRewardAdmin(USER_A_ADDRESS, 1 ether, "Reward A for mix");
+        _giveRewardAdmin(USER_B_ADDRESS, 0.5 ether, "Reward B for mix");
+        _giveRewardAdmin(USER_C_ADDRESS, 0.7 ether, "Reward C for mix");
+
+        address[] memory localRecipients = new address[](3);
+        localRecipients[0] = USER_A_ADDRESS;
+        localRecipients[1] = USER_B_ADDRESS;
+        localRecipients[2] = USER_C_ADDRESS;
+
+        uint256[] memory localAmounts = new uint256[](3);
+        localAmounts[0] = 0.3 ether;
+        localAmounts[1] = 0.5 ether;
+        localAmounts[2] = 0 ether;
+
+        string[] memory localReasons = new string[](3);
+        localReasons[0] = "Partial A";
+        localReasons[1] = "Full B";
+        localReasons[2] = "Zero C";
+
+        vm.prank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true, address(reward));
+        emit RewardRemoved(USER_A_ADDRESS, localAmounts[0], localReasons[0]);
+        vm.expectEmit(true, true, true, true, address(reward));
+        emit RewardRemoved(USER_B_ADDRESS, localAmounts[1], localReasons[1]);
+        vm.expectEmit(true, true, true, true, address(reward));
+        emit RewardRemoved(USER_C_ADDRESS, localAmounts[2], localReasons[2]);
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+
+        assertEq(reward.balanceOf(USER_A_ADDRESS), 1 ether - 0.3 ether);
+        assertEq(reward.balanceOf(USER_B_ADDRESS), 0);
+        assertEq(reward.balanceOf(USER_C_ADDRESS), 0.7 ether);
+    }
+
+    function test_RemoveRewardBulk_Fail_NotAdmin() public {
+        _giveRewardAdmin(USER_A_ADDRESS, 1 ether, "Reward for bulk auth test");
+
+        address[] memory localRecipients = new address[](1);
+        localRecipients[0] = USER_A_ADDRESS;
+        uint256[] memory localAmounts = new uint256[](1);
+        localAmounts[0] = 0.1 ether;
+        string[] memory localReasons = new string[](1);
+        localReasons[0] = "Attempt non-admin";
+
+        vm.prank(NON_ADMIN_ADDRESS);
+        vm.expectRevert("ThriveProtocol: must have admin role");
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+    }
+
+    function test_RemoveRewardBulk_Fail_MismatchedArrayLengths_RecipientsAmounts(
+    ) public {
+        address[] memory localRecipients = new address[](1);
+        localRecipients[0] = USER_A_ADDRESS;
+        uint256[] memory localAmounts = new uint256[](2);
+        localAmounts[0] = 0.1 ether;
+        localAmounts[1] = 0.1 ether;
+        string[] memory localReasons = new string[](1);
+        localReasons[0] = "Mismatch test";
+
+        vm.prank(ADMIN_ADDRESS);
+        vm.expectRevert(bytes("ThriveProtocol: array lengths mismatch!"));
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+    }
+
+    function test_RemoveRewardBulk_Fail_MismatchedArrayLengths_RecipientsReasons(
+    ) public {
+        address[] memory localRecipients = new address[](1);
+        localRecipients[0] = USER_A_ADDRESS;
+        uint256[] memory localAmounts = new uint256[](1);
+        localAmounts[0] = 0.1 ether;
+        string[] memory localReasons = new string[](2);
+        localReasons[0] = "R1";
+        localReasons[1] = "R2"; // Mismatch
+
+        vm.prank(ADMIN_ADDRESS);
+        vm.expectRevert(bytes("ThriveProtocol: array lengths mismatch!"));
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+    }
+
+    function test_RemoveRewardBulk_Fail_OneAmountExceedsBalance() public {
+        _giveRewardAdmin(USER_A_ADDRESS, 0.1 ether, "Reward A for exceed test");
+        _giveRewardAdmin(USER_B_ADDRESS, 0.5 ether, "Reward B for exceed test");
+
+        address[] memory localRecipients = new address[](2);
+        localRecipients[0] = USER_A_ADDRESS;
+        localRecipients[1] = USER_B_ADDRESS;
+
+        uint256[] memory localAmounts = new uint256[](2);
+        localAmounts[0] = 0.05 ether;
+        localAmounts[1] = 0.6 ether;
+
+        string[] memory localReasons = new string[](2);
+        localReasons[0] = "Valid A";
+        localReasons[1] = "Exceed B";
+
+        vm.prank(ADMIN_ADDRESS);
+        vm.expectRevert(bytes("ThriveProtocol: amount exceeds balance!"));
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+
+        assertEq(reward.balanceOf(USER_A_ADDRESS), 0.1 ether);
+        assertEq(reward.balanceOf(USER_B_ADDRESS), 0.5 ether);
+    }
+
+    function test_RemoveRewardBulk_Success_EmptyArrays() public {
+        address[] memory localRecipients = new address[](0);
+        uint256[] memory localAmounts = new uint256[](0);
+        string[] memory localReasons = new string[](0);
+
+        vm.prank(ADMIN_ADDRESS);
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+    }
+
+    function test_RemoveRewardBulk_Success_SingleUserInBulk() public {
+        uint256 initialReward = 0.7 ether;
+        _giveRewardAdmin(
+            USER_A_ADDRESS, initialReward, "Reward for single bulk test"
+        );
+
+        address[] memory localRecipients = new address[](1);
+        localRecipients[0] = USER_A_ADDRESS;
+        uint256[] memory localAmounts = new uint256[](1);
+        localAmounts[0] = 0.2 ether;
+        string[] memory localReasons = new string[](1);
+        localReasons[0] = "Single bulk remove";
+
+        vm.prank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true, address(reward));
+        emit RewardRemoved(USER_A_ADDRESS, localAmounts[0], localReasons[0]);
+        reward.removeRewardBulk(localRecipients, localAmounts, localReasons);
+
+        assertEq(
+            reward.balanceOf(USER_A_ADDRESS), initialReward - localAmounts[0]
+        );
     }
 }
