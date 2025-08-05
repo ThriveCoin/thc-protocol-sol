@@ -18,6 +18,9 @@ contract ThriveProtocolIERC20RewardTest is Test {
     MockERC20 public token;
 
     event Reward(address indexed recipient, uint256 amount, string reason);
+    event RewardTransferred(
+        address indexed recipient, uint256 amount, string reason
+    );
     event Withdrawal(address indexed user, uint256 amount);
     event RewardRemoved(
         address indexed recipient, uint256 amount, string reason
@@ -111,6 +114,136 @@ contract ThriveProtocolIERC20RewardTest is Test {
             )
         );
         reward.deposit(1 ether);
+        vm.stopPrank();
+    }
+
+    /**
+     *
+     * Tests for payoutReward (Single ERC20)
+     *
+     */
+    function test_payoutReward_Success() public {
+        uint256 payoutAmount = 0.5 ether;
+        string memory payoutReason = "test payout";
+        token.mint(address(reward), 1 ether);
+
+        uint256 initialRecipientBalance = token.balanceOf(USER_A_ADDRESS);
+        uint256 initialContractBalance = token.balanceOf(address(reward));
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true);
+        emit RewardTransferred(USER_A_ADDRESS, payoutAmount, payoutReason);
+        reward.payoutReward(USER_A_ADDRESS, payoutAmount, payoutReason);
+        vm.stopPrank();
+
+        assertEq(
+            token.balanceOf(USER_A_ADDRESS),
+            initialRecipientBalance + payoutAmount,
+            "Recipient should receive the tokens"
+        );
+        assertEq(
+            token.balanceOf(address(reward)),
+            initialContractBalance - payoutAmount,
+            "Contract token balance should decrease"
+        );
+    }
+
+    function test_payoutReward_RevertIf_NonAdmin() public {
+        token.mint(address(reward), 1 ether);
+
+        vm.startPrank(NON_ADMIN_ADDRESS);
+        vm.expectRevert();
+        reward.payoutReward(USER_A_ADDRESS, 0.5 ether, "fail");
+        vm.stopPrank();
+    }
+
+    function test_payoutReward_RevertIf_InsufficientTokenBalance() public {
+        token.mint(address(reward), 0.1 ether);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert("ThriveProtocol: Insufficient token balance");
+        reward.payoutReward(USER_A_ADDRESS, 0.5 ether, "fail");
+        vm.stopPrank();
+    }
+
+    function test_payoutReward_RevertIf_AmountIsZero() public {
+        token.mint(address(reward), 1 ether);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert(
+            "ThriveProtocol: Payout amount must be greater than zero"
+        );
+        reward.payoutReward(USER_A_ADDRESS, 0, "fail");
+        vm.stopPrank();
+    }
+
+    /**
+     *
+     * Tests for payoutRewardBulk (ERC20)
+     *
+     */
+    function test_payoutRewardBulk_Success() public {
+        uint256 totalPayout = amounts[0] + amounts[1];
+        token.mint(address(reward), 1 ether);
+
+        uint256 initialRecipientABalance = token.balanceOf(recipients[0]);
+        uint256 initialRecipientBBalance = token.balanceOf(recipients[1]);
+        uint256 initialContractBalance = token.balanceOf(address(reward));
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true);
+        emit RewardTransferred(recipients[0], amounts[0], reasons[0]);
+        vm.expectEmit(true, true, true, true);
+        emit RewardTransferred(recipients[1], amounts[1], reasons[1]);
+
+        reward.payoutRewardBulk(recipients, amounts, reasons);
+        vm.stopPrank();
+
+        assertEq(
+            token.balanceOf(recipients[0]),
+            initialRecipientABalance + amounts[0],
+            "Recipient A token balance mismatch"
+        );
+        assertEq(
+            token.balanceOf(recipients[1]),
+            initialRecipientBBalance + amounts[1],
+            "Recipient B token balance mismatch"
+        );
+        assertEq(
+            token.balanceOf(address(reward)),
+            initialContractBalance - totalPayout,
+            "Contract token balance mismatch"
+        );
+    }
+
+    function test_payoutRewardBulk_RevertIf_NonAdmin() public {
+        token.mint(address(reward), 1 ether);
+
+        vm.startPrank(NON_ADMIN_ADDRESS);
+        vm.expectRevert();
+        reward.payoutRewardBulk(recipients, amounts, reasons);
+        vm.stopPrank();
+    }
+
+    function test_payoutRewardBulk_RevertIf_InsufficientTokenBalance() public {
+        uint256 totalPayout = amounts[0] + amounts[1];
+        token.mint(address(reward), totalPayout - 1 wei);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert(
+            "ThriveProtocol: Insufficient token balance for bulk payout"
+        );
+        reward.payoutRewardBulk(recipients, amounts, reasons);
+        vm.stopPrank();
+    }
+
+    function test_payoutRewardBulk_RevertIf_ArrayLengthsMismatch() public {
+        uint256[] memory mismatchedAmounts = new uint256[](1);
+        mismatchedAmounts[0] = 1 ether;
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert("ThriveProtocol: Array lengths mismatch");
+        reward.payoutRewardBulk(recipients, mismatchedAmounts, reasons);
         vm.stopPrank();
     }
 
