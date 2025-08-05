@@ -27,6 +27,12 @@ contract ThriveProtocolNativeReward is OwnableUpgradeable, UUPSUpgradeable {
      */
     event Reward(address indexed recipient, uint256 amount, string reason);
     /**
+     * @dev Emitted when an admin sends a reward directly to a user.
+     */
+    event RewardTransferred(
+        address indexed recipient, uint256 amount, string reason
+    );
+    /**
      * @dev Emitted when a user withdraws tokens from the contract.
      */
     event Withdrawal(address indexed user, uint256 amount);
@@ -125,6 +131,70 @@ contract ThriveProtocolNativeReward is OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /**
+     * @notice Sends a native token reward directly to a recipient's address.
+     * @dev This function sends funds immediately, unlike the `reward` function which credits a balance for withdrawal.
+     * The contract must have sufficient balance to cover the payout.
+     * @param _recipient The address of the recipient.
+     * @param _amount The amount of the reward to send.
+     * @param _reason The reason for the reward.
+     */
+    function payoutReward(
+        address payable _recipient,
+        uint256 _amount,
+        string calldata _reason
+    ) external onlyAdmin {
+        require(
+            address(this).balance >= _amount,
+            "ThriveProtocol: Insufficient contract balance"
+        );
+
+        emit RewardTransferred(_recipient, _amount, _reason);
+
+        _transferNative(_recipient, _amount);
+    }
+
+    /**
+     * @notice Sends native token rewards directly to multiple recipients in a single transaction.
+     * @dev This function sends funds immediately. The contract must have sufficient balance to cover the total payout.
+     * @param _recipients The addresses of the recipients.
+     * @param _amounts The amounts of the rewards to send.
+     * @param _reasons The reasons for the rewards.
+     */
+    function payoutRewardBulk(
+        address payable[] calldata _recipients,
+        uint256[] calldata _amounts,
+        string[] calldata _reasons
+    ) external onlyAdmin {
+        require(
+            _recipients.length == _amounts.length
+                && _recipients.length == _reasons.length,
+            "Array lengths mismatch"
+        );
+
+        uint256 totalPayout;
+        for (uint256 i = 0; i < _amounts.length; i++) {
+            totalPayout += _amounts[i];
+        }
+
+        require(
+            address(this).balance >= totalPayout,
+            "ThriveProtocol: Insufficient contract balance for bulk payout"
+        );
+
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            uint256 amount = _amounts[i];
+            address payable recipient = _recipients[i];
+            string calldata reason = _reasons[i];
+
+            if (amount > 0) {
+                emit RewardTransferred(recipient, amount, reason);
+
+                _transferNative(recipient, amount);
+            }
+        }
+    }
+
+    /**
      * @dev Give rewards to multiple recipients in bulk.
      * @param _recipients The addresses of the recipients.
      * @param _amounts The amounts of the rewards.
@@ -218,6 +288,16 @@ contract ThriveProtocolNativeReward is OwnableUpgradeable, UUPSUpgradeable {
         );
         balanceOf[_recipient] -= _amount;
         emit RewardRemoved(_recipient, _amount, _reason);
+    }
+
+    function _transferNative(address user, uint256 amount) internal {
+        require(
+            amount > 0,
+            "ThriveProtocol: Payout amount must be greater than zero"
+        );
+
+        (bool success,) = user.call{value: amount}("");
+        require(success, "ThriveProtocol: Native reward transfer failed");
     }
 
     /**

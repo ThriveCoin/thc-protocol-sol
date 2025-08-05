@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {ThriveProtocolNativeReward} from "../src/ThriveProtocolNativeReward.sol";
 import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -15,12 +16,16 @@ contract ThriveProtocolNativeRewardTest is Test {
     ThriveProtocolAccessControl public accessControl;
 
     event Reward(address indexed recipient, uint256 amount, string reason);
+    event RewardTransferred(
+        address indexed recipient, uint256 amount, string reason
+    );
     event Withdrawal(address indexed user, uint256 amount);
     event RewardRemoved(
         address indexed recipient, uint256 amount, string reason
     );
 
     address[] public recipients;
+    address payable[] public payableRecipients;
     uint256[] public amounts;
     string[] public reasons;
 
@@ -52,6 +57,7 @@ contract ThriveProtocolNativeRewardTest is Test {
         vm.stopPrank();
 
         recipients = [address(2), address(3)];
+        payableRecipients = [payable(address(2)), payable(address(3))];
         amounts = [0.001 ether, 0.1 ether];
         reasons = ["deposited", "test"];
     }
@@ -138,6 +144,136 @@ contract ThriveProtocolNativeRewardTest is Test {
         vm.prank(USER_A_ADDRESS);
         vm.expectRevert("ThriveProtocol: must have admin role");
         reward.rewardBulk(recipients, amounts, reasons);
+    }
+
+    /**
+     *
+     * Tests for payoutReward (Single)
+     *
+     */
+    function test_payoutReward_Success() public {
+        uint256 payoutAmount = 0.5 ether;
+        string memory payoutReason = "test payout";
+        vm.deal(address(reward), 1 ether);
+
+        uint256 initialRecipientBalance = USER_A_ADDRESS.balance;
+        uint256 initialContractBalance = address(reward).balance;
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true);
+        emit RewardTransferred(USER_A_ADDRESS, payoutAmount, payoutReason);
+        reward.payoutReward(payable(USER_A_ADDRESS), payoutAmount, payoutReason);
+        vm.stopPrank();
+
+        assertEq(
+            USER_A_ADDRESS.balance,
+            initialRecipientBalance + payoutAmount,
+            "Recipient should receive the funds"
+        );
+        assertEq(
+            address(reward).balance,
+            initialContractBalance - payoutAmount,
+            "Contract balance should decrease"
+        );
+    }
+
+    function test_payoutReward_RevertIf_NonAdmin() public {
+        vm.deal(address(reward), 1 ether);
+
+        vm.startPrank(NON_ADMIN_ADDRESS);
+        vm.expectRevert();
+        reward.payoutReward(payable(USER_A_ADDRESS), 0.5 ether, "fail");
+        vm.stopPrank();
+    }
+
+    function test_payoutReward_RevertIf_InsufficientBalance() public {
+        vm.deal(address(reward), 0.1 ether);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert("ThriveProtocol: Insufficient contract balance");
+        reward.payoutReward(payable(USER_A_ADDRESS), 0.5 ether, "fail");
+        vm.stopPrank();
+    }
+
+    function test_payoutReward_RevertIf_AmountIsZero() public {
+        vm.deal(address(reward), 1 ether);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert(
+            "ThriveProtocol: Payout amount must be greater than zero"
+        );
+        reward.payoutReward(payable(USER_A_ADDRESS), 0, "fail");
+        vm.stopPrank();
+    }
+
+    /**
+     *
+     * Tests for payoutRewardBulk
+     *
+     */
+    function test_payoutRewardBulk_Success() public {
+        uint256 totalPayout = amounts[0] + amounts[1];
+        vm.deal(address(reward), 1 ether);
+
+        uint256 initialRecipientABalance = payableRecipients[0].balance;
+        uint256 initialRecipientBBalance = payableRecipients[1].balance;
+        uint256 initialContractBalance = address(reward).balance;
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectEmit(true, true, true, true);
+        emit RewardTransferred(payableRecipients[0], amounts[0], reasons[0]);
+        vm.expectEmit(true, true, true, true);
+        emit RewardTransferred(payableRecipients[1], amounts[1], reasons[1]);
+
+        reward.payoutRewardBulk(payableRecipients, amounts, reasons);
+        vm.stopPrank();
+
+        assertEq(
+            payableRecipients[0].balance,
+            initialRecipientABalance + amounts[0],
+            "Recipient A balance mismatch"
+        );
+        assertEq(
+            payableRecipients[1].balance,
+            initialRecipientBBalance + amounts[1],
+            "Recipient B balance mismatch"
+        );
+        assertEq(
+            address(reward).balance,
+            initialContractBalance - totalPayout,
+            "Contract balance mismatch"
+        );
+    }
+
+    function test_payoutRewardBulk_RevertIf_NonAdmin() public {
+        vm.deal(address(reward), 1 ether);
+
+        vm.startPrank(NON_ADMIN_ADDRESS);
+        vm.expectRevert();
+        reward.payoutRewardBulk(payableRecipients, amounts, reasons);
+        vm.stopPrank();
+    }
+
+    function test_payoutRewardBulk_RevertIf_InsufficientBalance() public {
+        uint256 totalPayout = amounts[0] + amounts[1];
+        vm.deal(address(reward), totalPayout - 1 wei);
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert(
+            "ThriveProtocol: Insufficient contract balance for bulk payout"
+        );
+        reward.payoutRewardBulk(payableRecipients, amounts, reasons);
+        vm.stopPrank();
+    }
+
+    function test_payoutRewardBulk_RevertIf_ArrayLengthsMismatch() public {
+        uint256[] memory mismatchedAmounts = new uint256[](1);
+        mismatchedAmounts[0] = 1 ether;
+
+        vm.startPrank(ADMIN_ADDRESS);
+        vm.expectRevert("Array lengths mismatch");
+        reward.payoutRewardBulk(payableRecipients, mismatchedAmounts, reasons);
+        vm.stopPrank();
     }
 
     // //////////////
