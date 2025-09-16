@@ -32,6 +32,12 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
      */
     event Reward(address indexed recipient, uint256 amount, string reason);
     /**
+     * @dev Emitted when an admin sends a reward directly to a user.
+     */
+    event RewardTransferred(
+        address indexed recipient, uint256 amount, string reason
+    );
+    /**
      * @dev Emitted when a user withdraws tokens from the contract.
      */
     event Withdrawal(address indexed user, uint256 amount);
@@ -108,6 +114,73 @@ contract ThriveProtocolIERC20Reward is OwnableUpgradeable, UUPSUpgradeable {
         balanceOf[_msgSender()] -= _amount;
         token.safeTransfer(_msgSender(), _amount);
         emit Withdrawal(_msgSender(), _amount);
+    }
+
+    /**
+     * @notice Sends an ERC20 token reward directly to a recipient's address.
+     * @dev This function sends tokens immediately.
+     * @param _recipient The address of the recipient.
+     * @param _amount The amount of the reward to send.
+     * @param _reason The reason for the reward.
+     */
+    function payoutReward(
+        address _recipient,
+        uint256 _amount,
+        string calldata _reason
+    ) external onlyAdmin {
+        require(
+            _amount > 0,
+            "ThriveProtocol: Payout amount must be greater than zero"
+        );
+        require(
+            token.balanceOf(address(this)) >= _amount,
+            "ThriveProtocol: Insufficient token balance"
+        );
+
+        emit RewardTransferred(_recipient, _amount, _reason);
+
+        token.safeTransfer(_recipient, _amount);
+    }
+
+    /**
+     * @notice Sends ERC20 token rewards directly to multiple recipients.
+     * @dev This function sends tokens immediately.
+     * @param _recipients The addresses of the recipients.
+     * @param _amounts The amounts of the rewards to send.
+     * @param _reasons The reasons for the rewards.
+     */
+    function payoutRewardBulk(
+        address[] calldata _recipients,
+        uint256[] calldata _amounts,
+        string[] calldata _reasons
+    ) external onlyAdmin {
+        require(
+            _recipients.length == _amounts.length
+                && _recipients.length == _reasons.length,
+            "ThriveProtocol: Array lengths mismatch"
+        );
+
+        uint256 totalPayout;
+        for (uint256 i = 0; i < _amounts.length; i++) {
+            totalPayout += _amounts[i];
+        }
+
+        require(
+            token.balanceOf(address(this)) >= totalPayout,
+            "ThriveProtocol: Insufficient token balance for bulk payout"
+        );
+
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            uint256 amount = _amounts[i];
+            address recipient = _recipients[i];
+            string calldata reason = _reasons[i];
+
+            if (amount > 0) {
+                emit RewardTransferred(recipient, amount, reason);
+
+                token.safeTransfer(recipient, amount);
+            }
+        }
     }
 
     /**
